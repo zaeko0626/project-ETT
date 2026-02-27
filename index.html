@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETT System v2.6</title>
+    <title>ETT System v2.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -42,10 +42,18 @@
                 <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono italic"></p>
             </div>
             <nav class="flex-1 space-y-2">
-                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд</button>
-                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх</button>
-                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic"><i class="fas fa-tools mr-4 text-amber-500"></i> Удирдах самбар</button>
-                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих</button>
+                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
+                    <i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд
+                </button>
+                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
+                    <i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх
+                </button>
+                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic">
+                    <i class="fas fa-tools mr-4 text-amber-500"></i> Удирдах самбар
+                </button>
+                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
+                    <i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих
+                </button>
             </nav>
             <button onclick="logout()" class="p-4 bg-red-600/20 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest mt-auto hover:bg-red-600 hover:text-white transition-all">Гарах</button>
         </div>
@@ -53,19 +61,17 @@
         <div class="flex-1 p-10 overflow-hidden relative">
             
             <div id="tab-orders" class="tab-content hidden">
-                <div class="flex flex-col mb-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 id="page-title" class="text-3xl font-black text-slate-800 italic">Захиалгууд</h2>
-                        <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border border-slate-100 hover:bg-blue-50"><i class="fas fa-sync-alt"></i></button>
-                    </div>
-                    
-                    <div id="filter-container" class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
-                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Хайх..." class="admin-only hidden p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500">
-                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Олгосон">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select>
-                        <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх бараа</option></select>
-                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх он</option><option value="2025">2025</option><option value="2026">2026</option></select>
-                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх сар</option><option value="01">1-р сар</option><option value="02">2-р сар</option><option value="03">3-р сар</option><option value="12">12-р сар</option></select>
-                    </div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="page-title" class="text-3xl font-black text-slate-800 italic">Захиалгууд</h2>
+                    <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border border-slate-100 hover:bg-blue-50"><i class="fas fa-sync-alt"></i></button>
+                </div>
+                
+                <div id="filter-container" class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 mb-6">
+                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Хайх..." class="admin-only hidden p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none">
+                    <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Олгосон">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select>
+                    <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх бараа</option></select>
+                    <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх он</option><option value="2025">2025</option><option value="2026">2026</option></select>
+                    <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх сар</option><option value="01">1-р сар</option><option value="02">2-р сар</option><option value="03">3-р сар</option></select>
                 </div>
 
                 <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
@@ -102,7 +108,7 @@
                         </div>
                         <div>
                             <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-2 tracking-widest">Тоо ширхэг</label>
-                            <input type="number" id="order-qty" value="1" min="1" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="number" id="order-qty" value="1" min="1" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none">
                         </div>
                     </div>
                     <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest">Захиалга илгээх</button>
@@ -113,18 +119,18 @@
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Системийн удирдлага</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-black uppercase mb-6 text-blue-600 tracking-widest">1. Бараа бүртгэх</h3>
+                        <h3 class="text-xs font-black uppercase mb-6 text-blue-600 tracking-widest">Бараа бүртгэх</h3>
                         <div class="space-y-4">
                             <input type="text" id="new-item-name" placeholder="Барааны нэр" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
-                            <input type="text" id="new-item-sizes" placeholder="Размерууд (Таслалаар: 38,39,40)" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
-                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black hover:bg-blue-700 uppercase text-xs">Жагсаалтад нэмэх</button>
+                            <input type="text" id="new-item-sizes" placeholder="Размерууд (38,39,40)" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
+                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black hover:bg-blue-700 uppercase text-xs">Нэмэх</button>
                         </div>
-                        <div id="admin-item-list" class="mt-8 space-y-2 max-h-48 overflow-y-auto pr-2"></div>
+                        <div id="admin-item-list" class="mt-8 space-y-2 max-h-48 overflow-y-auto"></div>
                     </div>
                     <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-black uppercase mb-6 text-green-600 tracking-widest">2. Ажилчид нэмэх</h3>
+                        <h3 class="text-xs font-black uppercase mb-6 text-green-600 tracking-widest">Ажилчид нэмэх</h3>
                         <textarea id="csv-input" rows="6" class="w-full p-4 bg-slate-50 border rounded-xl mb-4 font-mono text-xs outline-none" placeholder="Овог Нэр Код Албан-Тушаал"></textarea>
-                        <button onclick="processEmployees()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-black hover:bg-slate-900 uppercase text-xs">Мэдээлэл хадгалах</button>
+                        <button onclick="processEmployees()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-black hover:bg-slate-900 uppercase text-xs">Хадгалах</button>
                     </div>
                 </div>
             </div>
@@ -132,12 +138,10 @@
             <div id="tab-settings" class="tab-content hidden">
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Тохиргоо</h2>
                 <div class="max-w-md bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-4 ml-1">Нууц үг солих</label>
                     <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-bold outline-none">
-                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700 transition-all">ХАДГАЛАХ</button>
+                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700 transition-all uppercase">Хадгалах</button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -179,8 +183,12 @@
             
             if (currentUser.type === "admin") {
                 document.getElementById('btn-admin').classList.remove('hidden');
+                document.getElementById('btn-add-order').classList.add('hidden'); // Админд захиалга өгөх цэсийг нуух
                 document.getElementById('search-input').classList.remove('hidden');
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            } else {
+                document.getElementById('btn-add-order').classList.remove('hidden');
+                document.getElementById('btn-admin').classList.add('hidden');
             }
             refreshData();
             showTab('orders');
@@ -208,10 +216,7 @@
             if (currentUser.type === 'admin') {
                 adminList.innerHTML = globalItems.map(item => `
                     <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <div>
-                            <p class="font-bold text-xs text-slate-700">${item.name}</p>
-                            <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest">${item.sizes.join(', ')}</p>
-                        </div>
+                        <div><p class="font-bold text-xs text-slate-700">${item.name}</p><p class="text-[9px] text-slate-400 font-bold">${item.sizes.join(', ')}</p></div>
                         <button onclick="deleteItem('${item.name}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `).join('');
@@ -222,29 +227,22 @@
             const selectedName = document.getElementById('item-select').value;
             const sizeSelect = document.getElementById('size-select');
             const item = globalItems.find(i => i.name === selectedName);
-            
-            if (item && item.sizes && item.sizes.length > 0) {
+            if (item && item.sizes.length > 0) {
                 sizeSelect.disabled = false;
-                sizeSelect.innerHTML = '<option value="">-- Сонгох --</option>' + 
-                    item.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
-            } else {
-                sizeSelect.disabled = true;
-                sizeSelect.innerHTML = '<option value="">-- Сонголтгүй --</option>';
-            }
+                sizeSelect.innerHTML = '<option value="">-- Сонгох --</option>' + item.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
+            } else { sizeSelect.disabled = true; sizeSelect.innerHTML = '<option value="">-- Сонголтгүй --</option>'; }
         }
 
         function applyFilters() {
-            const searchQuery = document.getElementById('search-input').value.toLowerCase();
-            const statusFilter = document.getElementById('filter-status').value;
-            const itemFilter = document.getElementById('filter-item').value;
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const status = document.getElementById('filter-status').value;
+            const item = document.getElementById('filter-item').value;
             const isAdmin = currentUser.type === "admin";
-
             const filtered = allOrders.filter(o => {
                 if (!isAdmin && o.code.toString() !== currentUser.code.toString()) return false;
                 let curStat = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
-                return (!isAdmin || (o.ner + o.ovog + o.code).toLowerCase().includes(searchQuery)) &&
-                       (statusFilter === "" || curStat === statusFilter) &&
-                       (itemFilter === "" || o.item === itemFilter);
+                return (!isAdmin || (o.ner + o.ovog + o.code).toLowerCase().includes(search)) &&
+                       (status === "" || curStat === status) && (item === "" || o.item === item);
             });
             renderOrders(filtered);
         }
@@ -259,15 +257,13 @@
                 tr.innerHTML = `
                     <td class="p-6">
                         <div class="font-extrabold text-slate-700 text-sm">${o.ovog || ''} ${o.ner || ''}</div>
-                        <div class="text-[9px] font-bold text-blue-500 uppercase italic">ID: ${o.code}</div>
+                        <div class="text-[9px] font-bold text-blue-500 uppercase">ID: ${o.code}</div>
                     </td>
                     <td class="p-6">
                         <div class="font-bold text-slate-800 text-sm">${o.item}</div>
                         <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase">Размер: ${o.size || '---'} | Тоо: ${o.quantity || 1}ш</div>
                     </td>
-                    <td class="p-6 text-center">
-                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${color}">${dispStat}</span>
-                    </td>
+                    <td class="p-6 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${color}">${dispStat}</span></td>
                     <td class="p-6 text-right font-bold text-slate-400 text-[10px]">${formatDate(o.requestedDate)}</td>
                     ${currentUser.type === 'admin' ? `
                     <td class="p-6 text-right admin-only">
@@ -289,9 +285,7 @@
             if (!item) return alert("Бараа сонгоно уу");
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog || "", ner: currentUser.ner, role: currentUser.role, item, size, quantity: qty });
-            alert("Амжилттай!");
-            showTab('orders');
-            await refreshData();
+            alert("Захиалга илгээгдлээ!"); showTab('orders'); await refreshData();
             document.getElementById('loading').style.display = 'none';
         }
 
@@ -301,25 +295,21 @@
             if (!name) return;
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_item", itemName: name, sizes: sizes });
-            document.getElementById('new-item-name').value = "";
-            document.getElementById('new-item-sizes').value = "";
-            await refreshData();
-            document.getElementById('loading').style.display = 'none';
+            document.getElementById('new-item-name').value = ""; document.getElementById('new-item-sizes').value = "";
+            await refreshData(); document.getElementById('loading').style.display = 'none';
         }
 
         async function deleteItem(name) {
             if (!confirm("Устгах уу?")) return;
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "delete_item", itemName: name });
-            await refreshData();
-            document.getElementById('loading').style.display = 'none';
+            await refreshData(); document.getElementById('loading').style.display = 'none';
         }
 
         async function updateStatus(id, status) {
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "update_status", id, status });
-            await refreshData();
-            document.getElementById('loading').style.display = 'none';
+            await refreshData(); document.getElementById('loading').style.display = 'none';
         }
 
         async function callAPI(body) {
@@ -344,15 +334,13 @@
             const input = document.getElementById('csv-input').value.trim();
             if (!input) return;
             const data = input.split('\n').map(line => {
-                const p = line.split(/\t|\s+/);
+                const p = line.split(/\s+/);
                 return { ovog: p[0], ner: p[1], code: p[2], role: p[3] };
             });
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_employees", data });
-            alert("Хадгалагдлаа");
-            document.getElementById('csv-input').value = "";
-            await refreshData();
-            document.getElementById('loading').style.display = 'none';
+            alert("Хадгалагдлаа"); document.getElementById('csv-input').value = "";
+            await refreshData(); document.getElementById('loading').style.display = 'none';
         }
 
         async function changePassword() {
@@ -360,8 +348,7 @@
             if (!np) return;
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "change_password", code: currentUser.code, newPassword: np });
-            alert("Амжилттай. Дахин нэвтэрнэ үү.");
-            logout();
+            alert("Амжилттай. Дахин нэвтэрнэ үү."); logout();
         }
     </script>
 </body>
