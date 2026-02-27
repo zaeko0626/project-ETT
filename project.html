@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дотоод систем - Захиалга</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .page-view { display: none; height: 100vh; width: 100%; }
+        .active { display: flex !important; }
+        .sidebar-item:hover { background: rgba(255,255,255,0.05); }
+        .sidebar-active { background: #2563eb !important; color: white !important; }
+        .tab-content { display: none; }
+        .tab-active { display: block !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans">
+
+    <div id="login-view" class="page-view active items-center justify-center bg-slate-900">
+        <div class="bg-white p-10 rounded-[35px] shadow-2xl w-full max-w-sm text-center border border-slate-700">
+            <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+                <i class="fas fa-lock text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-black text-slate-800 mb-2 italic uppercase">Нэвтрэх</h1>
+            <p class="text-slate-400 text-[10px] font-bold uppercase tracking-[3px] mb-8">Системд нэвтрэх хэсэг</p>
+            <div class="space-y-4">
+                <input id="user-input" type="text" placeholder="admin / employee" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all">
+                <input id="pass-input" type="password" placeholder="1234" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all">
+                <button onclick="checkLogin()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-lg shadow-lg hover:bg-blue-700 active:scale-95 transition-all uppercase italic">Нэвтрэх</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-view" class="page-view">
+        <aside class="w-72 bg-slate-950 text-slate-300 flex flex-col p-6 shrink-0 border-r border-slate-800">
+            <div class="mb-10 px-4 pt-4">
+                <h2 class="text-blue-500 font-black text-2xl italic uppercase tracking-tighter">Admin Panel</h2>
+            </div>
+            <nav class="space-y-1 flex-grow">
+                <button onclick="switchTab('orders-tab')" id="btn-orders" class="sidebar-item sidebar-active w-full flex items-center p-4 rounded-2xl transition font-bold text-sm text-left">
+                    <i class="fas fa-shopping-cart mr-3"></i> Захиалгууд
+                </button>
+                <button onclick="switchTab('employees-tab')" id="btn-employees" class="sidebar-item w-full flex items-center p-4 rounded-2xl transition font-bold text-sm text-left hover:text-white">
+                    <i class="fas fa-users mr-3"></i> Ажилчид
+                </button>
+            </nav>
+            <button onclick="logout()" class="w-full flex items-center p-4 text-red-400 font-bold hover:bg-red-500/10 rounded-2xl transition text-sm">
+                <i class="fas fa-power-off mr-3"></i> ГАРАХ
+            </button>
+        </aside>
+
+        <main class="flex-grow overflow-y-auto bg-slate-50">
+            <div id="orders-tab" class="tab-content tab-active p-10 max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+                    <div>
+                        <h1 class="text-3xl font-black text-slate-900 uppercase italic">Захиалгын хяналт</h1>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <select id="order-status-filter" onchange="renderAdminTable()" class="p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-[10px] uppercase shadow-sm">
+                            <option value="All">Бүх төлөв</option>
+                            <option value="Зөвшөөрсөн">Зөвшөөрсөн</option>
+                            <option value="Татгалзсан">Татгалзсан</option>
+                            <option value="Хүлээн авсан">Хүлээн авсан</option>
+                        </select>
+                        <input type="text" id="order-search-name" onkeyup="renderAdminTable()" placeholder="Нэрээр хайх..." class="p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-xs italic w-48 shadow-sm">
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[32px] shadow-xl border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 border-b font-black text-[10px] uppercase text-slate-400 italic">
+                            <tr>
+                                <th class="p-6">Ажилтан & Огноо</th>
+                                <th class="p-6">Төрөл</th>
+                                <th class="p-6">Төлөв</th>
+                                <th class="p-6">Авсан өдөр</th>
+                                <th class="p-6 text-center">Үйлдэл</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-slate-50 text-sm italic"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="employees-tab" class="tab-content p-10 max-w-7xl mx-auto">
+                <h1 class="text-3xl font-black text-slate-900 uppercase italic mb-8">Ажилчдын түүх</h1>
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
+                    <div class="lg:col-span-1 space-y-4">
+                        <div class="bg-white p-6 rounded-[30px] shadow-sm border h-fit">
+                            <input type="text" id="emp-search" onkeyup="renderEmployeeList()" placeholder="Ажилтан хайх..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-xs italic">
+                            <div id="employee-list-container" class="mt-4 space-y-1 max-h-[500px] overflow-y-auto pr-2"></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-3">
+                        <div class="bg-white rounded-[30px] shadow-xl border border-slate-200 overflow-hidden">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400 italic">
+                                    <tr>
+                                        <th class="p-6">Огноо</th>
+                                        <th class="p-6">Төрөл</th>
+                                        <th class="p-6">Төлөв</th>
+                                        <th class="p-6">Авсан өдөр</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="individual-history-body" class="divide-y text-sm italic"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="employee-view" class="page-view">
+        <aside class="w-72 bg-blue-700 text-white flex flex-col p-6 shrink-0">
+            <h2 class="font-black text-2xl italic uppercase mb-10">Employee</h2>
+            <nav class="space-y-1 flex-grow">
+                <a href="#" class="sidebar-item sidebar-active flex items-center p-4 rounded-2xl font-bold text-sm"><i class="fas fa-plus-circle mr-3"></i> Захиалга өгөх</a>
+            </nav>
+            <button onclick="logout()" class="p-4 text-white/70 font-bold text-sm text-left"><i class="fas fa-sign-out-alt mr-3"></i> ГАРАХ</button>
+        </aside>
+        <main class="flex-grow overflow-y-auto bg-slate-50 p-10">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white p-10 rounded-[35px] shadow-xl border mb-10">
+                    <h3 class="text-2xl font-black mb-8 italic uppercase">Шинэ захиалга</h3>
+                    <div class="space-y-4">
+                        <input id="emp-email" type="text" placeholder="Таны нэр" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold">
+                        <select id="emp-clothing" class="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold cursor-pointer">
+                            <option>Өвлийн куртка</option>
+                            <option>Ажлын хантааз</option>
+                            <option>Зуны өмд</option>
+                            <option>Ажлын гутал</option>
+                        </select>
+                        <button onclick="sendOrder()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase">Илгээх</button>
+                    </div>
+                </div>
+                <div id="employee-order-list" class="space-y-4"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const getOrders = () => JSON.parse(localStorage.getItem('sidebar_dated_orders')) || [];
+        const saveOrders = (orders) => localStorage.setItem('sidebar_dated_orders', JSON.stringify(orders));
+        const getDateOnly = () => {
+            const now = new Date();
+            return `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+        };
+
+        function checkLogin() {
+            const u = document.getElementById('user-input').value.trim();
+            const p = document.getElementById('pass-input').value.trim();
+            if (u === 'admin' && p === '1234') { localStorage.setItem('currentUser', 'admin'); showView('admin-view'); renderAdminTable(); }
+            else if (u === 'employee' && p === '1234') { localStorage.setItem('currentUser', 'employee'); showView('employee-view'); renderEmployeeHistory(); }
+            else alert("Буруу!");
+        }
+
+        function logout() { localStorage.removeItem('currentUser'); location.reload(); }
+        function showView(id) {
+            document.querySelectorAll('.page-view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('tab-active'));
+            document.getElementById(tabId).classList.add('tab-active');
+            document.getElementById('btn-orders').classList.toggle('sidebar-active', tabId === 'orders-tab');
+            document.getElementById('btn-employees').classList.toggle('sidebar-active', tabId === 'employees-tab');
+            if(tabId === 'orders-tab') renderAdminTable();
+            else renderEmployeeList();
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('admin-table-body');
+            const statusFilter = document.getElementById('order-status-filter').value;
+            const nameSearch = document.getElementById('order-search-name').value.toLowerCase();
+            let orders = getOrders();
+
+            if (statusFilter !== "All") orders = orders.filter(o => o.status === statusFilter);
+            if (nameSearch) orders = orders.filter(o => o.employee.toLowerCase().includes(nameSearch));
+
+            tbody.innerHTML = "";
+            orders.forEach(o => {
+                let statusColor = o.status === 'Зөвшөөрсөн' ? 'bg-blue-100 text-blue-700' : 
+                                 o.status === 'Хүлээн авсан' ? 'bg-green-100 text-green-700' : 
+                                 o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-all">
+                        <td class="p-6"><p class="font-black text-slate-800 uppercase text-xs">${o.employee}</p><p class="text-[9px] text-blue-500 font-bold mt-1">${o.requestedDate}</p></td>
+                        <td class="p-6 font-bold text-slate-500 uppercase text-xs">${o.item}</td>
+                        <td class="p-6"><span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${statusColor}">${o.status}</span></td>
+                        <td class="p-6 font-bold text-xs text-green-600">${o.completedDate || '---'}</td>
+                        <td class="p-6 text-center">
+                            ${o.status === 'Шинэ' ? `
+                                <div class="flex justify-center space-x-2">
+                                    <button onclick="updateStatus(${o.id}, 'Зөвшөөрсөн')" class="bg-green-600 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase">Ok</button>
+                                    <button onclick="updateStatus(${o.id}, 'Татгалзсан')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase">No</button>
+                                </div>
+                            ` : `<i class="fas fa-check-circle text-slate-200"></i>`}
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        // АЖИЛТАН ТАЛ: Хүлээн авах
+        function completeOrder(id) {
+            let orders = getOrders();
+            let i = orders.findIndex(o => o.id === id);
+            orders[i].status = "Хүлээн авсан";
+            orders[i].completedDate = getDateOnly();
+            saveOrders(orders);
+            renderEmployeeHistory();
+        }
+
+        function renderEmployeeHistory() {
+            const list = document.getElementById('employee-order-list');
+            const orders = getOrders();
+            list.innerHTML = "";
+            orders.forEach(o => {
+                let actionBtn = o.status === 'Зөвшөөрсөн' ? 
+                    `<button onclick="completeOrder(${o.id})" class="mt-4 w-full bg-slate-900 text-white py-3 rounded-xl font-black text-[10px] uppercase">Хүлээн авсан</button>` : '';
+                
+                list.innerHTML += `
+                    <div class="bg-white p-6 rounded-[28px] border border-slate-100 shadow-sm mb-4">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-slate-800 uppercase">${o.item}</span>
+                            <span class="text-[10px] font-black uppercase p-1 px-3 bg-slate-100 rounded-lg">${o.status}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mt-2">${o.requestedDate}</p>
+                        ${actionBtn}
+                    </div>`;
+            });
+        }
+
+        function updateStatus(id, status) {
+            let orders = getOrders();
+            let i = orders.findIndex(o => o.id === id);
+            orders[i].status = status;
+            saveOrders(orders);
+            renderAdminTable();
+        }
+
+        function sendOrder() {
+            const name = document.getElementById('emp-email').value.trim();
+            const cloth = document.getElementById('emp-clothing').value;
+            if(!name) return alert("Нэрээ оруулна уу");
+            const orders = getOrders();
+            orders.unshift({ id: Date.now(), employee: name, item: cloth, status: "Шинэ", requestedDate: getDateOnly(), completedDate: "" });
+            saveOrders(orders);
+            renderEmployeeHistory();
+        }
+
+        function renderEmployeeList() {
+            const container = document.getElementById('employee-list-container');
+            const search = document.getElementById('emp-search').value.toLowerCase();
+            const orders = getOrders();
+            const employees = [...new Set(orders.map(o => o.employee))].filter(e => e.toLowerCase().includes(search));
+            container.innerHTML = "";
+            employees.forEach(emp => {
+                container.innerHTML += `<button onclick="renderIndivHistory('${emp}')" class="w-full text-left p-3 rounded-xl hover:bg-blue-50 transition-all font-bold text-slate-700 text-xs italic">${emp}</button>`;
+            });
+        }
+
+        function renderIndivHistory(name) {
+            const tbody = document.getElementById('individual-history-body');
+            const orders = getOrders().filter(o => o.employee === name);
+            tbody.innerHTML = "";
+            orders.forEach(o => {
+                tbody.innerHTML += `<tr><td class="p-6 font-bold text-slate-400 text-xs">${o.requestedDate}</td><td class="p-6 font-black text-slate-800 uppercase text-xs">${o.item}</td><td class="p-6 text-[10px] font-black uppercase">${o.status}</td><td class="p-6 font-bold text-green-600 text-xs">${o.completedDate || '---'}</td></tr>`;
+            });
+        }
+
+        window.onload = () => {
+            const user = localStorage.getItem('currentUser');
+            if (user === 'admin') { showView('admin-view'); renderAdminTable(); }
+            else if (user === 'employee') { showView('employee-view'); renderEmployeeHistory(); }
+        };
+    </script>
+</body>
+</html>
