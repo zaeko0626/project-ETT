@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="mn">
 <head>
     <meta charset="UTF-8">
@@ -25,10 +25,10 @@
 
     <div id="login-page" class="page-view active-view items-center justify-center">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-200">
-            <h1 class="text-4xl font-black text-center mb-10 italic tracking-tighter">ETT <span class="text-blue-600">SYSTEM</span></h1>
+            <h1 class="text-4xl font-black text-center mb-10 italic tracking-tighter text-slate-800">ETT <span class="text-blue-600">SYSTEM</span></h1>
             <div class="space-y-4">
-                <input type="text" id="login-code" placeholder="Нэвтрэх нэр" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all">
-                <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold transition-all">
+                <input type="text" id="login-code" placeholder="Код" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                 <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 transition-all active:scale-95">НЭВТРЭХ</button>
             </div>
         </div>
@@ -42,10 +42,10 @@
                 <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono italic"></p>
             </div>
             <nav class="flex-1 space-y-2">
-                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic transition-all"><i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд</button>
-                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic transition-all"><i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх</button>
-                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic transition-all"><i class="fas fa-user-plus mr-4 text-amber-500"></i> Ажилчид бүртгэх</button>
-                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic transition-all"><i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих</button>
+                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд</button>
+                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх</button>
+                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic"><i class="fas fa-user-plus mr-4 text-amber-500"></i> Ажилчид бүртгэх</button>
+                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих</button>
             </nav>
             <button onclick="logout()" class="p-4 bg-red-600/20 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest mt-auto hover:bg-red-600 hover:text-white transition-all">Гарах</button>
         </div>
@@ -58,10 +58,17 @@
                         <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border border-slate-100 hover:bg-blue-50 transition-all"><i class="fas fa-sync-alt"></i></button>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
-                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Ажилтны нэр..." class="p-3 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
+                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Нэрээр хайх..." class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                         
-                        <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-sm outline-none font-bold">
+                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
+                            <option value="">Бүх төлөв</option>
+                            <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
+                            <option value="Олгосон">Олгосон</option>
+                            <option value="Татгалзсан">Татгалзсан</option>
+                        </select>
+
+                        <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
                             <option value="">Бүх бараа</option>
                             <option value="Ажлын гутал">Ажлын гутал</option>
                             <option value="Ажлын бээлий">Ажлын бээлий</option>
@@ -69,14 +76,12 @@
                             <option value="Ажлын хувцас">Ажлын хувцас</option>
                         </select>
 
-                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-sm outline-none font-bold">
+                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
                             <option value="">Бүх он</option>
-                            <option value="2024">2024 он</option>
-                            <option value="2025">2025 он</option>
-                            <option value="2026">2026 он</option>
+                            <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
                         </select>
 
-                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-sm outline-none font-bold">
+                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
                             <option value="">Бүх сар</option>
                             <option value="01">1-р сар</option><option value="02">2-р сар</option><option value="03">3-р сар</option>
                             <option value="04">4-р сар</option><option value="05">5-р сар</option><option value="06">6-р сар</option>
@@ -90,11 +95,11 @@
                     <table class="w-full text-left">
                         <thead>
                             <tr class="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                <th class="p-6">Ажилтан</th>
+                                <th class="p-6">Ажилтан / Код / Албан тушаал</th>
                                 <th class="p-6">Бараа</th>
                                 <th class="p-6 text-center">Төлөв</th>
                                 <th class="p-6 text-right">Огноо</th>
-                                <th class="p-6 admin-only hidden text-right">Шийдвэрлэх</th>
+                                <th class="p-6 admin-only hidden text-right italic">Олгох</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-50"></tbody>
@@ -105,7 +110,7 @@
             <div id="tab-add-order" class="tab-content hidden">
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Шинэ захиалга илгээх</h2>
                 <div class="max-w-xl bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
-                    <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Барааны төрөл</label>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Барааны төрөл сонгох</label>
                     <select id="item-select" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-blue-500">
                         <option>Ажлын гутал</option>
                         <option>Ажлын бээлий</option>
@@ -196,6 +201,7 @@
 
         function applyFilters() {
             const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('filter-status').value;
             const itemFilter = document.getElementById('filter-item').value;
             const yearFilter = document.getElementById('filter-year').value;
             const monthFilter = document.getElementById('filter-month').value;
@@ -204,13 +210,18 @@
                 const date = new Date(o.requestedDate);
                 const orderYear = date.getFullYear().toString();
                 const orderMonth = (date.getMonth() + 1).toString().padStart(2, '0');
+                
+                // Төлөвийн нэршлийг тааруулах
+                let currentStatus = o.status;
+                if (currentStatus === 'Зөвшөөрсөн') currentStatus = 'Олгосон';
 
-                const matchesSearch = (o.ner + o.ovog).toLowerCase().includes(searchQuery);
+                const matchesSearch = (o.ner + o.ovog + o.code).toLowerCase().includes(searchQuery);
+                const matchesStatus = statusFilter === "" || currentStatus === statusFilter;
                 const matchesItem = itemFilter === "" || o.item === itemFilter;
                 const matchesYear = yearFilter === "" || orderYear === yearFilter;
                 const matchesMonth = monthFilter === "" || orderMonth === monthFilter;
 
-                return matchesSearch && matchesItem && matchesYear && matchesMonth;
+                return matchesSearch && matchesStatus && matchesItem && matchesYear && matchesMonth;
             });
             renderOrders(filtered);
         }
@@ -221,16 +232,21 @@
             orders.slice().reverse().forEach(o => {
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-all";
-                let statusStyle = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-600' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600');
+                
+                let displayStatus = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
+                let statusStyle = displayStatus === 'Олгосон' ? 'bg-green-100 text-green-600' : (displayStatus === 'Татгалзсан' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600');
 
                 tr.innerHTML = `
                     <td class="p-6">
-                        <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest">${o.role || ''}</div>
-                        <div class="font-extrabold text-slate-700">${o.ovog || ''} ${o.ner || ''}</div>
+                        <div class="font-extrabold text-slate-700 text-sm">${o.ovog || ''} ${o.ner || ''}</div>
+                        <div class="flex gap-2 mt-1">
+                            <span class="text-[9px] font-mono bg-slate-100 px-1.5 rounded text-slate-500">ID: ${o.code}</span>
+                            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">${o.role || ''}</span>
+                        </div>
                     </td>
                     <td class="p-6 font-bold text-slate-600 text-sm">${o.item}</td>
                     <td class="p-6 text-center">
-                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${statusStyle}">${o.status}</span>
+                        <span class="px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${statusStyle}">${displayStatus}</span>
                     </td>
                     <td class="p-6 text-right font-bold text-slate-400 text-[10px]">
                         <div>${formatDate(o.requestedDate)}</div>
@@ -239,8 +255,8 @@
                     ${currentUser.type === 'admin' ? `
                     <td class="p-6 text-right space-x-2 admin-only">
                         ${o.status === 'Хүлээгдэж буй' ? `
-                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition-all">Хүлээн авах</button>
-                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all">Татгалзах</button>
+                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-sm">Олгох</button>
+                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-sm">Татгалзах</button>
                         ` : '<span class="text-slate-300 italic text-[10px] font-bold">Шийдвэрлэсэн</span>'}
                     </td>
                     ` : ''}
