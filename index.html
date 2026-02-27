@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETT - Систем</title>
+    <title>ETT - Дотоод систем</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -29,7 +29,7 @@
             <div class="space-y-4">
                 <input type="text" id="login-code" placeholder="Код" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                 <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 transition-all active:scale-95">НЭВТРЭХ</button>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 transition-all">НЭВТРЭХ</button>
             </div>
         </div>
     </div>
@@ -37,7 +37,7 @@
     <div id="main-page" class="page-view flex-row">
         <div class="w-72 bg-slate-900 text-white p-8 flex flex-col shrink-0">
             <div class="mb-10 p-5 bg-slate-800/50 rounded-2xl border border-slate-700 text-center">
-                <p id="u-name" class="font-extrabold text-blue-400 text-lg italic leading-tight"></p>
+                <p id="u-name" class="font-extrabold text-blue-400 text-lg italic"></p>
                 <p id="u-role" class="text-[10px] text-slate-400 uppercase font-bold mt-1 tracking-widest"></p>
                 <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono italic"></p>
             </div>
@@ -59,16 +59,16 @@
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
-                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Нэрээр хайх..." class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Нэр, Код, Албан тушаал..." class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                         
-                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
+                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none font-bold">
                             <option value="">Бүх төлөв</option>
                             <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
                             <option value="Олгосон">Олгосон</option>
                             <option value="Татгалзсан">Татгалзсан</option>
                         </select>
 
-                        <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
+                        <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none font-bold">
                             <option value="">Бүх бараа</option>
                             <option value="Ажлын гутал">Ажлын гутал</option>
                             <option value="Ажлын бээлий">Ажлын бээлий</option>
@@ -76,12 +76,12 @@
                             <option value="Ажлын хувцас">Ажлын хувцас</option>
                         </select>
 
-                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
+                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none font-bold">
                             <option value="">Бүх он</option>
-                            <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+                            <option value="2024">2024 он</option><option value="2025">2025 он</option><option value="2026">2026 он</option>
                         </select>
 
-                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[12px] outline-none font-bold">
+                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none font-bold">
                             <option value="">Бүх сар</option>
                             <option value="01">1-р сар</option><option value="02">2-р сар</option><option value="03">3-р сар</option>
                             <option value="04">4-р сар</option><option value="05">5-р сар</option><option value="06">6-р сар</option>
@@ -110,8 +110,7 @@
             <div id="tab-add-order" class="tab-content hidden">
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Шинэ захиалга илгээх</h2>
                 <div class="max-w-xl bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Барааны төрөл сонгох</label>
-                    <select id="item-select" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold mb-6 outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="item-select" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold mb-6">
                         <option>Ажлын гутал</option>
                         <option>Ажлын бээлий</option>
                         <option>Хамгаалалтын малгай</option>
@@ -125,15 +124,15 @@
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Ажилчид бүртгэх</h2>
                 <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
                     <textarea id="csv-input" rows="8" class="w-full p-6 bg-slate-50 border rounded-2xl mb-6 font-mono text-sm outline-none" placeholder="Овог Нэр Код Албан-Тушаал"></textarea>
-                    <button onclick="processEmployees()" class="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">МЭДЭЭЛЛИЙГ БҮРТГЭХ</button>
+                    <button onclick="processEmployees()" class="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black shadow-xl hover:bg-blue-700">МЭДЭЭЛЛИЙГ БҮРТГЭХ</button>
                 </div>
             </div>
 
             <div id="tab-settings" class="tab-content hidden">
                 <h2 class="text-3xl font-black mb-8 italic text-slate-800">Нууц үг солих</h2>
                 <div class="max-w-md bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
-                    <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-bold outline-none focus:ring-2 focus:ring-red-500 transition-all">
-                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700 transition-all">НУУЦ ҮГ ШИНЭЧЛЭХ</button>
+                    <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-bold">
+                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700">НУУЦ ҮГ ШИНЭЧЛЭХ</button>
                 </div>
             </div>
         </div>
@@ -211,11 +210,10 @@
                 const orderYear = date.getFullYear().toString();
                 const orderMonth = (date.getMonth() + 1).toString().padStart(2, '0');
                 
-                // Төлөвийн нэршлийг тааруулах
-                let currentStatus = o.status;
-                if (currentStatus === 'Зөвшөөрсөн') currentStatus = 'Олгосон';
+                let currentStatus = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
 
-                const matchesSearch = (o.ner + o.ovog + o.code).toLowerCase().includes(searchQuery);
+                // Хайлт: Нэр, Код, Албан тушаал
+                const matchesSearch = (o.ner + o.ovog + o.code + o.role).toLowerCase().includes(searchQuery);
                 const matchesStatus = statusFilter === "" || currentStatus === statusFilter;
                 const matchesItem = itemFilter === "" || o.item === itemFilter;
                 const matchesYear = yearFilter === "" || orderYear === yearFilter;
@@ -240,8 +238,8 @@
                     <td class="p-6">
                         <div class="font-extrabold text-slate-700 text-sm">${o.ovog || ''} ${o.ner || ''}</div>
                         <div class="flex gap-2 mt-1">
-                            <span class="text-[9px] font-mono bg-slate-100 px-1.5 rounded text-slate-500">ID: ${o.code}</span>
-                            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-tighter">${o.role || ''}</span>
+                            <span class="text-[9px] font-mono bg-slate-100 px-1.5 rounded text-slate-500 italic">ID: ${o.code}</span>
+                            <span class="text-[9px] font-bold text-blue-500 uppercase tracking-tighter italic">${o.role || ''}</span>
                         </div>
                     </td>
                     <td class="p-6 font-bold text-slate-600 text-sm">${o.item}</td>
@@ -269,9 +267,18 @@
         }
 
         async function updateStatus(id, status) {
+            if (!id || id === 'undefined') {
+                alert("Алдаа: Захиалгын ID олдсонгүй. Мэдээллийг дахин ачаална уу.");
+                refreshData();
+                return;
+            }
             document.getElementById('loading').style.display = 'flex';
-            await callAPI({ action: "update_status", id, status });
-            refreshData();
+            try {
+                await callAPI({ action: "update_status", id: id.toString(), status: status });
+                refreshData();
+            } catch (e) {
+                alert("Статус өөрчлөхөд алдаа гарлаа.");
+            }
             document.getElementById('loading').style.display = 'none';
         }
 
