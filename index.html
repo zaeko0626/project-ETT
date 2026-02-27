@@ -155,7 +155,7 @@
             if (!code || !pass) return alert("Мэдээллээ бүрэн оруулна уу!");
 
             // Admin bypass
-            if (code === "admin" && pass === "1234") {
+            if (code === "admin" && pass === "12345") {
                 currentUser = { ner: "Администратор", code: "admin", role: "Системийн удирдлага", type: "admin" };
                 initSystem();
                 return;
