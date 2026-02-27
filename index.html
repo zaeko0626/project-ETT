@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETT - Дотоод систем</title>
+    <title>ETT - Систем</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -37,12 +37,12 @@
     <div id="main-page" class="page-view flex-row">
         <div class="w-72 bg-slate-900 text-white p-8 flex flex-col shrink-0">
             <div class="mb-10 p-5 bg-slate-800/50 rounded-2xl border border-slate-700 text-center">
-                <p id="u-name" class="font-extrabold text-blue-400 text-lg italic"></p>
+                <p id="u-name" class="font-extrabold text-blue-400 text-lg italic leading-tight"></p>
                 <p id="u-role" class="text-[10px] text-slate-400 uppercase font-bold mt-1 tracking-widest"></p>
                 <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono italic"></p>
             </div>
             <nav class="flex-1 space-y-2">
-                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд</button>
+                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-list-ul mr-4 text-blue-500"></i> Миний түүх</button>
                 <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх</button>
                 <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic"><i class="fas fa-user-plus mr-4 text-amber-500"></i> Ажилчид бүртгэх</button>
                 <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic"><i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих</button>
@@ -54,12 +54,12 @@
             <div id="tab-orders" class="tab-content hidden">
                 <div class="flex flex-col mb-8">
                     <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-3xl font-black text-slate-800 italic">Хяналтын самбар</h2>
+                        <h2 id="page-title" class="text-3xl font-black text-slate-800 italic">Миний захиалгууд</h2>
                         <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border border-slate-100 hover:bg-blue-50 transition-all"><i class="fas fa-sync-alt"></i></button>
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
-                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Нэр, Код, Албан тушаал..." class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500 font-bold">
+                    <div id="filter-container" class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100">
+                        <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Нэр, Код, Албан тушаал..." class="admin-only hidden p-3 bg-slate-50 border rounded-xl text-[11px] outline-none focus:ring-2 focus:ring-blue-500 font-bold">
                         
                         <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] outline-none font-bold">
                             <option value="">Бүх төлөв</option>
@@ -181,10 +181,21 @@
             document.getElementById('u-name').innerText = currentUser.ner;
             document.getElementById('u-role').innerText = currentUser.role;
             document.getElementById('u-code').innerText = "ID: #" + currentUser.code;
-            if (currentUser.type === "admin") {
+            
+            const isAdmin = currentUser.type === "admin";
+            
+            // Админ бол нэрээр хайх талбарыг гаргах, гарчиг солих
+            if (isAdmin) {
                 document.getElementById('btn-admin').classList.remove('hidden');
+                document.getElementById('search-input').classList.remove('hidden');
+                document.getElementById('page-title').innerText = "Бүх захиалгууд";
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            } else {
+                document.getElementById('page-title').innerText = "Миний захиалгууд";
+                // Ажилтан бол 5-р баганыг (search) багасгаж grid-ийг тохируулах
+                document.getElementById('filter-container').classList.replace('md:grid-cols-5', 'md:grid-cols-4');
             }
+            
             showTab('orders');
             refreshData();
         }
@@ -205,15 +216,21 @@
             const yearFilter = document.getElementById('filter-year').value;
             const monthFilter = document.getElementById('filter-month').value;
 
+            const isAdmin = currentUser.type === "admin";
+
             const filtered = allOrders.filter(o => {
+                // 1. Ажилтан бол зөвхөн өөрийнхийг харна
+                if (!isAdmin && o.code.toString() !== currentUser.code.toString()) return false;
+
                 const date = new Date(o.requestedDate);
                 const orderYear = date.getFullYear().toString();
                 const orderMonth = (date.getMonth() + 1).toString().padStart(2, '0');
                 
                 let currentStatus = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
 
-                // Хайлт: Нэр, Код, Албан тушаал
-                const matchesSearch = (o.ner + o.ovog + o.code + o.role).toLowerCase().includes(searchQuery);
+                // 2. Админ бол хайлтаар шүүх, ажилтан бол хайлт алгасах
+                const matchesSearch = !isAdmin || (o.ner + o.ovog + o.code + o.role).toLowerCase().includes(searchQuery);
+                
                 const matchesStatus = statusFilter === "" || currentStatus === statusFilter;
                 const matchesItem = itemFilter === "" || o.item === itemFilter;
                 const matchesYear = yearFilter === "" || orderYear === yearFilter;
@@ -253,8 +270,8 @@
                     ${currentUser.type === 'admin' ? `
                     <td class="p-6 text-right space-x-2 admin-only">
                         ${o.status === 'Хүлээгдэж буй' ? `
-                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-sm">Олгох</button>
-                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-sm">Татгалзах</button>
+                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all">Олгох</button>
+                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all">Татгалзах</button>
                         ` : '<span class="text-slate-300 italic text-[10px] font-bold">Шийдвэрлэсэн</span>'}
                     </td>
                     ` : ''}
@@ -268,17 +285,12 @@
 
         async function updateStatus(id, status) {
             if (!id || id === 'undefined') {
-                alert("Алдаа: Захиалгын ID олдсонгүй. Мэдээллийг дахин ачаална уу.");
-                refreshData();
+                alert("Алдаа: Захиалгын ID олдсонгүй.");
                 return;
             }
             document.getElementById('loading').style.display = 'flex';
-            try {
-                await callAPI({ action: "update_status", id: id.toString(), status: status });
-                refreshData();
-            } catch (e) {
-                alert("Статус өөрчлөхөд алдаа гарлаа.");
-            }
+            await callAPI({ action: "update_status", id: id.toString(), status: status });
+            refreshData();
             document.getElementById('loading').style.display = 'none';
         }
 
