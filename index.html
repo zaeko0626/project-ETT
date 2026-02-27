@@ -3,143 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETT System v2.7</title>
+    <title>ETT - НБХХ-ийн систем</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Manrope', sans-serif; height: 100vh; overflow: hidden; background-color: #f8fafc; }
+        body { font-family: 'Manrope', sans-serif; height: 100vh; overflow: hidden; background-color: #f1f5f9; font-size: 16px; }
         .page-view { display: none; height: 100vh; width: 100%; }
         .active-view { display: flex !important; }
-        .tab-content { height: calc(100vh - 20px); overflow-y: auto; padding-bottom: 80px; }
+        .tab-content { height: calc(100vh - 20px); overflow-y: auto; padding-bottom: 100px; }
         .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        /* Фонт томруулах нэмэлт */
+        input, select, button, table { font-size: 15px !important; }
+        h2 { font-size: 2rem !important; }
     </style>
 </head>
 <body>
 
     <div id="loading" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-2"></div>
-        <p class="font-bold text-blue-600 tracking-widest uppercase text-xs">Түр хүлээнэ үү...</p>
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mb-4"></div>
+        <p class="font-black text-blue-600 uppercase text-sm tracking-widest">Түр хүлээнэ үү...</p>
     </div>
 
     <div id="login-page" class="page-view active-view items-center justify-center">
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-200">
-            <h1 class="text-4xl font-black text-center mb-10 italic tracking-tighter text-slate-800">ETT <span class="text-blue-600">SYSTEM</span></h1>
-            <div class="space-y-4">
-                <input type="text" id="login-code" placeholder="Код" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-blue-700 transition-all uppercase">НЭВТРЭХ</button>
+        <div class="bg-white p-12 rounded-[3rem] shadow-2xl w-full max-w-lg border border-slate-200">
+            <h1 class="text-5xl font-black text-center mb-12 italic tracking-tighter text-slate-800">ETT <span class="text-blue-600">PPE</span></h1>
+            <div class="space-y-6">
+                <input type="text" id="login-code" placeholder="Ажилтны код" class="w-full p-6 bg-slate-50 border-2 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/20 font-bold text-lg">
+                <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-6 bg-slate-50 border-2 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/20 font-bold text-lg">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-6 rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase text-lg">Нэвтрэх</button>
             </div>
         </div>
     </div>
 
     <div id="main-page" class="page-view flex-row">
-        <div class="w-72 bg-slate-900 text-white p-8 flex flex-col shrink-0">
-            <div class="mb-10 p-5 bg-slate-800/50 rounded-2xl border border-slate-700 text-center">
-                <p id="u-name" class="font-extrabold text-blue-400 text-lg italic leading-tight"></p>
-                <p id="u-role" class="text-[10px] text-slate-400 uppercase font-bold mt-1 tracking-widest"></p>
-                <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono italic"></p>
+        <div class="w-80 bg-slate-900 text-white p-8 flex flex-col shrink-0">
+            <div class="mb-10 p-6 bg-slate-800 rounded-3xl border border-slate-700 text-center">
+                <p id="u-name" class="font-extrabold text-blue-400 text-xl italic"></p>
+                <p id="u-role" class="text-xs text-slate-400 uppercase font-bold mt-2 tracking-widest"></p>
+                <p id="u-code" class="text-xs text-slate-500 mt-2 font-mono italic"></p>
             </div>
-            <nav class="flex-1 space-y-2">
-                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
-                    <i class="fas fa-list-ul mr-4 text-blue-500"></i> Захиалгууд
+            <nav class="flex-1 space-y-3">
+                <button onclick="showTab('orders')" class="w-full text-left p-5 rounded-2xl hover:bg-slate-800 flex items-center font-bold italic text-lg">
+                    <i class="fas fa-history mr-4 text-blue-500"></i> Хүсэлтийн түүх
                 </button>
-                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
-                    <i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх
+                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-5 rounded-2xl hover:bg-slate-800 flex items-center font-bold italic text-lg">
+                    <i class="fas fa-plus-circle mr-4 text-green-500"></i> Хүсэлт гаргах
                 </button>
-                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden italic">
-                    <i class="fas fa-tools mr-4 text-amber-500"></i> Удирдах самбар
+                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-5 rounded-2xl hover:bg-slate-800 flex items-center font-bold hidden italic text-lg">
+                    <i class="fas fa-user-shield mr-4 text-amber-500"></i> Админ удирдлага
                 </button>
-                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold italic">
+                <button onclick="showTab('settings')" class="w-full text-left p-5 rounded-2xl hover:bg-slate-800 flex items-center font-bold italic text-lg">
                     <i class="fas fa-key mr-4 text-red-500"></i> Нууц үг солих
                 </button>
             </nav>
-            <button onclick="logout()" class="p-4 bg-red-600/20 text-red-500 rounded-2xl font-black text-xs uppercase tracking-widest mt-auto hover:bg-red-600 hover:text-white transition-all">Гарах</button>
+            <button onclick="logout()" class="p-5 bg-red-600/20 text-red-500 rounded-2xl font-black text-sm uppercase tracking-widest mt-auto hover:bg-red-600 hover:text-white transition-all">Системээс гарах</button>
         </div>
 
-        <div class="flex-1 p-10 overflow-hidden relative">
+        <div class="flex-1 p-12 overflow-hidden relative">
             
             <div id="tab-orders" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 id="page-title" class="text-3xl font-black text-slate-800 italic">Захиалгууд</h2>
-                    <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border border-slate-100 hover:bg-blue-50"><i class="fas fa-sync-alt"></i></button>
+                <div class="flex justify-between items-center mb-10">
+                    <h2 class="font-black text-slate-800 italic uppercase">Хүсэлтийн жагсаалт</h2>
+                    <button onclick="refreshData()" class="px-8 py-5 bg-blue-600 text-white rounded-2xl shadow-lg font-black flex items-center hover:bg-blue-700 transition-all">
+                        <i class="fas fa-sync-alt mr-3"></i> МЭДЭЭЛЭЛ СЭРГЭЭХ
+                    </button>
                 </div>
                 
-                <div id="filter-container" class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-100 mb-6">
-                    <input type="text" id="search-input" onkeyup="applyFilters()" placeholder="Хайх..." class="admin-only hidden p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none">
-                    <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Олгосон">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select>
-                    <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх бараа</option></select>
-                    <select id="filter-year" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх он</option><option value="2025">2025</option><option value="2026">2026</option></select>
-                    <select id="filter-month" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl text-[11px] font-bold outline-none"><option value="">Бүх сар</option><option value="01">1-р сар</option><option value="02">2-р сар</option><option value="03">3-р сар</option></select>
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-200 mb-8">
+                    <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="Ажилтны нэр..." class="admin-only hidden p-4 bg-slate-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="search-code" onkeyup="applyFilters()" placeholder="Ажилтны код..." class="admin-only hidden p-4 bg-slate-50 border rounded-xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="filter-role" onchange="applyFilters()" class="admin-only hidden p-4 bg-slate-50 border rounded-xl font-bold outline-none"><option value="">Бүх албан тушаал</option></select>
+                    
+                    <select id="filter-status" onchange="applyFilters()" class="p-4 bg-slate-50 border rounded-xl font-bold outline-none"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Олгосон">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select>
+                    <select id="filter-item" onchange="applyFilters()" class="p-4 bg-slate-50 border rounded-xl font-bold outline-none"><option value="">Бүх НБХХ</option></select>
+                    
+                    <div class="flex gap-2">
+                        <select id="filter-year" onchange="applyFilters()" class="w-1/2 p-4 bg-slate-50 border rounded-xl font-bold outline-none"></select>
+                        <select id="filter-month" onchange="applyFilters()" class="w-1/2 p-4 bg-slate-50 border rounded-xl font-bold outline-none">
+                            <option value="">Сар</option>
+                            <option value="01">1 сар</option><option value="02">2 сар</option><option value="03">3 сар</option><option value="04">4 сар</option>
+                            <option value="05">5 сар</option><option value="06">6 сар</option><option value="07">7 сар</option><option value="08">8 сар</option>
+                            <option value="09">9 сар</option><option value="10">10 сар</option><option value="11">11 сар</option><option value="12">12 сар</option>
+                        </select>
+                    </div>
                 </div>
 
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left">
                         <thead>
-                            <tr class="bg-slate-50 border-b text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                                <th class="p-6">Ажилтан</th>
-                                <th class="p-6">Бараа / Хэмжээ / Тоо</th>
-                                <th class="p-6 text-center">Төлөв</th>
-                                <th class="p-6 text-right">Огноо</th>
-                                <th class="p-6 admin-only hidden text-right italic">Үйлдэл</th>
+                            <tr class="bg-slate-50 border-b text-xs font-black uppercase text-slate-400 tracking-widest">
+                                <th class="p-8">Ажилтан / Албан тушаал</th>
+                                <th class="p-8">НБХХ / Хэмжээ / Тоо</th>
+                                <th class="p-8 text-center">Төлөв</th>
+                                <th class="p-8 text-right">Огноо</th>
+                                <th class="p-8 admin-only hidden text-right italic">Шийдвэрлэх</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="divide-y divide-slate-50"></tbody>
+                        <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
 
             <div id="tab-add-order" class="tab-content hidden">
-                <h2 class="text-3xl font-black mb-8 italic text-slate-800">Шинэ захиалга</h2>
-                <div class="max-w-xl bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200 space-y-6">
+                <h2 class="font-black mb-10 italic text-slate-800 uppercase">Шинэ хүсэлт илгээх</h2>
+                <div class="max-w-2xl bg-white p-12 rounded-[3rem] shadow-sm border border-slate-200 space-y-8">
                     <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-2 tracking-widest">Бараа сонгох</label>
-                        <select id="item-select" onchange="onItemChange()" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">НБХХ сонгох</label>
+                        <select id="item-select" onchange="onItemChange()" class="w-full p-6 bg-slate-50 border-2 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-500/20 text-lg">
                             <option value="">-- Сонгох --</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-2 tracking-widest">Размер</label>
-                            <select id="size-select" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500" disabled>
+                            <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Размер</label>
+                            <select id="size-select" class="w-full p-6 bg-slate-50 border-2 rounded-2xl font-bold outline-none focus:ring-4 focus:ring-blue-500/20 text-lg" disabled>
                                 <option value="">-- Сонгох --</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-2 tracking-widest">Тоо ширхэг</label>
-                            <input type="number" id="order-qty" value="1" min="1" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none">
+                            <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Тоо ширхэг</label>
+                            <input type="number" id="order-qty" value="1" min="1" class="w-full p-6 bg-slate-50 border-2 rounded-2xl font-bold outline-none text-lg">
                         </div>
                     </div>
-                    <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase tracking-widest">Захиалга илгээх</button>
+                    <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-6 rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase text-lg tracking-widest">Хүсэлт илгээх</button>
                 </div>
             </div>
 
             <div id="tab-admin-panel" class="tab-content hidden">
-                <h2 class="text-3xl font-black mb-8 italic text-slate-800">Системийн удирдлага</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-black uppercase mb-6 text-blue-600 tracking-widest">Бараа бүртгэх</h3>
-                        <div class="space-y-4">
-                            <input type="text" id="new-item-name" placeholder="Барааны нэр" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
-                            <input type="text" id="new-item-sizes" placeholder="Размерууд (38,39,40)" class="w-full p-4 bg-slate-50 border rounded-xl font-bold outline-none">
-                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black hover:bg-blue-700 uppercase text-xs">Нэмэх</button>
+                <h2 class="font-black mb-10 italic text-slate-800 uppercase">Системийн тохиргоо</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-black uppercase mb-8 text-blue-600 tracking-widest">НБХХ-ийн бүртгэл</h3>
+                        <div class="space-y-5">
+                            <input type="text" id="new-item-name" placeholder="НБХХ нэр (жишээ: Бээлий)" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none">
+                            <input type="text" id="new-item-sizes" placeholder="Размерууд (S,M,L)" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold outline-none">
+                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black hover:bg-blue-700 uppercase">Бүртгэх</button>
                         </div>
-                        <div id="admin-item-list" class="mt-8 space-y-2 max-h-48 overflow-y-auto"></div>
+                        <div id="admin-item-list" class="mt-10 space-y-3 max-h-60 overflow-y-auto pr-2"></div>
                     </div>
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <h3 class="text-xs font-black uppercase mb-6 text-green-600 tracking-widest">Ажилчид нэмэх</h3>
-                        <textarea id="csv-input" rows="6" class="w-full p-4 bg-slate-50 border rounded-xl mb-4 font-mono text-xs outline-none" placeholder="Овог Нэр Код Албан-Тушаал"></textarea>
-                        <button onclick="processEmployees()" class="w-full bg-slate-800 text-white py-4 rounded-xl font-black hover:bg-slate-900 uppercase text-xs">Хадгалах</button>
+                    <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-black uppercase mb-8 text-green-600 tracking-widest">Ажилчдын сан нэмэх</h3>
+                        <textarea id="csv-input" rows="7" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-mono text-sm outline-none" placeholder="Овог Нэр Код Албан-Тушаал"></textarea>
+                        <button onclick="processEmployees()" class="w-full bg-slate-900 text-white py-5 rounded-2xl font-black hover:bg-black uppercase">Мэдээллийг хадгалах</button>
                     </div>
                 </div>
             </div>
 
             <div id="tab-settings" class="tab-content hidden">
-                <h2 class="text-3xl font-black mb-8 italic text-slate-800">Тохиргоо</h2>
-                <div class="max-w-md bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-200">
-                    <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-bold outline-none">
-                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700 transition-all uppercase">Хадгалах</button>
+                <h2 class="font-black mb-10 italic text-slate-800 uppercase">Хэрэглэгчийн тохиргоо</h2>
+                <div class="max-w-md bg-white p-12 rounded-[3rem] shadow-sm border border-slate-200">
+                    <label class="block text-xs font-black text-slate-400 uppercase mb-5 ml-2 tracking-widest">Нууц үг солих</label>
+                    <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-6 bg-slate-50 border-2 rounded-2xl mb-8 font-bold outline-none focus:ring-4 focus:ring-red-500/10">
+                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-6 rounded-2xl shadow-xl hover:bg-red-700 transition-all uppercase">Шинэчлэх</button>
                 </div>
             </div>
         </div>
@@ -151,7 +168,20 @@
         let allOrders = [];
         let globalItems = [];
 
-        window.onload = () => { if (currentUser) initSystem(); };
+        window.onload = () => { 
+            setupYearFilter();
+            if (currentUser) initSystem(); 
+        };
+
+        function setupYearFilter() {
+            const select = document.getElementById('filter-year');
+            const currentYear = new Date().getFullYear();
+            let html = '<option value="">Бүх он</option>';
+            for(let y = 2022; y <= currentYear + 1; y++) {
+                html += `<option value="${y}">${y} он</option>`;
+            }
+            select.innerHTML = html;
+        }
 
         async function handleLogin() {
             const code = document.getElementById('login-code').value.trim();
@@ -183,50 +213,56 @@
             
             if (currentUser.type === "admin") {
                 document.getElementById('btn-admin').classList.remove('hidden');
-                document.getElementById('btn-add-order').classList.add('hidden'); // Админд захиалга өгөх цэсийг нуух
-                document.getElementById('search-input').classList.remove('hidden');
+                document.getElementById('btn-add-order').classList.add('hidden');
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-            } else {
-                document.getElementById('btn-add-order').classList.remove('hidden');
-                document.getElementById('btn-admin').classList.add('hidden');
             }
             refreshData();
             showTab('orders');
         }
 
         async function refreshData() {
+            document.getElementById('loading').style.display = 'flex';
             try {
                 const res = await callAPI({ action: "get_all_data" });
                 allOrders = res.orders || [];
                 globalItems = res.items || [];
                 updateUI();
+                populateRoleFilter(res.employees);
                 applyFilters();
             } catch(e) {}
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function populateRoleFilter(employees) {
+            const roles = [...new Set(employees.map(e => e.role))];
+            const select = document.getElementById('filter-role');
+            select.innerHTML = '<option value="">Бүх албан тушаал</option>' + 
+                roles.map(r => `<option value="${r}">${r}</option>`).join('');
         }
 
         function updateUI() {
-            const orderSelect = document.getElementById('item-select');
-            const filterSelect = document.getElementById('filter-item');
+            const itemSelect = document.getElementById('item-select');
+            const filterItem = document.getElementById('filter-item');
             const adminList = document.getElementById('admin-item-list');
             
             const html = globalItems.map(item => `<option value="${item.name}">${item.name}</option>`).join('');
-            orderSelect.innerHTML = '<option value="">-- Сонгох --</option>' + html;
-            filterSelect.innerHTML = '<option value="">Бүх бараа</option>' + html;
+            itemSelect.innerHTML = '<option value="">-- Сонгох --</option>' + html;
+            filterItem.innerHTML = '<option value="">Бүх НБХХ</option>' + html;
             
             if (currentUser.type === 'admin') {
                 adminList.innerHTML = globalItems.map(item => `
-                    <div class="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
-                        <div><p class="font-bold text-xs text-slate-700">${item.name}</p><p class="text-[9px] text-slate-400 font-bold">${item.sizes.join(', ')}</p></div>
-                        <button onclick="deleteItem('${item.name}')" class="text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <div><p class="font-bold text-slate-700">${item.name}</p><p class="text-[10px] text-slate-400 font-black uppercase">${item.sizes.join(', ')}</p></div>
+                        <button onclick="deleteItem('${item.name}')" class="text-red-400 hover:text-red-600 p-2"><i class="fas fa-trash-alt"></i></button>
                     </div>
                 `).join('');
             }
         }
 
         function onItemChange() {
-            const selectedName = document.getElementById('item-select').value;
+            const selected = document.getElementById('item-select').value;
             const sizeSelect = document.getElementById('size-select');
-            const item = globalItems.find(i => i.name === selectedName);
+            const item = globalItems.find(i => i.name === selected);
             if (item && item.sizes.length > 0) {
                 sizeSelect.disabled = false;
                 sizeSelect.innerHTML = '<option value="">-- Сонгох --</option>' + item.sizes.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -234,15 +270,30 @@
         }
 
         function applyFilters() {
-            const search = document.getElementById('search-input').value.toLowerCase();
-            const status = document.getElementById('filter-status').value;
-            const item = document.getElementById('filter-item').value;
+            const nameSearch = document.getElementById('search-name').value.toLowerCase();
+            const codeSearch = document.getElementById('search-code').value.toLowerCase();
+            const roleFilter = document.getElementById('filter-role').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            const itemFilter = document.getElementById('filter-item').value;
+            const yearFilter = document.getElementById('filter-year').value;
+            const monthFilter = document.getElementById('filter-month').value;
+            
             const isAdmin = currentUser.type === "admin";
             const filtered = allOrders.filter(o => {
                 if (!isAdmin && o.code.toString() !== currentUser.code.toString()) return false;
+                
+                const date = new Date(o.requestedDate);
+                const oYear = date.getFullYear().toString();
+                const oMonth = (date.getMonth() + 1).toString().padStart(2, '0');
                 let curStat = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
-                return (!isAdmin || (o.ner + o.ovog + o.code).toLowerCase().includes(search)) &&
-                       (status === "" || curStat === status) && (item === "" || o.item === item);
+
+                return (!isAdmin || (o.ner + o.ovog).toLowerCase().includes(nameSearch)) &&
+                       (!isAdmin || o.code.toString().toLowerCase().includes(codeSearch)) &&
+                       (!isAdmin || roleFilter === "" || o.role === roleFilter) &&
+                       (statusFilter === "" || curStat === statusFilter) &&
+                       (itemFilter === "" || o.item === itemFilter) &&
+                       (yearFilter === "" || oYear === yearFilter) &&
+                       (monthFilter === "" || oMonth === monthFilter);
             });
             renderOrders(filtered);
         }
@@ -252,41 +303,39 @@
             body.innerHTML = '';
             orders.slice().reverse().forEach(o => {
                 let dispStat = o.status === 'Зөвшөөрсөн' ? 'Олгосон' : o.status;
-                let color = dispStat === 'Олгосон' ? 'bg-green-100 text-green-600' : (dispStat === 'Татгалзсан' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600');
+                let color = dispStat === 'Олгосон' ? 'bg-green-100 text-green-700' : (dispStat === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td class="p-6">
-                        <div class="font-extrabold text-slate-700 text-sm">${o.ovog || ''} ${o.ner || ''}</div>
-                        <div class="text-[9px] font-bold text-blue-500 uppercase">ID: ${o.code}</div>
+                    <td class="p-8">
+                        <div class="font-extrabold text-slate-800 text-base">${o.ovog || ''} ${o.ner || ''}</div>
+                        <div class="text-[11px] font-black text-blue-600 uppercase mt-1 tracking-tight">${o.role} | ID: ${o.code}</div>
                     </td>
-                    <td class="p-6">
-                        <div class="font-bold text-slate-800 text-sm">${o.item}</div>
-                        <div class="text-[9px] font-bold text-slate-400 mt-1 uppercase">Размер: ${o.size || '---'} | Тоо: ${o.quantity || 1}ш</div>
+                    <td class="p-8">
+                        <div class="font-bold text-slate-700 text-base">${o.item}</div>
+                        <div class="text-[11px] font-bold text-slate-400 mt-1 uppercase tracking-widest">Размер: ${o.size || '---'} | Тоо: ${o.quantity || 1}ш</div>
                     </td>
-                    <td class="p-6 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${color}">${dispStat}</span></td>
-                    <td class="p-6 text-right font-bold text-slate-400 text-[10px]">${formatDate(o.requestedDate)}</td>
+                    <td class="p-8 text-center"><span class="px-4 py-2 rounded-full text-xs font-black uppercase ${color}">${dispStat}</span></td>
+                    <td class="p-8 text-right font-bold text-slate-500 text-xs">${formatDate(o.requestedDate)}</td>
                     ${currentUser.type === 'admin' ? `
-                    <td class="p-6 text-right admin-only">
+                    <td class="p-8 text-right">
                         ${o.status === 'Хүлээгдэж буй' ? `
-                            <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Олгох</button>
-                            <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Татгалзах</button>
-                        ` : '<span class="text-slate-300 italic text-[10px] font-bold">Шийдвэрлэсэн</span>'}
+                            <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-green-700 shadow-sm mr-2">Олгох</button>
+                            <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase hover:bg-red-600 shadow-sm">Татгалзах</button>
+                        ` : '<span class="text-slate-300 italic text-xs font-bold">Шийдвэрлэсэн</span>'}
                     </td>` : ''}
                 `;
                 body.appendChild(tr);
             });
-            if (currentUser.type === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
         }
 
         async function sendOrder() {
             const item = document.getElementById('item-select').value;
             const size = document.getElementById('size-select').value;
             const qty = document.getElementById('order-qty').value;
-            if (!item) return alert("Бараа сонгоно уу");
+            if (!item) return alert("НБХХ сонгоно уу");
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog || "", ner: currentUser.ner, role: currentUser.role, item, size, quantity: qty });
-            alert("Захиалга илгээгдлээ!"); showTab('orders'); await refreshData();
-            document.getElementById('loading').style.display = 'none';
+            alert("Хүсэлт амжилттай илгээгдлээ!"); showTab('orders'); await refreshData();
         }
 
         async function addNewItem() {
@@ -296,20 +345,20 @@
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_item", itemName: name, sizes: sizes });
             document.getElementById('new-item-name').value = ""; document.getElementById('new-item-sizes').value = "";
-            await refreshData(); document.getElementById('loading').style.display = 'none';
+            await refreshData();
         }
 
         async function deleteItem(name) {
-            if (!confirm("Устгах уу?")) return;
+            if (!confirm("Устгахдаа итгэлтэй байна уу?")) return;
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "delete_item", itemName: name });
-            await refreshData(); document.getElementById('loading').style.display = 'none';
+            await refreshData();
         }
 
         async function updateStatus(id, status) {
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "update_status", id, status });
-            await refreshData(); document.getElementById('loading').style.display = 'none';
+            await refreshData();
         }
 
         async function callAPI(body) {
@@ -325,7 +374,7 @@
         function formatDate(d) {
             if (!d) return "";
             const dt = new Date(d);
-            return isNaN(dt.getTime()) ? d.split(',')[0] : `${dt.getFullYear()}.${dt.getMonth()+1}.${dt.getDate()}`;
+            return isNaN(dt.getTime()) ? d.split(',')[0] : `${dt.getFullYear()}.${(dt.getMonth()+1).toString().padStart(2,'0')}.${dt.getDate().toString().padStart(2,'0')}`;
         }
 
         function logout() { localStorage.removeItem('ett_user'); location.reload(); }
@@ -339,8 +388,8 @@
             });
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_employees", data });
-            alert("Хадгалагдлаа"); document.getElementById('csv-input').value = "";
-            await refreshData(); document.getElementById('loading').style.display = 'none';
+            alert("Ажилчдын мэдээлэл хадгалагдлаа"); document.getElementById('csv-input').value = "";
+            await refreshData();
         }
 
         async function changePassword() {
@@ -348,7 +397,7 @@
             if (!np) return;
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "change_password", code: currentUser.code, newPassword: np });
-            alert("Амжилттай. Дахин нэвтэрнэ үү."); logout();
+            alert("Нууц үг солигдлоо. Дахин нэвтэрнэ үү."); logout();
         }
     </script>
 </body>
