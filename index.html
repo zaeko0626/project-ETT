@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETT - Ажилчдын нэгдсэн систем</title>
+    <title>ETT - Дотоод систем</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -25,20 +25,14 @@
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-md border border-slate-100">
             <div class="text-center mb-10">
                 <h1 class="text-4xl font-black text-slate-800 italic tracking-tighter">ETT <span class="text-blue-600">SYSTEM</span></h1>
-                <p class="text-slate-400 mt-2 font-medium">Дотоод хяналтын портал</p>
+                <p class="text-slate-400 mt-2 font-medium">Нэвтрэх хэсэг</p>
             </div>
             <div class="space-y-4">
-                <div class="relative">
-                    <i class="fas fa-id-card absolute left-4 top-5 text-slate-300"></i>
-                    <input type="text" id="login-code" placeholder="Ажилчдын код (7 оронтой)" 
-                        class="w-full pl-12 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold">
-                </div>
-                <div class="relative">
-                    <i class="fas fa-lock absolute left-4 top-5 text-slate-300"></i>
-                    <input type="password" id="login-pass" placeholder="Нууц үг" 
-                        class="w-full pl-12 p-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold">
-                </div>
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all active:scale-95 tracking-wide">НЭВТРЭХ</button>
+                <input type="text" id="login-code" placeholder="Ажилчдын код (7 оронтой)" 
+                    class="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold">
+                <input type="password" id="login-pass" placeholder="Нууц үг" 
+                    class="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all active:scale-95">НЭВТРЭХ</button>
             </div>
         </div>
     </div>
@@ -47,106 +41,85 @@
         <div class="w-full md:w-80 bg-slate-900 text-white p-8 flex flex-col shadow-2xl">
             <div id="user-profile" class="mb-10 p-5 bg-slate-800/50 rounded-3xl border border-slate-700">
                 <p id="u-name" class="font-extrabold text-xl text-blue-400 leading-tight mb-1"></p>
-                <p id="u-role" class="text-[10px] text-slate-400 uppercase tracking-[0.2em] font-bold"></p>
-                <p id="u-code" class="text-[10px] text-slate-500 mt-2">ID: #0000000</p>
+                <p id="u-role" class="text-[10px] text-slate-400 uppercase tracking-widest font-bold"></p>
+                <p id="u-code" class="text-[10px] text-slate-500 mt-2 font-mono"></p>
             </div>
             <nav class="flex-1 space-y-3">
-                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center transition-all font-semibold">
-                    <i class="fas fa-list-check mr-4 text-blue-500"></i> Захиалгын хяналт
+                <button onclick="showTab('orders')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold">
+                    <i class="fas fa-list-check mr-4 text-blue-500"></i> Захиалгууд
                 </button>
-                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center transition-all font-semibold">
-                    <i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга нэмэх
+                <button id="btn-add-order" onclick="showTab('add-order')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold">
+                    <i class="fas fa-plus-circle mr-4 text-green-500"></i> Захиалга илгээх
                 </button>
-                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center transition-all font-semibold hidden">
+                <button id="btn-admin" onclick="showTab('admin-panel')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold hidden">
                     <i class="fas fa-user-plus mr-4 text-amber-500"></i> Ажилчид бүртгэх
                 </button>
-                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center transition-all font-semibold">
+                <button onclick="showTab('settings')" class="w-full text-left p-4 rounded-2xl hover:bg-slate-800 flex items-center font-semibold">
                     <i class="fas fa-shield-alt mr-4 text-red-500"></i> Нууц үг солих
                 </button>
             </nav>
-            <button onclick="logout()" class="mt-auto p-5 bg-red-500/10 text-red-500 rounded-2xl font-black hover:bg-red-500 hover:text-white transition-all text-sm tracking-widest uppercase">
-                Системээс гарах
-            </button>
+            <button onclick="logout()" class="mt-auto p-5 bg-red-500/10 text-red-500 rounded-2xl font-black hover:bg-red-500 hover:text-white transition-all text-sm uppercase">Гарах</button>
         </div>
 
-        <div class="flex-1 p-6 md:p-12 overflow-y-auto bg-slate-50">
-            
+        <div class="flex-1 p-6 md:p-12 overflow-y-auto">
             <div id="tab-orders" class="tab-content hidden">
                 <div class="flex justify-between items-center mb-10">
-                    <h2 class="text-3xl font-black text-slate-800 tracking-tight">Хяналтын самбар</h2>
-                    <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all text-blue-600 border border-slate-100">
-                        <i class="fas fa-sync-alt"></i>
-                    </button>
+                    <h2 class="text-3xl font-black text-slate-800">Хяналтын самбар</h2>
+                    <button onclick="refreshData()" class="p-4 bg-white rounded-2xl shadow-sm text-blue-600 border"><i class="fas fa-sync-alt"></i></button>
                 </div>
-                <div class="bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr class="bg-slate-50/50 border-b border-slate-100">
-                                    <th class="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Ажилтан</th>
-                                    <th class="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest">Бараа / Төрөл</th>
-                                    <th class="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest text-center">Төлөв</th>
-                                    <th class="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right">Хугацаа</th>
-                                    <th id="admin-th" class="p-6 text-[10px] font-black uppercase text-slate-400 tracking-widest text-right hidden">Үйлдэл</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-body" class="divide-y divide-slate-50"></tbody>
-                        </table>
-                    </div>
+                <div class="bg-white rounded-[2rem] shadow-sm border overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="bg-slate-50 border-b">
+                                <th class="p-6 text-[10px] font-black uppercase text-slate-400">Ажилтан</th>
+                                <th class="p-6 text-[10px] font-black uppercase text-slate-400">Бараа</th>
+                                <th class="p-6 text-[10px] font-black uppercase text-slate-400 text-center">Төлөв</th>
+                                <th class="p-6 text-[10px] font-black uppercase text-slate-400 text-right">Хугацаа</th>
+                                <th id="admin-th" class="p-6 text-[10px] font-black uppercase text-slate-400 text-right hidden">Үйлдэл</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
                 </div>
             </div>
 
             <div id="tab-add-order" class="tab-content hidden">
-                <h2 class="text-3xl font-black text-slate-800 mb-10 tracking-tight">Шинэ захиалга илгээх</h2>
-                <div class="max-w-xl bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Барааны төрөл</label>
-                            <select id="item-select" class="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Ажлын гутал</option>
-                                <option>Ажлын бээлий</option>
-                                <option>Хамгаалалтын малгай</option>
-                                <option>Ажлын хувцас (Иж бүрдэл)</option>
-                                <option>Нүдний шил</option>
-                            </select>
-                        </div>
-                        <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all active:scale-95">ИЛГЭЭХ</button>
-                    </div>
+                <h2 class="text-3xl font-black mb-10">Шинэ захиалга илгээх</h2>
+                <div class="max-w-xl bg-white p-10 rounded-[2.5rem] shadow-sm border">
+                    <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2">Барааны төрөл</label>
+                    <select id="item-select" class="w-full p-5 bg-slate-50 border rounded-2xl font-bold mb-6">
+                        <option>Ажлын гутал</option>
+                        <option>Ажлын бээлий</option>
+                        <option>Хамгаалалтын малгай</option>
+                        <option>Ажлын хувцас</option>
+                    </select>
+                    <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all">ИЛГЭЭХ</button>
                 </div>
             </div>
 
             <div id="tab-admin-panel" class="tab-content hidden">
-                <h2 class="text-3xl font-black text-slate-800 mb-2 tracking-tight">Ажилчид бөөнөөр бүртгэх</h2>
-                <p class="text-slate-500 mb-8 font-medium">Excel-ээс [Овог, Нэр, Код, Албан тушаал] багануудыг хуулж тавина уу.</p>
-                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <textarea id="csv-input" rows="8" class="w-full p-6 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 mb-6 font-mono text-sm" 
-                        placeholder="Овог Нэр 1234567 Албан-Тушаал&#10;Бат Дорж 7654321 Оператор"></textarea>
-                    <button onclick="processEmployees()" class="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black shadow-xl hover:bg-blue-700 transition-all">БҮРТГЭХ</button>
+                <h2 class="text-3xl font-black mb-10">Ажилчид бүртгэх</h2>
+                <div class="bg-white p-10 rounded-[2.5rem] shadow-sm border">
+                    <textarea id="csv-input" rows="8" class="w-full p-6 bg-slate-50 border rounded-2xl mb-6 font-mono text-sm" placeholder="Овог Нэр 1234567 Албан-Тушаал"></textarea>
+                    <button onclick="processEmployees()" class="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black shadow-xl">БҮРТГЭХ</button>
                 </div>
             </div>
 
             <div id="tab-settings" class="tab-content hidden">
-                <h2 class="text-3xl font-black text-slate-800 mb-10 tracking-tight">Аюулгүй байдал</h2>
-                <div class="max-w-md bg-white p-10 rounded-[2.5rem] shadow-sm border border-slate-100">
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-xs font-black text-slate-400 uppercase mb-3 ml-2 tracking-widest">Шинэ нууц үг</label>
-                            <input type="password" id="new-pw" class="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-red-500">
-                        </div>
-                        <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-red-700 transition-all">НУУЦ ҮГ ШИНЭЧЛЭХ</button>
-                    </div>
+                <h2 class="text-3xl font-black mb-10">Нууц үг солих</h2>
+                <div class="max-w-md bg-white p-10 rounded-[2.5rem] shadow-sm border">
+                    <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border rounded-2xl mb-6 font-bold">
+                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl shadow-xl">ШИНЭЧЛЭХ</button>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script>
-        // ТАНЫ GOOGLE SCRIPT URL-ЫГ ЭНД ТАВИНА
+        // ТАНЫ GOOGLE SCRIPT URL
         const API_URL = "https://script.google.com/macros/s/AKfycbzMeNWFhPLtdzFOUd-Bv-6u11yLgnvm7XGxyxeR5EEWvdLm5wRWCdrpn9oKJ0wvo2HB/exec"; 
 
         let currentUser = null;
-        let ordersData = [];
 
         async function handleLogin() {
             const code = document.getElementById('login-code').value.trim();
@@ -154,13 +127,14 @@
 
             if (!code || !pass) return alert("Мэдээллээ бүрэн оруулна уу!");
 
-            // Admin bypass
+            // 1. АДМИН ЭРХИЙГ ШУУД ШАЛГАХ (Гацахаас сэргийлнэ)
             if (code === "admin" && pass === "12345") {
                 currentUser = { ner: "Администратор", code: "admin", role: "Системийн удирдлага", type: "admin" };
                 initSystem();
                 return;
             }
 
+            // 2. АЖИЛТАН БОЛ GOOGLE-ЭЭС ДАТА ТАТАЖ ШАЛГАНА
             document.getElementById('loading').style.display = 'flex';
             try {
                 const res = await callAPI({ action: "get_all_data" });
@@ -174,7 +148,7 @@
                     alert("Код эсвэл нууц үг буруу байна!");
                 }
             } catch (e) {
-                alert("Холболтын алдаа гарлаа!");
+                alert("Холболтын алдаа! Google Script-ийн URL-аа шалгана уу.");
             }
             document.getElementById('loading').style.display = 'none';
         }
@@ -183,13 +157,12 @@
             document.getElementById('login-page').classList.remove('active');
             document.getElementById('main-page').classList.add('active');
             
-            document.getElementById('u-name').innerText = (currentUser.ovog ? currentUser.ovog[0] + ". " : "") + currentUser.ner;
+            document.getElementById('u-name').innerText = currentUser.ner;
             document.getElementById('u-role').innerText = currentUser.role;
             document.getElementById('u-code').innerText = "ID: #" + currentUser.code;
 
             if (currentUser.type === "admin") {
                 document.getElementById('btn-admin').classList.remove('hidden');
-                document.getElementById('btn-add-order').classList.add('hidden');
                 document.getElementById('admin-th').classList.remove('hidden');
             }
             showTab('orders');
@@ -197,10 +170,11 @@
         }
 
         async function refreshData() {
-            document.getElementById('loading').style.display = 'flex';
-            const res = await callAPI({ action: "get_all_data" });
-            renderOrders(res.orders);
-            document.getElementById('loading').style.display = 'none';
+            if (!currentUser) return;
+            try {
+                const res = await callAPI({ action: "get_all_data" });
+                renderOrders(res.orders);
+            } catch(e) {}
         }
 
         function renderOrders(orders) {
@@ -209,100 +183,73 @@
             
             orders.slice().reverse().forEach(o => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/80 transition-all";
-                
-                let statusStyle = "bg-amber-100 text-amber-600";
-                if(o.status === 'Зөвшөөрсөн') statusStyle = "bg-green-100 text-green-600";
-                if(o.status === 'Татгалзсан') statusStyle = "bg-red-100 text-red-600";
+                tr.className = "border-b hover:bg-slate-50 transition-all";
+                let statusStyle = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-600' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600');
 
                 tr.innerHTML = `
-                    <td class="p-6">
-                        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">${o.role || ''}</div>
-                        <div class="font-extrabold text-slate-700">${o.ovog || ''} ${o.ner || ''}</div>
-                    </td>
-                    <td class="p-6">
-                        <div class="font-bold text-slate-600 text-sm">${o.item}</div>
-                    </td>
-                    <td class="p-6 text-center">
-                        <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${statusStyle}">${o.status}</span>
-                    </td>
-                    <td class="p-6 text-right">
-                        <div class="flex flex-col text-[10px] font-bold">
-                            <span class="text-slate-400">Илгээсэн: ${o.requestedDate}</span>
-                            ${o.completedDate ? `<span class="text-green-500 mt-1 italic">Дууссан: ${o.completedDate}</span>` : ''}
-                        </div>
+                    <td class="p-6"><div class="text-[10px] text-slate-400 font-bold uppercase">${o.role || ''}</div><div class="font-extrabold">${o.ovog || ''} ${o.ner || ''}</div></td>
+                    <td class="p-6 font-bold text-slate-600">${o.item}</td>
+                    <td class="p-6 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${statusStyle}">${o.status}</span></td>
+                    <td class="p-6 text-right text-[10px] font-bold text-slate-400">
+                        <div>Хүсэлт: ${o.requestedDate}</div>
+                        ${o.completedDate ? `<div class="text-green-500 mt-1 italic">Дууссан: ${o.completedDate}</div>` : ''}
                     </td>
                     ${currentUser.type === 'admin' ? `
-                    <td class="p-6 text-right space-x-2">
+                    <td class="p-6 text-right">
                         ${o.status === 'Хүлээгдэж буй' ? `
-                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="text-green-500 hover:scale-110 transition-transform"><i class="fas fa-check-circle text-2xl"></i></button>
-                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="text-red-400 hover:scale-110 transition-transform"><i class="fas fa-times-circle text-2xl"></i></button>
+                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="text-green-500 mr-2"><i class="fas fa-check-circle text-2xl"></i></button>
+                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="text-red-400"><i class="fas fa-times-circle text-2xl"></i></button>
                         ` : '<i class="fas fa-check-double text-slate-200"></i>'}
-                    </td>
-                    ` : ''}
+                    </td>` : ''}
                 `;
                 body.appendChild(tr);
             });
         }
 
+        async function callAPI(body) {
+            const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+            return await response.json();
+        }
+
         async function processEmployees() {
             const input = document.getElementById('csv-input').value.trim();
             if (!input) return;
-            
             const lines = input.split('\n');
             const data = lines.map(line => {
-                const parts = line.split(/\t|\s+/);
-                return { ovog: parts[0], ner: parts[1], code: parts[2], role: parts[3] };
+                const p = line.split(/\t|\s+/);
+                return { ovog: p[0], ner: p[1], code: p[2], role: p[3] };
             });
-
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "add_employees", data });
-            alert("Амжилттай бүртгэгдлээ!");
+            alert("Амжилттай!");
             document.getElementById('csv-input').value = "";
             refreshData();
+            document.getElementById('loading').style.display = 'none';
         }
 
         async function sendOrder() {
-            const item = document.getElementById('item-select').value;
             document.getElementById('loading').style.display = 'flex';
-            await callAPI({ 
-                action: "add_order", 
-                code: currentUser.code, 
-                ovog: currentUser.ovog || "", 
-                ner: currentUser.ner, 
-                role: currentUser.role, 
-                item 
-            });
-            alert("Захиалга илгээгдлээ!");
+            await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog || "", ner: currentUser.ner, role: currentUser.role, item: document.getElementById('item-select').value });
+            alert("Илгээгдлээ!");
             showTab('orders');
             refreshData();
+            document.getElementById('loading').style.display = 'none';
         }
 
         async function updateStatus(id, status) {
             document.getElementById('loading').style.display = 'flex';
             await callAPI({ action: "update_status", id, status });
             refreshData();
+            document.getElementById('loading').style.display = 'none';
         }
 
         async function changePassword() {
-            const newPassword = document.getElementById('new-pw').value;
-            if (!newPassword || newPassword.length < 4) return alert("Нууц үг дор хаяж 4 тэмдэгт байх ёстой!");
-            
+            const np = document.getElementById('new-pw').value;
+            if (!np) return;
             document.getElementById('loading').style.display = 'flex';
-            await callAPI({ action: "change_password", code: currentUser.code, newPassword });
-            alert("Нууц үг амжилттай солигдлоо. Дахин нэвтэрнэ үү!");
+            await callAPI({ action: "change_password", code: currentUser.code, newPassword: np });
+            alert("Нууц үг солигдлоо!");
             logout();
-        }
-
-        async function callAPI(body) {
-            try {
-                const response = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
-                return await response.json();
-            } catch (e) {
-                console.error("API Error", e);
-                document.getElementById('loading').style.display = 'none';
-                throw e;
-            }
         }
 
         function showTab(tab) {
