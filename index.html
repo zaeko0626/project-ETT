@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT PPE v6.8 (Fixed)</title>
+    <title>ETT PPE v6.9 (Final Login)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -59,67 +59,39 @@
             <div id="tab-orders" class="block">
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-3 mb-4">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div>
-                            <label class="filter-label">Барааны нэр</label>
-                            <select id="filter-item" onchange="applyFilters()"><option value="">Бүх бараа</option></select>
-                        </div>
-                        <div>
-                            <label class="filter-label">Төлөв</label>
-                            <select id="filter-status" onchange="applyFilters()">
-                                <option value="">Бүх төлөв</option>
-                                <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-                                <option value="Зөвшөөрсөн">Олгосон</option>
-                                <option value="Татгалзсан">Татгалзсан</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="filter-label">Он</label>
-                            <select id="filter-year" onchange="applyFilters()"></select>
-                        </div>
-                        <div>
-                            <label class="filter-label">Сар</label>
-                            <select id="filter-month" onchange="applyFilters()"></select>
-                        </div>
+                        <div><label class="filter-label">Барааны нэр</label><select id="filter-item" onchange="applyFilters()"><option value="">Бүх бараа</option></select></div>
+                        <div><label class="filter-label">Төлөв</label><select id="filter-status" onchange="applyFilters()"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Зөвшөөрсөн">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select></div>
+                        <div><label class="filter-label">Он</label><select id="filter-year" onchange="applyFilters()"></select></div>
+                        <div><label class="filter-label">Сар</label><select id="filter-month" onchange="applyFilters()"></select></div>
                     </div>
                     <div class="grid grid-cols-3 gap-1.5 border-t pt-2">
-                        <div>
-                            <label class="filter-label">Ажилтны нэр</label>
-                            <input type="text" id="search-name" oninput="applyFilters()" placeholder="Нэр..." class="!px-2">
-                        </div>
-                        <div>
-                            <label class="filter-label">Код</label>
-                            <input type="text" id="search-code" oninput="applyFilters()" placeholder="Код..." class="!px-2">
-                        </div>
-                        <div>
-                            <label class="filter-label">Албан тушаал</label>
-                            <input type="text" id="search-role" oninput="applyFilters()" placeholder="Тушаал..." class="!px-2">
-                        </div>
+                        <div><label class="filter-label">Ажилтны нэр</label><input type="text" id="search-name" oninput="applyFilters()" placeholder="Нэр..." class="!px-2"></div>
+                        <div><label class="filter-label">Код</label><input type="text" id="search-code" oninput="applyFilters()" placeholder="Код..." class="!px-2"></div>
+                        <div><label class="filter-label">Албан тушаал</label><input type="text" id="search-role" oninput="applyFilters()" placeholder="Тушаал..." class="!px-2"></div>
                     </div>
                 </div>
                 <div id="orders-list-container" class="space-y-3 pb-10"></div>
             </div>
-            <div id="tab-admin-panel" class="hidden"><div class="p-10 text-center uppercase font-black text-slate-400 text-xs">Удирдлагын хэсэг</div></div>
-            <div id="tab-profile" class="hidden text-center"><div class="p-10 text-center uppercase font-black text-slate-400 text-xs">Нууц үг солих хэсэг</div></div>
-            <div id="tab-emp-history" class="hidden"><div class="p-10 text-center uppercase font-black text-slate-400 text-xs">Ажилтны түүх</div></div>
         </main>
     </div>
 
     <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6">
         <div class="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-2xl">
             <div class="text-center mb-8">
-                <div class="inline-block p-4 bg-blue-50 rounded-3xl mb-4">
-                    <i class="fas fa-shield-alt text-3xl text-blue-600"></i>
-                </div>
+                <div class="inline-block p-4 bg-blue-50 rounded-3xl mb-4"><i class="fas fa-shield-alt text-3xl text-blue-600"></i></div>
                 <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">PPE Нэвтрэх</h2>
-                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Системд нэвтрэх код таглана уу</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Ажилтны код болон нууц үгээ оруулна уу</p>
             </div>
-            <input type="password" id="login-input" placeholder="Нэвтрэх код" class="w-full p-5 bg-slate-50 border-none rounded-2xl mb-4 text-center text-lg font-bold">
-            <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg shadow-blue-200 active:scale-95 transition-all">Нэвтрэх</button>
+            <div class="space-y-4">
+                <input type="text" id="login-user" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
+                <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Нэвтрэх</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwaAbrQMAa8yfQc7x5nN3wPXIrdQB9oz4PyAR-j-Lw8OVcAtNlrGdpUpUTQwyve5N9C/exec"; // Таны URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbwaAbrQMAa8yfQc7x5nN3wPXIrdQB9oz4PyAR-j-Lw8OVcAtNlrGdpUpUTQwyve5N9C/exec";
         let allOrders = [];
         let currentUser = null;
 
@@ -140,24 +112,27 @@
             if(window.innerWidth < 1024) toggleSidebar();
         };
 
-        // LOGIN (v6.7 зассан логик)
         async function handleLogin() {
-            const code = document.getElementById('login-input').value.trim();
-            if(!code) return;
+            const userCode = document.getElementById('login-user').value.trim();
+            const password = document.getElementById('login-pass').value.trim();
+            if(!userCode || !password) return alert("Мэдээллээ бүрэн бөглөнө үү!");
+
             document.getElementById('loading').classList.remove('hidden');
             try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code: code }) });
+                const res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: "login", code: userCode, password: password }) 
+                });
                 const user = await res.json();
                 if(user.success) {
                     localStorage.setItem('ett_user', JSON.stringify(user));
                     currentUser = user;
                     initApp();
-                } else { alert("Код буруу байна!"); }
+                } else { alert("Код эсвэл нууц үг буруу байна!"); }
             } catch(e) { alert("Холболтын алдаа!"); }
             document.getElementById('loading').classList.add('hidden');
         }
 
-        // LOGOUT (Login хуудас руу шилжих)
         window.logout = function() {
             if(confirm("Та системээс гарахдаа итгэлтэй байна уу?")) {
                 localStorage.removeItem('ett_user');
@@ -168,10 +143,6 @@
         function initApp() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-page').classList.remove('hidden');
-            if(currentUser && currentUser.type !== 'admin') {
-                if(document.getElementById('nav-admin')) document.getElementById('nav-admin').style.display = 'none';
-                if(document.getElementById('nav-history')) document.getElementById('nav-history').style.display = 'none';
-            }
             setupFilters();
             refreshData();
         }
