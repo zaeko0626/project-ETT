@@ -21,6 +21,7 @@
             #sidebar.open { transform: translateX(0); }
         }
         .admin-only { display: none; }
+        .admin-card { background: white; padding: 1.5rem; border-radius: 1.5rem; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
@@ -81,16 +82,32 @@
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden"></div>
 
         <div class="flex-1 p-4 md:p-12 overflow-hidden relative">
+            
             <div id="tab-orders" class="tab-content hidden">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <h2 class="font-black text-slate-800 italic uppercase text-2xl">Хүсэлтийн жагсаалт</h2>
                     <div class="flex gap-2 w-full md:w-auto">
+                        <button onclick="downloadExcel()" class="admin-only flex-1 md:flex-none px-6 py-4 bg-green-600 text-white rounded-2xl shadow-lg font-black flex items-center justify-center hover:bg-green-700 transition-all text-sm">
+                            <i class="fas fa-file-excel mr-2"></i> ТАЙЛАН
+                        </button>
                         <button onclick="refreshData()" class="flex-1 md:flex-none px-6 py-4 bg-blue-600 text-white rounded-2xl shadow-lg font-black flex items-center justify-center hover:bg-blue-700 transition-all text-sm">
                             <i class="fas fa-sync-alt mr-2"></i> ШИНЭЧЛЭХ
                         </button>
                     </div>
                 </div>
                 
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 bg-white p-4 rounded-[1.5rem] md:rounded-[2rem] shadow-sm border border-slate-200 mb-8">
+                    <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="Нэр..." class="admin-only p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                    <input type="text" id="search-code" onkeyup="applyFilters()" placeholder="Код..." class="admin-only p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                    <select id="filter-role" onchange="applyFilters()" class="admin-only p-3 bg-slate-50 border rounded-xl font-bold text-sm"><option value="">Албан тушаал</option></select>
+                    <select id="filter-status" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm"><option value="">Төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Олгосон">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select>
+                    <select id="filter-item" onchange="applyFilters()" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm"><option value="">НБХХ</option></select>
+                    <div class="flex gap-1">
+                        <select id="filter-year" onchange="applyFilters()" class="w-1/2 p-3 bg-slate-50 border rounded-xl font-bold text-[10px] md:text-sm"></select>
+                        <select id="filter-month" onchange="applyFilters()" class="w-1/2 p-3 bg-slate-50 border rounded-xl font-bold text-[10px] md:text-sm"><option value="">Сар</option></select>
+                    </div>
+                </div>
+
                 <div class="bg-white rounded-[1.5rem] md:rounded-[2.5rem] shadow-sm border border-slate-200 overflow-x-auto">
                     <table class="w-full text-left min-w-[600px]">
                         <thead>
@@ -99,6 +116,7 @@
                                 <th class="p-6">НБХХ / Хэмжээ / Тоо</th>
                                 <th class="p-6 text-center">Төлөв</th>
                                 <th class="p-6 text-right">Огноо</th>
+                                <th class="p-6 admin-only text-right">Үйлдэл</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
@@ -111,9 +129,54 @@
                 <div class="max-w-xl mx-auto bg-white p-8 md:p-12 rounded-[2rem] md:rounded-[3rem] shadow-sm border border-slate-200 space-y-6">
                     <div>
                         <label class="block text-xs font-black text-slate-400 uppercase mb-2 ml-2">НБХХ сонгох</label>
-                        <select id="item-select" class="w-full p-5 bg-slate-50 border-2 rounded-2xl font-bold text-lg outline-none"></select>
+                        <select id="item-select" onchange="onItemChange()" class="w-full p-5 bg-slate-50 border-2 rounded-2xl font-bold text-lg outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase mb-2 ml-2">Размер</label>
+                            <select id="size-select" class="w-full p-5 bg-slate-50 border-2 rounded-2xl font-bold text-lg outline-none" disabled></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-400 uppercase mb-2 ml-2">Тоо ширхэг</label>
+                            <input type="number" id="order-qty" value="1" min="1" class="w-full p-5 bg-slate-50 border-2 rounded-2xl font-bold text-lg outline-none">
+                        </div>
                     </div>
                     <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl shadow-xl hover:bg-blue-700 transition-all uppercase text-lg">Хүсэлт илгээх</button>
+                </div>
+            </div>
+
+            <div id="tab-emp-history" class="tab-content hidden">
+                <h2 class="font-black mb-10 italic text-slate-800 uppercase text-2xl">Ажилтны авсан түүх</h2>
+                <div class="admin-card mb-8 flex flex-col md:flex-row gap-4">
+                    <input list="emp-datalist" id="history-search-code" placeholder="Ажилтны код..." class="flex-1 p-5 bg-slate-50 border-2 rounded-2xl font-bold outline-none">
+                    <datalist id="emp-datalist"></datalist>
+                    <button onclick="loadEmployeeHistory()" class="px-10 py-5 bg-purple-600 text-white rounded-2xl font-black uppercase">Шүүх</button>
+                </div>
+                <div id="history-result" class="bg-white rounded-[1.5rem] border border-slate-200 overflow-x-auto min-h-[300px]"></div>
+            </div>
+
+            <div id="tab-admin-panel" class="tab-content hidden">
+                <h2 class="font-black mb-10 italic text-slate-800 uppercase text-2xl">Системийн удирдлага</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="admin-card">
+                        <h3 class="text-xs font-black uppercase mb-6 text-blue-600 tracking-widest">НБХХ бүртгэл</h3>
+                        <div class="space-y-4">
+                            <input type="text" id="new-item-name" placeholder="НБХХ нэр" class="w-full p-4 bg-slate-50 border rounded-xl font-bold">
+                            <input type="text" id="new-item-sizes" placeholder="Размер (38,39,40)" class="w-full p-4 bg-slate-50 border rounded-xl font-bold">
+                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-black uppercase">Бүртгэх</button>
+                        </div>
+                        <div id="admin-item-list" class="mt-6 space-y-2 max-h-60 overflow-y-auto"></div>
+                    </div>
+                    <div class="admin-card">
+                        <h3 class="text-xs font-black uppercase mb-6 text-green-600 tracking-widest">Ажилтан нэмэх</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <input type="text" id="emp-ovog" placeholder="Овог" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                            <input type="text" id="emp-ner" placeholder="Нэр" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                            <input type="text" id="emp-code" placeholder="Код" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                            <input type="text" id="emp-role" placeholder="Албан тушаал" class="p-3 bg-slate-50 border rounded-xl font-bold text-sm">
+                        </div>
+                        <button onclick="addSingleEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase">Хадгалах</button>
+                    </div>
                 </div>
             </div>
 
@@ -121,53 +184,36 @@
                 <h2 class="font-black mb-10 italic text-slate-800 uppercase text-2xl text-center">Нууц үг солих</h2>
                 <div class="max-w-md mx-auto bg-white p-8 md:p-12 rounded-[2rem] shadow-sm border border-slate-200">
                     <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-5 bg-slate-50 border-2 rounded-2xl mb-6 font-bold">
-                    <button onclick="alert('Нууц үг солих функц удахгүй...') " class="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase">Шинэчлэх</button>
+                    <button onclick="changePassword()" class="w-full bg-red-600 text-white font-black py-5 rounded-2xl uppercase">Шинэчлэх</button>
                 </div>
             </div>
+
         </div>
     </div>
 
     <script>
-        // API_URL-аа заавал энд зөв тавьсан эсэхээ шалгаарай
         const API_URL = "https://script.google.com/macros/s/AKfycbyTXEq2yPBaLWhYuXfoUJTHQitFltR2IeirdK-hbLLHj3PkulzXpe4tOk6_Hmyd0RFV/exec"; 
-        
         let currentUser = JSON.parse(localStorage.getItem('ett_user'));
         let allOrders = [];
+        let globalItems = [];
+        let globalEmployees = [];
 
-        window.onload = () => { if (currentUser) initSystem(); };
+        window.onload = () => { setupFilters(); if (currentUser) initSystem(); };
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('hidden');
-        }
-
-        function showTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-' + tab).classList.remove('hidden');
-            if (window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.remove('open');
-                document.getElementById('sidebar-overlay').classList.add('hidden');
-            }
-        }
-
-        async function callAPI(data) {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(data)
-            });
-            if (!response.ok) throw new Error('Сүлжээний алдаа');
-            return await response.json();
+        function setupFilters() {
+            const currentYear = new Date().getFullYear();
+            let yHtml = '<option value="">Бүх он</option>';
+            for(let y = 2022; y <= currentYear + 1; y++) yHtml += `<option value="${y}">${y} он</option>`;
+            document.getElementById('filter-year').innerHTML = yHtml;
+            let mHtml = '<option value="">Бүх сар</option>';
+            for(let m = 1; m <= 12; m++) mHtml += `<option value="${m.toString().padStart(2,'0')}">${m} сар</option>`;
+            document.getElementById('filter-month').innerHTML = mHtml;
         }
 
         async function handleLogin() {
             const code = document.getElementById('login-code').value.trim();
             const pass = document.getElementById('login-pass').value;
-
-            if (!code || !pass) { alert("Мэдээллээ оруулна уу!"); return; }
-
-            // Admin test
+            
             if (code === "admin" && pass === "12345") {
                 currentUser = { ner: "Администратор", code: "admin", role: "Системийн удирдлага", type: "admin" };
                 saveAndInit(); return;
@@ -181,12 +227,8 @@
                     currentUser = { ...user, type: "user" };
                     saveAndInit();
                 } else { alert("Код эсвэл нууц үг буруу байна!"); }
-            } catch (e) {
-                console.error(e);
-                alert("Холболтын алдаа! Google Script-ийн URL болон Deployment-оо шалгана уу.");
-            } finally {
-                document.getElementById('loading').style.display = 'none';
-            }
+            } catch (e) { alert("Холболтын алдаа!"); }
+            document.getElementById('loading').style.display = 'none';
         }
 
         function saveAndInit() {
@@ -201,7 +243,7 @@
             document.getElementById('u-role').innerText = currentUser.role;
             document.getElementById('u-code').innerText = "ID: #" + currentUser.code;
             
-            const isAdmin = currentUser.type === "admin";
+            const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'flex' : 'none');
             document.getElementById('btn-add-order-nav').style.display = isAdmin ? 'none' : 'flex';
             
@@ -214,22 +256,166 @@
             try {
                 const res = await callAPI({ action: "get_all_data" });
                 allOrders = res.orders || [];
-                const tbody = document.getElementById('table-body');
-                tbody.innerHTML = allOrders.map(o => `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="p-6"><p class="font-bold text-slate-800">${o.ner}</p><p class="text-xs text-slate-400 font-mono">#${o.code}</p></td>
-                        <td class="p-6"><p class="font-bold text-slate-700">${o.item}</p><p class="text-xs text-slate-400">Хэмжээ: ${o.size} | Тоо: ${o.quantity}</p></td>
-                        <td class="p-6 text-center"><span class="px-4 py-2 rounded-full text-[10px] font-black uppercase ${o.status === 'Олгосон' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}">${o.status}</span></td>
-                        <td class="p-6 text-right text-xs font-bold text-slate-400 italic">${new Date(o.requestedDate).toLocaleDateString()}</td>
-                    </tr>
-                `).join('');
-            } catch (e) { console.error(e); }
+                globalItems = res.items || [];
+                globalEmployees = res.employees || [];
+                updateUI();
+                populateFilters();
+                applyFilters();
+            } catch(e) { console.error(e); }
             document.getElementById('loading').style.display = 'none';
         }
 
-        function logout() {
-            localStorage.removeItem('ett_user');
-            location.reload();
+        function updateUI() {
+            const html = globalItems.map(item => `<option value="${item.name}">${item.name}</option>`).join('');
+            document.getElementById('item-select').innerHTML = '<option value="">-- Сонгох --</option>' + html;
+            document.getElementById('filter-item').innerHTML = '<option value="">Бүх НБХХ</option>' + html;
+            
+            const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
+            if (isAdmin) {
+                document.getElementById('admin-item-list').innerHTML = globalItems.map(item => `
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div><p class="font-bold text-slate-700">${item.name}</p><p class="text-[10px] text-slate-400 font-bold">Размер: ${item.sizes.join(',')}</p></div>
+                    </div>`).join('');
+            }
+        }
+
+        function populateFilters() {
+            const roles = [...new Set(globalEmployees.map(e => e.role))];
+            document.getElementById('filter-role').innerHTML = '<option value="">Албан тушаал</option>' + roles.map(r => `<option value="${r}">${r}</option>`).join('');
+            document.getElementById('emp-datalist').innerHTML = globalEmployees.map(e => `<option value="${e.code}">${e.ovog} ${e.ner}</option>`).join('');
+        }
+
+        function applyFilters() {
+            const nS = document.getElementById('search-name').value.toLowerCase();
+            const cS = document.getElementById('search-code').value.toLowerCase();
+            const rF = document.getElementById('filter-role').value;
+            const sF = document.getElementById('filter-status').value;
+            const iF = document.getElementById('filter-item').value;
+            const yF = document.getElementById('filter-year').value;
+            const mF = document.getElementById('filter-month').value;
+            const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
+            
+            const filtered = allOrders.filter(o => {
+                if (!isAdmin && o.code.toString() !== currentUser.code.toString()) return false;
+                const dt = new Date(o.requestedDate);
+                const oY = dt.getFullYear().toString();
+                const oM = (dt.getMonth() + 1).toString().padStart(2, '0');
+                let curStat = (o.status === 'Зөвшөөрсөн') ? 'Олгосон' : o.status;
+                
+                return (isAdmin ? (o.ner + o.ovog).toLowerCase().includes(nS) : true) &&
+                       (isAdmin ? o.code.toString().includes(cS) : true) &&
+                       (rF === "" || o.role === rF) && 
+                       (sF === "" || curStat === sF) &&
+                       (iF === "" || o.item === iF) && 
+                       (yF === "" || oY === yF) && 
+                       (mF === "" || oM === mF);
+            });
+            renderOrders(filtered, 'table-body');
+        }
+
+        function renderOrders(orders, containerId) {
+            const body = document.getElementById(containerId);
+            body.innerHTML = orders.slice().reverse().map(o => {
+                let dStat = (o.status === 'Зөвшөөрсөн') ? 'Олгосон' : o.status;
+                let color = dStat === 'Олгосон' ? 'bg-green-100 text-green-700' : (dStat === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
+                const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
+                
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-6"><div class="font-extrabold text-slate-800 text-sm">${o.ovog} ${o.ner}</div><div class="text-[10px] font-black text-blue-600 uppercase">ID: ${o.code}</div></td>
+                        <td class="p-6"><div class="font-bold text-slate-700 text-sm">${o.item}</div><div class="text-[10px] font-bold text-slate-400 uppercase">Размер: ${o.size || '-'} | Тоо: ${o.quantity}</div></td>
+                        <td class="p-6 text-center"><span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${color}">${dStat}</span></td>
+                        <td class="p-6 text-right font-bold text-slate-500 text-[10px]">${formatDate(o.requestedDate)}</td>
+                        ${isAdmin ? `<td class="p-6 text-right">
+                            ${o.status === 'Хүлээгдэж буй' ? `
+                                <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white p-2 rounded-lg text-[10px] mr-1"><i class="fas fa-check"></i></button>
+                                <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white p-2 rounded-lg text-[10px]"><i class="fas fa-times"></i></button>
+                            ` : '<i class="fas fa-check-circle text-slate-300"></i>'}
+                        </td>` : ''}
+                    </tr>`;
+            }).join('');
+        }
+
+        async function callAPI(body) {
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+            return await res.json();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
+            }
+        }
+
+        function onItemChange() {
+            const item = globalItems.find(i => i.name === document.getElementById('item-select').value);
+            const s = document.getElementById('size-select');
+            if (item && item.sizes.length > 0) {
+                s.disabled = false;
+                s.innerHTML = '<option value="">Размер</option>' + item.sizes.map(sz => `<option value="${sz}">${sz}</option>`).join('');
+            } else { s.disabled = true; s.innerHTML = '<option value="">--</option>'; }
+        }
+
+        async function sendOrder() {
+            const item = document.getElementById('item-select').value;
+            const size = document.getElementById('size-select').value;
+            const qty = document.getElementById('order-qty').value;
+            if (!item) return alert("НБХХ сонгоно уу");
+            document.getElementById('loading').style.display = 'flex';
+            try {
+                const res = await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog, ner: currentUser.ner, role: currentUser.role, item, size, quantity: qty });
+                if (res.status === "success") { alert("Амжилттай!"); await refreshData(); showTab('orders'); }
+            } catch(e) { alert("Алдаа!"); }
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function loadEmployeeHistory() {
+            const code = document.getElementById('history-search-code').value.trim();
+            const filtered = allOrders.filter(o => o.code.toString() === code && (o.status === "Зөвшөөрсөн" || o.status === "Олгосон"));
+            let h = `<table class="w-full text-left"><thead class="bg-slate-50 text-[10px] uppercase text-slate-400"><th class="p-6">НБХХ</th><th class="p-6">Тоо</th><th class="p-6 text-right">Огноо</th></thead><tbody class="divide-y">`;
+            filtered.forEach(o => { h += `<tr><td class="p-6 font-bold text-sm">${o.item} (${o.size || '-'})</td><td class="p-6 text-sm">${o.quantity}ш</td><td class="p-6 text-right text-xs font-bold text-slate-500">${formatDate(o.requestedDate)}</td></tr>`; });
+            document.getElementById('history-result').innerHTML = filtered.length ? h + `</tbody></table>` : '<p class="p-10 text-center font-bold text-slate-400">Түүх олдсонгүй.</p>';
+        }
+
+        async function updateStatus(id, status) {
+            document.getElementById('loading').style.display = 'flex';
+            await callAPI({ action: "update_status", id, status });
+            await refreshData();
+        }
+
+        function downloadExcel() {
+            const headers = ["ID", "Овог", "Нэр", "Код", "Албан тушаал", "НБХХ", "Размер", "Тоо", "Төлөв", "Огноо"];
+            let csv = "\uFEFF" + headers.join(",") + "\r\n";
+            allOrders.forEach(o => {
+                csv += [o.id, o.ovog, o.ner, o.code, o.role, o.item, o.size||"-", o.quantity, o.status, formatDate(o.requestedDate)].map(v => `"${v}"`).join(",") + "\r\n";
+            });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            link.download = `ETT_Report.csv`;
+            link.click();
+        }
+
+        function formatDate(d) {
+            const dt = new Date(d);
+            return isNaN(dt.getTime()) ? d.split('T')[0] : `${dt.getFullYear()}.${(dt.getMonth()+1).toString().padStart(2,'0')}.${dt.getDate().toString().padStart(2,'0')}`;
+        }
+
+        function logout() { localStorage.removeItem('ett_user'); location.reload(); }
+        
+        async function changePassword() {
+            const np = document.getElementById('new-pw').value;
+            if (!np) return;
+            document.getElementById('loading').style.display = 'flex';
+            await callAPI({ action: "change_password", code: currentUser.code, newPassword: np });
+            alert("Нууц үг солигдлоо."); logout();
         }
     </script>
 </body>
