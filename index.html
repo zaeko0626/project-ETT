@@ -368,12 +368,34 @@
             const item = document.getElementById('item-select').value;
             const size = document.getElementById('size-select').value;
             const qty = document.getElementById('order-qty').value;
+            
             if (!item) return alert("НБХХ сонгоно уу");
+            
             document.getElementById('loading').style.display = 'flex';
             try {
-                const res = await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog, ner: currentUser.ner, role: currentUser.role, item, size, quantity: qty });
-                if (res.status === "success") { alert("Амжилттай!"); await refreshData(); showTab('orders'); }
-            } catch(e) { alert("Алдаа!"); }
+                // Ажилтны мэдээллийг илүү найдвартай дамжуулах
+                const res = await callAPI({ 
+                    action: "add_order", 
+                    code: currentUser.code, 
+                    ovog: currentUser.ovog || " ", 
+                    ner: currentUser.ner, 
+                    role: currentUser.role, 
+                    item: item, 
+                    size: size, 
+                    quantity: qty 
+                });
+                
+                if (res && res.status === "success") { 
+                    alert("Хүсэлт амжилттай илгээгдлээ!"); 
+                    await refreshData(); 
+                    showTab('orders'); 
+                } else {
+                    alert("Алдаа гарлаа: " + (res.message || "Мэдээлэл хадгалагдсангүй"));
+                }
+            } catch(e) { 
+                console.error(e);
+                alert("Холболтын алдаа гарлаа. Google Script-ийн эрхийг шалгана уу."); 
+            }
             document.getElementById('loading').style.display = 'none';
         }
 
