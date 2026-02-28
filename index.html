@@ -39,7 +39,7 @@
 
     <div id="loading" class="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-        <p class="text-[10px] font-black text-blue-600 uppercase">Уншиж байна...</p>
+        <p class="text-[10px] font-black text-blue-600 uppercase">Мэдээлэл шинэчилж байна...</p>
     </div>
 
     <div id="login-page" class="page-view active-view items-center justify-center p-6">
@@ -48,7 +48,7 @@
             <div class="space-y-4">
                 <input type="text" id="login-code" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border rounded-xl font-bold text-center outline-none">
                 <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border rounded-xl font-bold text-center outline-none">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Нэвтрэх</button>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase shadow-lg">Нэвтрэх</button>
             </div>
         </div>
     </div>
@@ -70,7 +70,7 @@
 
             <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
                 <button onclick="showTab('orders')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800 flex items-center font-bold text-sm">
-                    <i class="fas fa-list-ul mr-3 text-blue-500 w-5"></i> <span id="menu-orders-label">Хүсэлтийн жагсаалт</span>
+                    <i class="fas fa-list-ul mr-3 text-blue-500 w-5"></i> <span id="menu-orders-label">Хүсэлтүүд</span>
                 </button>
                 <button id="btn-add-order-nav" onclick="showTab('add-order')" class="w-full text-left p-3 rounded-lg hover:bg-slate-800 flex items-center font-bold text-sm">
                     <i class="fas fa-plus-circle mr-3 text-green-500 w-5"></i> Хүсэлт гаргах
@@ -94,23 +94,32 @@
         <div class="content-area">
             <header class="mobile-header">
                 <button onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                <span id="header-title-text" class="font-black italic text-xs uppercase tracking-widest">ХҮСЭЛТИЙН ЖАГСААЛТ</span>
-                <button onclick="refreshData()"><i class="fas fa-sync-alt"></i></button>
+                <span id="header-title-text" class="font-black italic text-xs uppercase tracking-widest">ЖАГСААЛТ</span>
+                <button onclick="refreshData()" class="bg-blue-600/20 px-3 py-1 rounded-lg text-blue-400 text-[10px] font-black">
+                    <i class="fas fa-sync-alt mr-1"></i> ШИНЭЧЛЭХ
+                </button>
             </header>
 
             <main class="tab-content">
                 <div id="tab-orders">
-                    <div class="grid grid-cols-3 gap-2 mb-4 bg-white p-2 rounded-xl border shadow-sm">
-                        <select id="filter-status" onchange="applyFilters()" class="p-2 bg-slate-50 border rounded-lg text-[9px] font-black">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black shadow-sm outline-none">
                             <option value="">БҮХ ТӨЛӨВ</option>
                             <option value="Хүлээгдэж буй">ХҮЛЭЭГДЭЖ БУЙ</option>
                             <option value="Олгосон">ОЛГОСОН</option>
                             <option value="Татгалзсан">ТАТГАЛЗСАН</option>
                         </select>
-                        <select id="filter-year" onchange="applyFilters()" class="p-2 bg-slate-50 border rounded-lg text-[9px] font-black"></select>
-                        <select id="filter-month" onchange="applyFilters()" class="p-2 bg-slate-50 border rounded-lg text-[9px] font-black"><option value="">БҮХ САР</option></select>
+                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black shadow-sm outline-none"></select>
+                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black shadow-sm outline-none"><option value="">БҮХ САР</option></select>
+                        <button onclick="refreshData()" class="hidden lg:block bg-blue-600 text-white rounded-xl font-black text-[10px] uppercase shadow-md">Шинэчлэх</button>
                     </div>
-                    <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="Ажилтны нэрээр хайх..." class="admin-only w-full p-3 mb-4 bg-white border rounded-xl text-xs font-bold shadow-sm">
+
+                    <div class="admin-only grid grid-cols-1 lg:grid-cols-3 gap-2 mb-4">
+                        <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="Нэрээр хайх..." class="p-3 bg-white border rounded-xl text-[10px] font-bold shadow-sm">
+                        <input type="text" id="search-code" onkeyup="applyFilters()" placeholder="Кодоор хайх..." class="p-3 bg-white border rounded-xl text-[10px] font-bold shadow-sm">
+                        <input type="text" id="search-role" onkeyup="applyFilters()" placeholder="Албан тушаалаар..." class="p-3 bg-white border rounded-xl text-[10px] font-bold shadow-sm">
+                    </div>
+
                     <div id="orders-list-container" class="space-y-2"></div>
                 </div>
 
@@ -123,7 +132,7 @@
                                 <select id="size-select" class="p-4 bg-slate-50 border rounded-xl font-black text-xs outline-none" disabled></select>
                                 <input type="number" id="order-qty" value="1" class="p-4 bg-slate-50 border rounded-xl font-black text-xs outline-none">
                             </div>
-                            <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase text-xs mt-2">Илгээх</button>
+                            <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase text-xs mt-2 shadow-lg">Илгээх</button>
                         </div>
                     </div>
                 </div>
@@ -226,7 +235,7 @@
             document.getElementById('u-code-disp').innerText = "ID: #" + currentUser.code;
             
             const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
-            document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'block' : 'none');
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = isAdmin ? 'grid' : 'none');
             document.getElementById('btn-add-order-nav').style.display = isAdmin ? 'none' : 'flex';
             
             const label = isAdmin ? "ХҮСЭЛТИЙН ЖАГСААЛТ" : "МИНИЙ ХҮСЭЛТҮҮД";
@@ -246,7 +255,7 @@
                 globalEmployees = res.employees || [];
                 updateUI();
                 applyFilters();
-            } catch(e) { console.error(e); }
+            } catch(e) { console.error("Refresh Error:", e); }
             document.getElementById('loading').style.display = 'none';
         }
 
@@ -258,19 +267,28 @@
 
         function applyFilters() {
             const nS = document.getElementById('search-name').value.toLowerCase();
+            const cS = document.getElementById('search-code').value.toLowerCase();
+            const rS = document.getElementById('search-role').value.toLowerCase();
             const sF = document.getElementById('filter-status').value;
             const yF = document.getElementById('filter-year').value;
             const mF = document.getElementById('filter-month').value;
             const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
             
             const filtered = allOrders.filter(o => {
+                // Логик засалт: Ажилтан зөвхөн өөрийнхөөг, Админ бүгдийг
                 if (!isAdmin && o.code.toString() !== currentUser.code.toString()) return false;
+                
                 const dt = new Date(o.requestedDate);
                 const oY = dt.getFullYear().toString();
                 const oM = (dt.getMonth() + 1).toString().padStart(2, '0');
                 let curStat = (o.status === 'Зөвшөөрсөн') ? 'Олгосон' : o.status;
                 
-                return (isAdmin ? (o.ner + (o.ovog || "")).toLowerCase().includes(nS) : true) &&
+                // Админ шүүлтүүрүүд
+                const nameMatch = (o.ner + (o.ovog || "")).toLowerCase().includes(nS);
+                const codeMatch = o.code.toString().toLowerCase().includes(cS);
+                const roleMatch = (o.role || "").toLowerCase().includes(rS);
+
+                return (isAdmin ? (nameMatch && codeMatch && roleMatch) : true) &&
                        (sF === "" || curStat === sF) && 
                        (yF === "" || oY === yF) && 
                        (mF === "" || oM === mF);
@@ -283,7 +301,7 @@
             const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
             
             if (orders.length === 0) {
-                container.innerHTML = '<div class="text-center p-10 text-slate-400 font-bold text-[10px]">ХҮСЭЛТ ОЛДСОНГҮЙ.</div>';
+                container.innerHTML = '<div class="text-center p-20 text-slate-400 font-bold text-[10px] bg-white rounded-3xl border border-dashed border-slate-300 uppercase tracking-widest">Хүсэлт олдсонгүй</div>';
                 return;
             }
             
@@ -295,17 +313,22 @@
                     <div class="order-card">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <div class="font-black text-slate-800 text-[13px]">${o.item}</div>
-                                <div class="text-[10px] text-slate-500 font-bold mt-1">Р: ${o.size || '-'} | Т: ${o.quantity} ш</div>
-                                ${isAdmin ? `<div class="text-[10px] text-blue-600 font-black mt-1 uppercase">${o.ovog || ""} ${o.ner} (#${o.code})</div>` : ''}
-                                <div class="text-[9px] text-slate-400 mt-1">${formatDate(o.requestedDate)}</div>
+                                <div class="font-black text-slate-800 text-[13px] uppercase">${o.item}</div>
+                                <div class="text-[10px] text-slate-500 font-bold mt-1">РАЗМЕР: ${o.size || '-'} | ТОО: ${o.quantity} ш</div>
+                                ${isAdmin ? `
+                                    <div class="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                                        <div class="text-[10px] text-blue-600 font-black uppercase">${o.ovog || ""} ${o.ner}</div>
+                                        <div class="text-[9px] text-slate-400 font-bold">${o.role || ""} (#${o.code})</div>
+                                    </div>
+                                ` : ''}
+                                <div class="text-[9px] text-slate-400 mt-2 font-mono">${formatDate(o.requestedDate)}</div>
                             </div>
                             <div class="flex flex-col items-end gap-2">
                                 <span class="px-2 py-1 rounded-full text-[8px] font-black uppercase ${color}">${dStat}</span>
                                 ${isAdmin && o.status === 'Хүлээгдэж буй' ? `
                                     <div class="flex gap-1 mt-1">
-                                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-check text-xs"></i></button>
-                                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white w-8 h-8 rounded-lg flex items-center justify-center"><i class="fas fa-times text-xs"></i></button>
+                                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-check text-xs"></i></button>
+                                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md"><i class="fas fa-times text-xs"></i></button>
                                     </div>
                                 ` : ''}
                             </div>
@@ -357,8 +380,11 @@
 
         async function updateStatus(id, status) {
             document.getElementById('loading').style.display = 'flex';
-            await callAPI({ action: "update_status", id, status });
-            refreshData();
+            try {
+                await callAPI({ action: "update_status", id, status });
+                refreshData();
+            } catch(e) { alert("Статус шинэчлэхэд алдаа гарлаа!"); }
+            document.getElementById('loading').style.display = 'none';
         }
 
         async function addSingleEmployee() {
@@ -385,15 +411,16 @@
 
         function loadEmployeeHistory() {
             const code = document.getElementById('history-search-code').value.trim();
+            if(!code) return;
             const filtered = allOrders.filter(o => o.code.toString() === code && (o.status === "Зөвшөөрсөн" || o.status === "Олгосон"));
             let h = "";
             filtered.forEach(o => { 
-                h += `<div class="p-3 bg-white border rounded-xl flex justify-between items-center text-[11px] mb-2">
-                        <span><b>${o.item}</b> (${o.size || '-'})</span>
-                        <span class="text-slate-400 font-bold">${formatDate(o.requestedDate)}</span>
+                h += `<div class="p-4 bg-white border rounded-2xl flex justify-between items-center text-[11px] mb-2 shadow-sm">
+                        <span><b class="text-blue-600 uppercase">${o.item}</b> (${o.size || '-'})</span>
+                        <span class="text-slate-400 font-mono">${formatDate(o.requestedDate)}</span>
                       </div>`; 
             });
-            document.getElementById('history-result').innerHTML = filtered.length ? h : '<p class="text-center text-xs text-slate-400 py-10">ТҮҮХ ОЛДСОНГҮЙ.</p>';
+            document.getElementById('history-result').innerHTML = filtered.length ? h : '<p class="text-center text-xs text-slate-400 py-10 uppercase tracking-widest">Түүх олдсонгүй</p>';
         }
 
         function formatDate(d) {
