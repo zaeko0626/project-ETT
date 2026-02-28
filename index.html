@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT - PPE Management v5.5</title>
+    <title>ETT - PPE Management v5.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -14,15 +14,16 @@
         #sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 280px; background: #0f172a; color: white; z-index: 100; transform: translateX(-100%); transition: transform 0.3s ease; }
         #sidebar.open { transform: translateX(0); }
         @media (min-width: 1024px) { #sidebar { position: relative; transform: translateX(0); } #sidebar-overlay { display: none !important; } }
-        .nav-btn { width: 100%; padding: 14px 20px; border-radius: 12px; display: flex; align-items: center; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; color: #94a3b8; cursor: pointer; }
+        .nav-btn { width: 100%; padding: 14px 20px; border-radius: 12px; display: flex; align-items: center; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; color: #94a3b8; cursor: pointer; border:none; background:transparent; }
         .nav-btn.active { background: #2563eb; color: white; }
+        .nav-btn i { width: 28px; font-size: 18px; margin-right: 12px; text-align: center; }
         .content-area { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         .tab-content { flex: 1; overflow-y: auto; padding: 16px; }
         .order-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 10px; }
         .card-grid { display: grid; grid-template-columns: 1.5fr 1.5fr 0.8fr 1fr; padding: 16px 20px; align-items: center; gap: 15px; }
         .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
-        input, select { outline: none; transition: 0.2s; }
-        input:focus { border-color: #2563eb !important; }
+        input { outline: none; transition: 0.2s; border: 1px solid #e2e8f0; }
+        input:focus { border-color: #2563eb !important; background: white !important; }
     </style>
 </head>
 <body>
@@ -49,18 +50,15 @@
                 <button onclick="showTab('orders', this)" class="nav-btn active"><i class="fas fa-list-ul"></i> ЖАГСААЛТ</button>
                 <button id="nav-history" onclick="showTab('emp-history', this)" class="nav-btn"><i class="fas fa-search"></i> АЖИЛТНЫ ТҮҮХ</button>
                 <button id="nav-admin" onclick="showTab('admin-panel', this)" class="nav-btn"><i class="fas fa-user-shield"></i> УДИРДЛАГА</button>
-                <button onclick="showTab('settings', this)" class="nav-btn"><i class="fas fa-key"></i> НУУЦ ҮГ</button>
             </nav>
-            <div class="p-4 border-t border-slate-800"><button onclick="logout()" class="w-full bg-red-600/20 border border-red-500/50 p-3 rounded-xl text-red-500 font-black text-[10px] uppercase">СИСТЕМЭЭС ГАРАХ</button></div>
+            <div class="p-4 border-t border-slate-800"><button onclick="logout()" class="w-full bg-red-600/20 border border-red-500/50 p-3 rounded-xl text-red-500 font-black text-[10px] uppercase">ГАРАХ</button></div>
         </aside>
 
         <div class="content-area">
-            <header class="flex justify-between items-center p-4 bg-[#0f172a] text-white lg:px-8">
+            <header class="flex justify-between items-center p-4 bg-[#0f172a] text-white">
                 <button onclick="toggleSidebar()" class="lg:hidden text-xl"><i class="fas fa-bars"></i></button>
-                <span class="font-black italic text-[11px] uppercase tracking-widest">PPE SYSTEM v5.5</span>
-                <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all">
-                    <i class="fas fa-sync-alt mr-1"></i> ШИНЭЧЛЭХ
-                </button>
+                <span class="font-black text-[11px] uppercase tracking-widest">PPE SYSTEM v5.6</span>
+                <button onclick="refreshData()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all">ШИНЭЧЛЭХ</button>
             </header>
 
             <main class="tab-content">
@@ -75,14 +73,21 @@
 
                 <div id="tab-admin-panel" class="hidden space-y-6">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                        <h3 class="text-blue-600 font-black text-[11px] uppercase mb-4 flex items-center"><i class="fas fa-user-plus mr-2"></i> Шинэ ажилтан бүртгэх</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                            <input type="text" id="emp-ovog" placeholder="Овог" class="p-4 bg-slate-50 border rounded-xl font-bold text-xs">
-                            <input type="text" id="emp-ner" placeholder="Нэр" class="p-4 bg-slate-50 border rounded-xl font-bold text-xs">
-                            <input type="text" id="emp-code" placeholder="Ажилтны код" class="p-4 bg-slate-50 border rounded-xl font-bold text-xs">
-                            <input type="text" id="emp-role" placeholder="Албан тушаал" class="p-4 bg-slate-50 border rounded-xl font-bold text-xs">
+                        <h3 class="text-blue-600 font-black text-[10px] uppercase mb-4"><i class="fas fa-user-plus mr-2"></i> Шинэ ажилтан бүртгэх</h3>
+                        <div class="grid grid-cols-2 gap-3 mb-4">
+                            <input type="text" id="emp-ovog" placeholder="Овог" class="p-4 bg-slate-50 rounded-xl font-bold text-xs">
+                            <input type="text" id="emp-ner" placeholder="Нэр" class="p-4 bg-slate-50 rounded-xl font-bold text-xs">
+                            <input type="text" id="emp-code" placeholder="Ажилтны код" class="p-4 bg-slate-50 rounded-xl font-bold text-xs">
+                            <input type="text" id="emp-role" placeholder="Албан тушаал" class="p-4 bg-slate-50 rounded-xl font-bold text-xs">
                         </div>
-                        <button onclick="addNewEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all italic">Ажилтан хадгалах</button>
+                        <button onclick="addNewEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-black uppercase text-[10px]">Ажилтан хадгалах</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border shadow-sm">
+                        <h3 class="text-emerald-600 font-black text-[10px] uppercase mb-4"><i class="fas fa-shield-alt mr-2"></i> Хамгаалах хэрэгсэл нэмэх</h3>
+                        <input type="text" id="new-item-name" placeholder="Барааны нэр" class="w-full p-4 bg-slate-50 rounded-xl mb-2 font-bold text-xs">
+                        <input type="text" id="new-item-sizes" placeholder="Размерууд (38,39...)" class="w-full p-4 bg-slate-50 rounded-xl mb-4 font-bold text-xs">
+                        <button onclick="addNewItem()" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-black uppercase text-[10px]">Бараа бүртгэх</button>
                     </div>
                 </div>
 
@@ -93,20 +98,12 @@
                     </div>
                     <div id="history-result" class="space-y-2"></div>
                 </div>
-
-                <div id="tab-settings" class="hidden">
-                    <div class="max-w-sm mx-auto bg-white p-10 rounded-3xl border text-center shadow-sm">
-                        <h2 class="font-black mb-8 uppercase text-xs text-slate-400">Нууц үг солих</h2>
-                        <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-4 border rounded-2xl mb-6 font-bold text-center bg-slate-50">
-                        <button onclick="alert('Амжилттай')" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px]">Шинэчлэх</button>
-                    </div>
-                </div>
             </main>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbw7W8CrANxOeOCL9O_hZtSoOIWQ_TQKkFXMhhqMAyZ7fpKDIXSDDCBsQu-rgYuBcTE/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbwy9oTU6wDPjsHxHgPUgaIxVRKt5u7Uc-9esL_VKXdi1OVEo9wobSRpnBleroxkiclz/exec";
         let currentUser = JSON.parse(localStorage.getItem('ett_user'));
         let allOrders = [];
 
@@ -132,7 +129,7 @@
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code: code, pass: pass }) });
                 const result = await res.json();
                 if(result.success) { currentUser = result.user; localStorage.setItem('ett_user', JSON.stringify(currentUser)); initSystem(); }
-                else { alert("Буруу байна"); }
+                else { alert("Мэдээлэл буруу байна!"); }
             } catch(e) { alert("Алдаа"); }
             document.getElementById('loading').style.display = 'none';
         }
@@ -156,27 +153,45 @@
             document.getElementById('loading').style.display = 'none';
         }
 
-        // ШИНЭ АЖИЛТАН НЭМЭХ ФУНКЦ
         async function addNewEmployee() {
             const ovog = document.getElementById('emp-ovog').value;
             const ner = document.getElementById('emp-ner').value;
             const code = document.getElementById('emp-code').value;
             const role = document.getElementById('emp-role').value;
-
-            if(!ovog || !ner || !code || !role) return alert("Бүх талбарыг бөглөнө үү!");
-
+            if(!ovog || !ner || !code || !role) return alert("Бөглөнө үү!");
             document.getElementById('loading').style.display = 'flex';
-            try {
-                await fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: "add_employee", ovog: ovog, ner: ner, code: code, role: role }) 
-                });
-                alert("Ажилтан амжилттай бүртгэгдлээ. Нууц үг нь '1234' болж тохируулагдлаа.");
-                document.getElementById('emp-ovog').value = '';
-                document.getElementById('emp-ner').value = '';
-                document.getElementById('emp-code').value = '';
-                document.getElementById('emp-role').value = '';
-            } catch(e) { alert("Алдаа гарлаа"); }
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_employee", ovog: ovog, ner: ner, code: code, role: role }) });
+            alert("Ажилтан нэмэгдлээ (Pass: 1234)");
+            ["emp-ovog", "emp-ner", "emp-code", "emp-role"].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function addNewItem() {
+            const name = document.getElementById('new-item-name').value;
+            const sizes = document.getElementById('new-item-sizes').value;
+            if(!name) return alert("Нэр оруулна уу");
+            document.getElementById('loading').style.display = 'flex';
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_item", name: name, sizes: sizes }) });
+            alert("Бараа бүртгэгдлээ");
+            document.getElementById('new-item-name').value = '';
+            document.getElementById('new-item-sizes').value = '';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function loadEmployeeHistory() {
+            const code = document.getElementById('history-search-code').value;
+            if(!code) return alert("Код оруулна уу");
+            document.getElementById('loading').style.display = 'flex';
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
+            const data = await res.json();
+            const history = data.orders.filter(o => o.code.toString() === code.toString());
+            const resCont = document.getElementById('history-result');
+            resCont.innerHTML = history.length === 0 ? "Олдсонгүй" : history.reverse().map(h => `
+                <div class="p-4 bg-white border rounded-xl flex justify-between items-center text-[11px] font-black uppercase">
+                    <div><div>${h.item}</div><div class="text-[9px] text-slate-400 font-mono">${h.requestedDate}</div></div>
+                    <span class="px-3 py-1 bg-slate-100 rounded-full">${h.status}</span>
+                </div>
+            `).join('');
             document.getElementById('loading').style.display = 'none';
         }
 
@@ -199,22 +214,19 @@
         function renderOrders(orders) {
             const container = document.getElementById('orders-list-container');
             container.innerHTML = orders.slice().reverse().map(o => {
-                const isPending = o.status === 'Хүлээгдэж буй';
                 let sC = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-700' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 return `
-                <div class="order-card">
-                    <div class="card-grid">
-                        <div><div class="text-[13px] font-black uppercase">${o.ovog || ''} ${o.ner || ''}</div><div class="text-[10px] font-bold text-blue-600 uppercase">${o.role || 'Ажилтан'}</div><div class="text-[10px] font-black text-slate-500">ID: ${o.code}</div></div>
-                        <div><div class="text-[13px] font-black text-blue-700 uppercase">${o.item}</div><div class="text-[10px] font-bold text-slate-500 uppercase">Размер: ${o.size} | ТОО: ${o.quantity}</div></div>
-                        <div class="text-center"><span class="${sC} text-[9px] font-black px-3 py-1.5 rounded-full uppercase">${o.status === 'Зөвшөөрсөн' ? 'ОЛГОСОН' : o.status.toUpperCase()}</span></div>
-                        <div class="flex flex-col gap-2">
-                            ${(isPending && currentUser.type === 'admin') ? `
-                                <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-emerald-500 text-white p-2 rounded-lg text-[9px] font-black uppercase shadow-md active:scale-95 transition-all">Олгох</button>
-                                <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-rose-500 text-white p-2 rounded-lg text-[9px] font-black uppercase shadow-md active:scale-95 transition-all">Татгалзах</button>
-                            ` : `<div class="text-center text-[9px] font-black text-slate-300 italic">Шийдвэрлэсэн</div>`}
-                        </div>
+                <div class="order-card"><div class="card-grid">
+                    <div><div class="text-[13px] font-black uppercase">${o.ovog || ''} ${o.ner || ''}</div><div class="text-[10px] font-bold text-blue-600 uppercase">${o.role || ''}</div><div class="text-[10px] font-black text-slate-500">ID: ${o.code}</div></div>
+                    <div><div class="text-[13px] font-black text-blue-700 uppercase">${o.item}</div><div class="text-[10px] font-bold text-slate-500">Размер: ${o.size} | Тоо: ${o.quantity}</div></div>
+                    <div class="text-center"><span class="${sC} text-[9px] font-black px-3 py-1.5 rounded-full uppercase">${o.status === 'Зөвшөөрсөн' ? 'ОЛГОСОН' : o.status.toUpperCase()}</span></div>
+                    <div class="flex flex-col gap-2">
+                        ${(o.status === 'Хүлээгдэж буй' && currentUser.type === 'admin') ? `
+                            <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-emerald-500 text-white p-2 rounded-lg text-[9px] font-black uppercase">Олгох</button>
+                            <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-rose-500 text-white p-2 rounded-lg text-[9px] font-black uppercase">Татгалзах</button>
+                        ` : `<div class="text-center text-[9px] font-black text-slate-300">Шийдвэрлэсэн</div>`}
                     </div>
-                </div>`;
+                </div></div>`;
             }).join('');
         }
 
