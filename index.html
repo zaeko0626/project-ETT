@@ -9,7 +9,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; height: 100vh; overflow: hidden; }
+        body { font-family: 'Manrope', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; }
         
         .main-wrapper { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
         #sidebar { 
@@ -23,12 +23,14 @@
             #sidebar-overlay { display: none !important; }
         }
 
+        /* Nav Menu: All Caps & Colored Icons */
         .nav-btn {
-            width: 100%; padding: 14px 18px; border-radius: 14px;
-            display: flex; align-items: center; font-weight: 700; font-size: 13px;
-            transition: 0.2s; margin-bottom: 4px; color: #94a3b8;
+            width: 100%; padding: 14px 20px; border-radius: 12px;
+            display: flex; align-items: center; font-weight: 800; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            transition: 0.2s; margin-bottom: 6px; color: #94a3b8;
         }
-        .nav-btn i { width: 24px; font-size: 18px; margin-right: 12px; text-align: center; }
+        .nav-btn i { width: 28px; font-size: 18px; margin-right: 12px; text-align: center; }
         .nav-btn:hover { background: #1e293b; color: white; }
         .nav-btn.active { background: #2563eb; color: white; }
 
@@ -45,24 +47,24 @@
         .active-view { display: flex !important; }
         .admin-only { display: none; }
 
-        /* Админ шүүлтүүрийг нэг мөрөнд байлгах CSS */
-        .admin-filter-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-        }
+        .admin-filter-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+
+        /* Таблиц шиг картны бүтэц */
+        .order-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; margin-bottom: 10px; }
+        .card-grid { display: grid; grid-template-columns: 1.5fr 1.5fr 0.8fr 0.8fr; padding: 12px 16px; align-items: center; gap: 10px; }
+        .label-text { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px; }
+        .value-text { font-size: 12px; font-weight: 700; color: #1e293b; }
     </style>
 </head>
 <body>
 
     <div id="loading" class="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-        <p class="text-[10px] font-black text-blue-600 uppercase">Шинэчилж байна...</p>
+        <p class="text-[10px] font-black text-blue-600 uppercase italic">Түр хүлээнэ үү...</p>
     </div>
 
     <div id="login-page" class="page-view active-view items-center justify-center p-6">
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center border border-slate-100">
+        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
             <h1 class="text-4xl font-black mb-10 italic text-slate-900">ETT <span class="text-blue-600">PPE</span></h1>
             <div class="space-y-4">
                 <input type="text" id="login-code" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-center outline-none">
@@ -76,113 +78,131 @@
         <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/50 z-[90]"></div>
 
         <div id="sidebar" class="flex flex-col">
-            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                <h1 class="font-black italic text-xl uppercase tracking-tighter">ETT <span class="text-blue-500">PPE</span></h1>
-                <button onclick="toggleSidebar()" class="lg:hidden text-slate-400"><i class="fas fa-times"></i></button>
+            <div class="p-6 border-b border-slate-800">
+                <h1 class="font-black italic text-xl uppercase tracking-tighter text-white">ETT <span class="text-blue-500">PPE</span></h1>
             </div>
             
-            <div class="p-5 mx-4 my-6 bg-slate-800/40 rounded-2xl border border-slate-700/50">
-                <p id="u-name" class="font-bold text-blue-400 text-sm truncate italic"></p>
-                <p id="u-role" class="text-[10px] text-slate-400 font-black uppercase mt-1 tracking-wider"></p>
-                <p id="u-code-disp" class="text-[9px] text-slate-500 font-mono mt-1"></p>
+            <div class="p-5 mx-4 my-6 bg-slate-800/40 rounded-2xl border border-slate-700/50 text-center">
+                <p id="u-name" class="font-black text-blue-400 text-sm truncate uppercase"></p>
+                <p id="u-role" class="text-[9px] text-slate-400 font-bold uppercase mt-1"></p>
             </div>
 
             <nav class="flex-1 px-4 space-y-1">
                 <button onclick="showTab('orders', this)" class="nav-btn active">
-                    <i class="fas fa-list-ul"></i> <span id="menu-orders-label">Жагсаалт</span>
+                    <i class="fas fa-list-ul text-blue-400"></i> ЖАГСААЛТ
                 </button>
                 <button id="btn-add-order-nav" onclick="showTab('add-order', this)" class="nav-btn">
-                    <i class="fas fa-plus-circle"></i> Хүсэлт гаргах
+                    <i class="fas fa-plus-circle text-green-400"></i> ХҮСЭЛТ ГАРГАХ
                 </button>
                 <button onclick="showTab('emp-history', this)" class="admin-only nav-btn">
-                    <i class="fas fa-search"></i> Ажилтны түүх
+                    <i class="fas fa-search text-purple-400"></i> АЖИЛТНЫ ТҮҮХ
                 </button>
                 <button onclick="showTab('admin-panel', this)" class="admin-only nav-btn">
-                    <i class="fas fa-users-cog"></i> Удирдлага
+                    <i class="fas fa-user-shield text-amber-400"></i> УДИРДЛАГА
                 </button>
                 <button onclick="showTab('settings', this)" class="nav-btn">
-                    <i class="fas fa-shield-alt"></i> Нууц үг
+                    <i class="fas fa-key text-red-400"></i> НУУЦ ҮГ
                 </button>
             </nav>
 
             <div class="p-4 border-t border-slate-800">
-                <button onclick="logout()" class="w-full p-4 text-red-400 rounded-xl font-black text-[10px] uppercase">Гарах</button>
+                <button onclick="logout()" class="w-full bg-red-600/20 border border-red-500/50 p-3 rounded-xl text-red-500 font-black text-[10px] uppercase flex items-center justify-center">
+                    <i class="fas fa-power-off mr-2"></i> ГАРАХ
+                </button>
             </div>
         </div>
 
         <div class="content-area">
             <header class="mobile-header">
                 <button onclick="toggleSidebar()" class="text-xl lg:hidden"><i class="fas fa-bars"></i></button>
-                <span id="header-title-text" class="font-black italic text-xs uppercase tracking-widest">ХҮСЭЛТҮҮД</span>
-                <button onclick="refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase flex items-center shadow-lg active:scale-90 transition-all">
-                    <i class="fas fa-sync-alt mr-2"></i> Шинэчлэх
+                <span id="header-title-text" class="font-black italic text-[11px] uppercase tracking-widest">ХҮСЭЛТҮҮД</span>
+                <button onclick="refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase flex items-center shadow-lg active:scale-95 transition-all">
+                    <i class="fas fa-sync-alt mr-2"></i> ШИНЭЧЛЭХ
                 </button>
             </header>
 
             <main class="tab-content">
                 <div id="tab-orders">
                     <div class="grid grid-cols-3 gap-2 mb-3">
-                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black shadow-sm outline-none">
+                        <select id="filter-status" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black outline-none shadow-sm">
                             <option value="">БҮХ ТӨЛӨВ</option>
                             <option value="Хүлээгдэж буй">ХҮЛЭЭГДЭЖ БУЙ</option>
                             <option value="Олгосон">ОЛГОСОН</option>
                             <option value="Татгалзсан">ТАТГАЛЗСАН</option>
                         </select>
-                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black shadow-sm outline-none"></select>
-                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black shadow-sm outline-none"><option value="">БҮХ САР</option></select>
+                        <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black outline-none shadow-sm"></select>
+                        <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black outline-none shadow-sm"><option value="">БҮХ САР</option></select>
                     </div>
 
                     <div class="admin-only admin-filter-grid">
-                        <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="Нэрээр..." class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none">
-                        <input type="text" id="search-code" onkeyup="applyFilters()" placeholder="Кодоор..." class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none">
-                        <input type="text" id="search-role" onkeyup="applyFilters()" placeholder="Албан тушаал..." class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none">
+                        <input type="text" id="search-name" onkeyup="applyFilters()" placeholder="НЭРЭЭР..." class="p-3 bg-white border rounded-xl text-[10px] font-bold outline-none shadow-sm">
+                        <input type="text" id="search-code" onkeyup="applyFilters()" placeholder="КОДООР..." class="p-3 bg-white border rounded-xl text-[10px] font-bold outline-none shadow-sm">
+                        <input type="text" id="search-role" onkeyup="applyFilters()" placeholder="АЛБАН ТУШААЛ..." class="p-3 bg-white border rounded-xl text-[10px] font-bold outline-none shadow-sm">
                     </div>
 
-                    <div id="orders-list-container" class="space-y-3 pb-24"></div>
+                    <div id="orders-list-container" class="space-y-2 pb-24"></div>
+                </div>
+
+                <div id="tab-admin-panel" class="hidden space-y-6">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <h3 class="text-blue-600 font-black text-[10px] uppercase mb-4 tracking-widest border-b pb-2"><i class="fas fa-plus mr-2"></i> НБХХ Нэмэх</h3>
+                        <div class="space-y-3">
+                            <input type="text" id="new-item-name" placeholder="Барааны нэр (Жишээ: Ажлын гутал)" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none">
+                            <input type="text" id="new-item-sizes" placeholder="Размерууд (Жишээ: 38,39,40)" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-xs outline-none">
+                            <button onclick="addNewItem()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Бараа бүртгэх</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200">
+                        <h3 class="text-purple-600 font-black text-[10px] uppercase mb-4 tracking-widest border-b pb-2"><i class="fas fa-user-plus mr-2"></i> Ажилтан бүртгэх</h3>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <input type="text" id="emp-ovog" placeholder="Овог" class="p-4 bg-slate-50 border rounded-2xl font-bold text-xs">
+                                <input type="text" id="emp-ner" placeholder="Нэр" class="p-4 bg-slate-50 border rounded-2xl font-bold text-xs">
+                            </div>
+                            <input type="text" id="emp-code-new" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-xs">
+                            <input type="text" id="emp-role-new" placeholder="Албан тушаал" class="w-full p-4 bg-slate-50 border rounded-2xl font-bold text-xs">
+                            <button onclick="addSingleEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Хадгалах</button>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tab-add-order" class="hidden">
-                    <div class="max-w-sm mx-auto bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm mt-4">
-                        <h2 class="font-black mb-8 uppercase text-xs italic tracking-widest text-center">Шинэ хүсэлт илгээх</h2>
-                        <div class="space-y-4">
-                            <select id="item-select" onchange="onItemChange()" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs outline-none"></select>
+                    <div class="max-w-sm mx-auto bg-white p-8 rounded-3xl border border-slate-200 mt-4 shadow-sm text-center">
+                        <h2 class="font-black mb-8 uppercase text-xs italic tracking-widest text-slate-400">Шинэ хүсэлт илгээх</h2>
+                        <div class="space-y-4 text-left">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase ml-2">Бараа сонгох</label>
+                            <select id="item-select" onchange="onItemChange()" class="w-full p-4 bg-slate-50 border rounded-2xl font-black text-xs outline-none"></select>
                             <div class="grid grid-cols-2 gap-4">
-                                <select id="size-select" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs outline-none disabled:opacity-50" disabled></select>
-                                <input type="number" id="order-qty" value="1" min="1" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs outline-none">
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase ml-2 mb-1">Размер</label>
+                                    <select id="size-select" class="w-full p-4 bg-slate-50 border rounded-2xl font-black text-xs outline-none disabled:opacity-50" disabled></select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-black text-slate-400 uppercase ml-2 mb-1">Тоо</label>
+                                    <input type="number" id="order-qty" value="1" min="1" class="w-full p-4 bg-slate-50 border rounded-2xl font-black text-xs outline-none">
+                                </div>
                             </div>
-                            <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs mt-6 shadow-xl active:scale-95 transition-all">Илгээх</button>
+                            <button onclick="sendOrder()" class="w-full bg-blue-600 text-white font-black py-5 rounded-2xl uppercase text-xs mt-6 shadow-xl active:scale-95 transition-all">Хүсэлт илгээх</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="tab-emp-history" class="hidden">
-                    <h2 class="font-black mb-4 uppercase text-sm italic">Ажилтны түүх</h2>
-                    <div class="flex gap-2 mb-6 bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
-                        <input list="emp-datalist" id="history-search-code" placeholder="Код..." class="flex-1 p-3 bg-slate-50 rounded-xl font-bold text-xs outline-none">
+                    <h2 class="font-black mb-4 uppercase text-sm italic">Ажилтны түүх хайх</h2>
+                    <div class="flex gap-2 mb-6 bg-white p-3 rounded-2xl border border-slate-200">
+                        <input list="emp-datalist" id="history-search-code" placeholder="Ажилтны код..." class="flex-1 p-3 bg-slate-50 rounded-xl font-bold text-xs outline-none">
                         <datalist id="emp-datalist"></datalist>
-                        <button onclick="loadEmployeeHistory()" class="px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase">Хайх</button>
+                        <button onclick="loadEmployeeHistory()" class="px-6 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase shadow-md active:scale-95">Хайх</button>
                     </div>
                     <div id="history-result" class="space-y-2"></div>
                 </div>
 
-                <div id="tab-admin-panel" class="hidden space-y-4">
-                    <div class="bg-white p-6 rounded-[2rem] border border-slate-100">
-                        <h3 class="text-blue-600 font-black text-[10px] uppercase mb-4 tracking-widest">Ажилтан бүртгэх</h3>
-                        <div class="space-y-3">
-                            <input type="text" id="emp-ovog" placeholder="Овог" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs outline-none">
-                            <input type="text" id="emp-ner" placeholder="Нэр" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs outline-none">
-                            <input type="text" id="emp-code-new" placeholder="Код" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs outline-none">
-                            <input type="text" id="emp-role-new" placeholder="Албан тушаал" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-xs outline-none">
-                            <button onclick="addSingleEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg">Хадгалах</button>
-                        </div>
-                    </div>
-                </div>
-
                 <div id="tab-settings" class="hidden">
-                    <div class="max-w-sm mx-auto bg-white p-10 rounded-[2.5rem] border border-slate-100 text-center">
+                    <div class="max-w-sm mx-auto bg-white p-10 rounded-3xl border border-slate-200 text-center">
                         <h2 class="font-black mb-8 uppercase text-xs tracking-widest text-slate-400">Нууц үг солих</h2>
-                        <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-4 border border-slate-200 rounded-2xl mb-6 font-bold text-center outline-none bg-slate-50">
-                        <button onclick="changePassword()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg">Хадгалах</button>
+                        <input type="password" id="new-pw" placeholder="Шинэ нууц үг" class="w-full p-4 border rounded-2xl mb-6 font-bold text-center outline-none bg-slate-50">
+                        <button onclick="changePassword()" class="w-full bg-red-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] shadow-lg active:scale-95 transition-all">Шинэчлэх</button>
                     </div>
                 </div>
             </main>
@@ -204,7 +224,6 @@
         function setupFilters() {
             const currentYear = new Date().getFullYear();
             let yHtml = '<option value="">БҮХ ОН</option>';
-            // 2022 оноос эхлэх
             for(let y = 2022; y <= currentYear + 1; y++) yHtml += `<option value="${y}">${y} ОН</option>`;
             document.getElementById('filter-year').innerHTML = yHtml;
             let mHtml = '<option value="">БҮХ САР</option>';
@@ -244,7 +263,6 @@
             document.getElementById('btn-add-order-nav').style.display = isAdmin ? 'none' : 'flex';
             
             const label = isAdmin ? "БҮХ ХҮСЭЛТҮҮД" : "МИНИЙ ХҮСЭЛТҮҮД";
-            document.getElementById('menu-orders-label').innerText = label;
             document.getElementById('header-title-text').innerText = label;
 
             refreshData();
@@ -280,7 +298,6 @@
             const isAdmin = currentUser.type === "admin" || currentUser.code === "admin";
             
             const filtered = allOrders.filter(o => {
-                // Ажилтан бол зөвхөн өөрийнхийг, Админ бол бүгдийг
                 const matchesUser = isAdmin || String(o.code) === String(currentUser.code);
                 if (!matchesUser) return false;
 
@@ -289,8 +306,8 @@
                 const oM = (dt.getMonth() + 1).toString().padStart(2, '0');
                 let dStat = (o.status === 'Зөвшөөрсөн') ? 'Олгосон' : o.status;
 
-                const nameMatch = (String(o.ner) + String(o.ovog || "")).toLowerCase().includes(nS);
-                const codeMatch = String(o.code).toLowerCase().includes(cS);
+                const nameMatch = (String(o.ner || "") + String(o.ovog || "")).toLowerCase().includes(nS);
+                const codeMatch = String(o.code || "").toLowerCase().includes(cS);
                 const roleMatch = String(o.role || "").toLowerCase().includes(rS);
 
                 return (isAdmin ? (nameMatch && codeMatch && roleMatch) : true) &&
@@ -315,30 +332,31 @@
                 let color = dStat === 'Олгосон' ? 'bg-green-100 text-green-700' : (dStat === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 
                 return `
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <h4 class="font-black text-slate-800 text-[14px] uppercase">${o.item}</h4>
-                                <p class="text-[10px] text-slate-500 font-bold mt-1 uppercase">Размер: ${o.size || '-'} | Тоо: ${o.quantity} ш</p>
-                                ${isAdmin ? `
-                                    <div class="mt-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <p class="text-[11px] text-blue-600 font-black uppercase leading-none">${o.ovog || ""} ${o.ner}</p>
-                                        <p class="text-[9px] text-slate-400 font-bold mt-1 uppercase">${o.role || ""} (#${o.code})</p>
-                                    </div>
-                                ` : ''}
-                                <p class="text-[9px] text-slate-300 font-mono mt-3">${formatDate(o.requestedDate)}</p>
-                            </div>
-                            <div class="flex flex-col items-end gap-3 ml-4">
-                                <span class="px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-tighter ${color}">${dStat}</span>
-                                ${isAdmin && o.status === 'Хүлээгдэж буй' ? `
-                                    <div class="flex gap-2">
-                                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-green-600 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg active:scale-90"><i class="fas fa-check"></i></button>
-                                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-red-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg active:scale-90"><i class="fas fa-times"></i></button>
-                                    </div>
-                                ` : ''}
-                            </div>
+                <div class="order-card">
+                    <div class="card-grid">
+                        <div>
+                            <div class="label-text">Ажилтны нэр</div>
+                            <div class="value-text uppercase">${o.ovog || ''} ${o.ner || ''}</div>
+                            <div class="text-[9px] text-slate-400 font-bold mt-1">${o.role || ''} (#${o.code || ''})</div>
                         </div>
-                    </div>`;
+                        <div>
+                            <div class="label-text">Хамгаалах хэрэгсэл</div>
+                            <div class="value-text uppercase text-blue-600">${o.item || ''}</div>
+                            <div class="text-[9px] text-slate-400 font-bold mt-1">Размер: ${o.size || '-'} | ТОО: ${o.quantity || '1'}</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="label-text">Төлөв</div>
+                            <span class="px-2 py-1 rounded-full text-[8px] font-black uppercase ${color}">${dStat}</span>
+                            <div class="text-[8px] text-slate-300 font-mono mt-2">${formatDate(o.requestedDate)}</div>
+                        </div>
+                        <div class="flex flex-col gap-1 items-center">
+                            ${isAdmin && o.status === 'Хүлээгдэж буй' ? `
+                                <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="w-full bg-green-600 text-white p-2 rounded-lg text-[10px] font-black shadow-md active:scale-90"><i class="fas fa-check"></i></button>
+                                <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="w-full bg-red-500 text-white p-2 rounded-lg text-[10px] font-black shadow-md active:scale-90"><i class="fas fa-times"></i></button>
+                            ` : '-'}
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }
 
@@ -379,8 +397,8 @@
             if (!item) return alert("Бараа сонгоно уу!");
             document.getElementById('loading').style.display = 'flex';
             try {
-                const res = await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog || "", ner: currentUser.ner, role: currentUser.role, item: item, size: size, quantity: qty });
-                if (res.status === "success") { alert("Амжилттай."); refreshData(); showTab('orders', document.querySelector('.nav-btn')); }
+                await callAPI({ action: "add_order", code: currentUser.code, ovog: currentUser.ovog || "", ner: currentUser.ner, role: currentUser.role, item: item, size: size, quantity: qty });
+                alert("Амжилттай."); refreshData(); showTab('orders', document.querySelector('.nav-btn'));
             } catch(e) { alert("Алдаа!"); }
             document.getElementById('loading').style.display = 'none';
         }
@@ -390,6 +408,15 @@
             try { await callAPI({ action: "update_status", id, status }); refreshData(); }
             catch(e) { console.error(e); }
             document.getElementById('loading').style.display = 'none';
+        }
+
+        async function addNewItem() {
+            const name = document.getElementById('new-item-name').value;
+            const sizes = document.getElementById('new-item-sizes').value;
+            if(!name) return alert("Нэр оруулна уу");
+            document.getElementById('loading').style.display = 'flex';
+            await callAPI({ action: "add_item", name, sizes });
+            alert("Бараа нэмэгдлээ."); refreshData();
         }
 
         async function addSingleEmployee() {
@@ -414,7 +441,7 @@
                         <span class="text-[10px] text-slate-400 font-mono">${formatDate(o.requestedDate)}</span>
                       </div>`; 
             });
-            document.getElementById('history-result').innerHTML = filtered.length ? h : '<div class="text-center p-10 text-slate-400 uppercase text-[10px] font-black">Түүх байхгүй</div>';
+            document.getElementById('history-result').innerHTML = filtered.length ? h : '<div class="text-center p-10 text-slate-400 uppercase text-[10px] font-black border-2 border-dashed rounded-3xl">Түүх байхгүй</div>';
         }
 
         function formatDate(d) {
