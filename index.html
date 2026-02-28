@@ -3,127 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT PPE v6.1</title>
+    <title>ETT PPE v6.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Manrope', sans-serif; background-color: #f1f5f9; height: 100vh; width: 100vw; overflow: hidden; }
-
-        /* HEADER - Утасны дэлгэцийн хамгийн дээр бат зогсоно */
-        .app-header {
-            height: 60px;
-            background: #0f172a;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            color: white;
-            position: relative;
-            z-index: 1000;
-        }
-
-        /* SIDEBAR - Зүүн талаас гарч ирэх цэс */
-        #sidebar { 
-            position: fixed; left: 0; top: 0; bottom: 0; width: 280px; 
-            background: #0f172a; color: white; z-index: 2000;
-            transform: translateX(-100%); transition: 0.3s ease-in-out;
-        }
+        body { font-family: 'Manrope', sans-serif; background-color: #f1f5f9; height: 100vh; overflow: hidden; }
+        .app-header { height: 65px; background: #0f172a; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; color: white; position: relative; z-index: 1000; }
+        #sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 280px; background: #0f172a; color: white; z-index: 2000; transform: translateX(-100%); transition: 0.3s; }
         #sidebar.open { transform: translateX(0); }
-        
-        #sidebar-overlay { 
-            display: none; position: fixed; inset: 0; 
-            background: rgba(0,0,0,0.6); z-index: 1500; 
-        }
+        #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1500; }
         #sidebar-overlay.show { display: block; }
-
-        /* CONTENT AREA - Гүйлгэж харах хэсэг */
-        .scroll-container {
-            height: calc(100vh - 60px);
-            overflow-y: auto;
-            padding: 15px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .nav-btn {
-            width: 100%; padding: 15px 20px; border-radius: 12px;
-            display: flex; align-items: center; font-weight: 800; font-size: 12px;
-            text-transform: uppercase; margin-bottom: 8px; color: #94a3b8; border: none; background: transparent;
-        }
+        .scroll-area { height: calc(100vh - 65px); overflow-y: auto; padding: 15px; }
+        .nav-btn { width: 100%; padding: 15px 20px; border-radius: 12px; display: flex; align-items: center; font-weight: 800; font-size: 11px; text-transform: uppercase; margin-bottom: 5px; color: #94a3b8; border: none; background: transparent; }
         .nav-btn.active { background: #2563eb; color: white; }
         .nav-btn i { font-size: 18px; margin-right: 15px; width: 20px; text-align: center; }
-
-        .loading-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; }
+        input, select { border: 1px solid #e2e8f0; outline: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="loading" class="loading-overlay">
+    <div id="loading" class="hidden fixed inset-0 bg-white/90 z-[9999] flex flex-col items-center justify-center">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-2"></div>
-        <p class="text-[10px] font-black text-blue-600 uppercase italic">Шинэчилж байна...</p>
+        <p class="text-[10px] font-black text-blue-600 uppercase">Түр хүлээнэ үү...</p>
     </div>
 
     <div id="login-page" class="flex h-screen items-center justify-center p-6 bg-slate-100">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
-            <h1 class="text-3xl font-black mb-10 italic">ETT <span class="text-blue-600">PPE</span></h1>
-            <input type="text" id="login-code" placeholder="Код" class="w-full p-4 bg-slate-50 border rounded-2xl mb-4 font-bold text-center outline-none">
-            <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border rounded-2xl mb-6 font-bold text-center outline-none">
+            <h1 class="text-3xl font-black mb-8 italic">ETT <span class="text-blue-600">PPE</span></h1>
+            <input type="text" id="login-code" placeholder="Код" class="w-full p-4 bg-slate-50 border rounded-2xl mb-4 text-center">
+            <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border rounded-2xl mb-6 text-center">
             <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase">Нэвтрэх</button>
         </div>
     </div>
 
     <div id="main-page" class="hidden h-screen flex flex-col overflow-hidden">
-        
         <header class="app-header">
-            <button onclick="toggleSidebar()" class="w-10 h-10 flex items-center justify-center text-xl">
-                <i class="fas fa-bars"></i>
-            </button>
-            <div class="font-black italic text-sm tracking-widest">ETT PPE SYSTEM</div>
-            <button onclick="refreshData()" class="w-10 h-10 flex items-center justify-center bg-blue-600 rounded-xl shadow-lg">
-                <i class="fas fa-sync-alt"></i>
+            <button onclick="toggleSidebar()" class="text-xl p-2"><i class="fas fa-bars"></i></button>
+            <div class="font-black italic text-sm">PPE SYSTEM</div>
+            <button onclick="refreshData()" class="bg-blue-600 px-3 py-2 rounded-xl text-[10px] font-black uppercase flex items-center">
+                <i class="fas fa-sync-alt mr-2"></i> Шинэчлэх
             </button>
         </header>
 
         <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
         <aside id="sidebar">
             <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                <span class="font-black italic text-lg text-blue-500">ЦЭС</span>
-                <i class="fas fa-times text-slate-500" onclick="toggleSidebar()"></i>
+                <span class="font-black italic text-blue-500">МЕНЮ</span>
+                <i class="fas fa-times" onclick="toggleSidebar()"></i>
             </div>
-            <nav class="p-4 space-y-1">
+            <nav class="p-4 flex-1">
                 <button onclick="showTab('orders', this)" class="nav-btn active"><i class="fas fa-list-ul"></i> Жагсаалт</button>
-                <button id="nav-history" onclick="showTab('emp-history', this)" class="nav-btn"><i class="fas fa-history"></i> Түүх харах</button>
+                <button id="nav-history" onclick="showTab('emp-history', this)" class="nav-btn"><i class="fas fa-search"></i> Ажилтны түүх</button>
                 <button id="nav-admin" onclick="showTab('admin-panel', this)" class="nav-btn"><i class="fas fa-user-shield"></i> Удирдлага</button>
+                <button onclick="showTab('profile', this)" class="nav-btn"><i class="fas fa-key"></i> Нууц үг солих</button>
             </nav>
-            <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
-                <button onclick="logout()" class="w-full bg-red-600/20 text-red-500 p-3 rounded-xl text-[10px] font-black uppercase">Гарах</button>
+            <div class="p-4 border-t border-slate-800">
+                <button onclick="logout()" class="w-full bg-red-600 text-white p-3 rounded-xl text-[10px] font-black uppercase tracking-widest">Гарах</button>
             </div>
         </aside>
 
-        <main class="scroll-container">
-            <div id="tab-orders">
-                <div class="grid grid-cols-3 gap-2 mb-4">
-                    <select id="filter-status" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black outline-none"><option value="">БҮХ ТӨЛӨВ</option><option value="Хүлээгдэж буй">ХҮЛЭЭГДЭЖ БУЙ</option><option value="Зөвшөөрсөн">ОЛГОСОН</option><option value="Татгалзсан">ТАТГАЛЗСАН</option></select>
-                    <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black outline-none"></select>
-                    <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black outline-none"></select>
+        <main class="scroll-area">
+            <div id="tab-orders" class="space-y-3">
+                <div class="grid grid-cols-1 gap-2 mb-2">
+                    <input type="text" id="search-input" oninput="applyFilters()" placeholder="Нэр, Код, Бараа, Албан тушаалаар хайх..." class="w-full p-3 bg-white border rounded-xl text-xs">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <select id="filter-status" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[9px] uppercase"><option value="">БҮХ ТӨЛӨВ</option><option value="Хүлээгдэж буй">ХҮЛЭЭГДЭЖ БУЙ</option><option value="Зөвшөөрсөн">ОЛГОСОН</option><option value="Татгалзсан">ТАТГАЛЗСАН</option></select>
+                    <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[9px]"></select>
+                    <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[9px]"></select>
                 </div>
                 <div id="orders-list-container" class="space-y-3 pb-10"></div>
             </div>
 
-            <div id="tab-admin-panel" class="hidden space-y-4">
-                <div class="bg-white p-5 rounded-3xl border shadow-sm">
-                    <h3 class="text-[10px] font-black uppercase text-blue-600 mb-4 flex items-center italic">
-                        <i class="fas fa-user-plus mr-2"></i> Ажилтан бүртгэх
-                    </h3>
-                    <div class="space-y-3 mb-4">
-                        <input type="text" id="emp-ovog" placeholder="Овог" class="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border border-slate-100">
-                        <input type="text" id="emp-ner" placeholder="Нэр" class="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border border-slate-100">
-                        <input type="text" id="emp-code" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border border-slate-100">
-                        <input type="text" id="emp-role" placeholder="Албан тушаал" class="w-full p-4 bg-slate-50 rounded-2xl text-xs font-bold border border-slate-100">
+            <div id="tab-admin-panel" class="hidden space-y-6">
+                <div class="bg-white p-5 rounded-3xl border">
+                    <h3 class="text-[10px] font-black uppercase text-blue-600 mb-4 italic">Ажилтан бүртгэх</h3>
+                    <div class="grid grid-cols-1 gap-3 mb-4">
+                        <input type="text" id="emp-ovog" placeholder="Овог" class="p-4 bg-slate-50 rounded-2xl text-xs border">
+                        <input type="text" id="emp-ner" placeholder="Нэр" class="p-4 bg-slate-50 rounded-2xl text-xs border">
+                        <input type="text" id="emp-code" placeholder="Код" class="p-4 bg-slate-50 rounded-2xl text-xs border">
+                        <input type="text" id="emp-role" placeholder="Албан тушаал" class="p-4 bg-slate-50 rounded-2xl text-xs border">
                     </div>
-                    <button onclick="addNewEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[11px] uppercase shadow-lg">Хадгалах</button>
+                    <button onclick="addNewEmployee()" class="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[11px] uppercase">Хадгалах</button>
                 </div>
+                <div class="bg-white p-5 rounded-3xl border">
+                    <h3 class="text-[10px] font-black uppercase text-emerald-600 mb-4 italic">Хамгаалах хэрэгсэл нэмэх</h3>
+                    <input type="text" id="new-item-name" placeholder="Барааны нэр" class="w-full p-4 bg-slate-50 rounded-2xl text-xs border mb-3">
+                    <input type="text" id="new-item-sizes" placeholder="Размерууд (S,M,L эсвэл 38,39...)" class="w-full p-4 bg-slate-50 rounded-2xl text-xs border mb-4">
+                    <button onclick="addNewItem()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-black text-[11px] uppercase">Бараа бүртгэх</button>
+                </div>
+            </div>
+
+            <div id="tab-profile" class="hidden">
+                <div class="bg-white p-6 rounded-3xl border">
+                    <h3 class="text-[10px] font-black uppercase text-slate-600 mb-4 italic">Нууц үг солих</h3>
+                    <input type="password" id="new-pass" placeholder="Шинэ нууц үг" class="w-full p-4 bg-slate-50 rounded-2xl text-xs border mb-4 text-center">
+                    <button onclick="changePassword()" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-[11px] uppercase">Шинэчлэх</button>
+                </div>
+            </div>
+
+            <div id="tab-emp-history" class="hidden space-y-4">
+                <div class="flex gap-2">
+                    <input type="text" id="history-search-code" placeholder="Ажилтны код..." class="flex-1 p-4 bg-white border rounded-xl text-xs">
+                    <button onclick="loadEmployeeHistory()" class="px-6 bg-slate-900 text-white rounded-xl font-black text-[10px]">ХАЙХ</button>
+                </div>
+                <div id="history-result" class="space-y-2"></div>
             </div>
         </main>
     </div>
@@ -138,7 +124,7 @@
         function setupFilters() {
             const yS = document.getElementById('filter-year');
             let yH = '<option value="">БҮХ ОН</option>';
-            for(let y = 2024; y <= 2026; y++) yH += `<option value="${y}">${y}</option>`;
+            for(let y = 2020; y <= 2027; y++) yH += `<option value="${y}">${y}</option>`;
             yS.innerHTML = yH;
             const mS = document.getElementById('filter-month');
             let mH = '<option value="">БҮХ САР</option>';
@@ -149,18 +135,15 @@
         async function handleLogin() {
             const code = document.getElementById('login-code').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
-            if(!code || !pass) return alert("Мэдээллээ оруулна уу");
-            document.getElementById('loading').style.display = 'flex';
+            if(!code || !pass) return;
+            toggleLoading(true);
             try {
-                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code: code, pass: pass }) });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code, pass }) });
                 const result = await res.json();
-                if(result.success) { 
-                    currentUser = result.user; 
-                    localStorage.setItem('ett_user', JSON.stringify(currentUser)); 
-                    initSystem(); 
-                } else alert("Буруу байна");
-            } catch(e) { alert("Алдаа гарлаа"); }
-            document.getElementById('loading').style.display = 'none';
+                if(result.success) { currentUser = result.user; localStorage.setItem('ett_user', JSON.stringify(currentUser)); initSystem(); }
+                else alert("Нэвтрэх код эсвэл нууц үг буруу!");
+            } catch(e) { alert("Сервертэй холбогдоход алдаа гарлаа."); }
+            toggleLoading(false);
         }
 
         function initSystem() {
@@ -174,39 +157,43 @@
         }
 
         async function refreshData() {
-            document.getElementById('loading').style.display = 'flex';
+            toggleLoading(true);
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
                 const data = await res.json();
                 allOrders = data.orders || [];
-                if(currentUser.type !== 'admin') {
-                    allOrders = allOrders.filter(o => o.code.toString() === currentUser.code.toString());
-                }
+                if(currentUser.type !== 'admin') allOrders = allOrders.filter(o => o.code.toString() === currentUser.code.toString());
                 applyFilters();
             } catch(e) {}
-            document.getElementById('loading').style.display = 'none';
+            toggleLoading(false);
         }
 
         function applyFilters() {
             const sF = document.getElementById('filter-status').value;
             const yF = document.getElementById('filter-year').value;
             const mF = document.getElementById('filter-month').value;
+            const search = document.getElementById('search-input').value.toLowerCase();
+
             const filtered = allOrders.filter(o => {
                 const d = new Date(o.requestedDate);
                 const matchesStatus = sF === "" || o.status === sF;
                 const matchesYear = yF === "" || d.getFullYear().toString() === yF;
                 const matchesMonth = mF === "" || (d.getMonth()+1).toString().padStart(2,'0') === mF;
-                return matchesStatus && matchesYear && matchesMonth;
+                const matchesSearch = search === "" || 
+                    (o.ner && o.ner.toLowerCase().includes(search)) || 
+                    (o.ovog && o.ovog.toLowerCase().includes(search)) || 
+                    (o.code && o.code.toString().includes(search)) || 
+                    (o.item && o.item.toLowerCase().includes(search)) ||
+                    (o.role && o.role.toLowerCase().includes(search));
+
+                return matchesStatus && matchesYear && matchesMonth && matchesSearch;
             });
             renderOrders(filtered);
         }
 
         function renderOrders(orders) {
             const container = document.getElementById('orders-list-container');
-            if(orders.length === 0) {
-                container.innerHTML = '<div class="text-center p-20 text-slate-400 font-black text-[10px] uppercase italic">Мэдээлэл олдсонгүй</div>';
-                return;
-            }
+            if(orders.length === 0) { container.innerHTML = '<div class="text-center p-20 text-slate-400 font-black text-[10px] uppercase italic">Мэдээлэл олдсонгүй</div>'; return; }
             container.innerHTML = orders.slice().reverse().map(o => {
                 let color = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-700' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 return `
@@ -222,35 +209,69 @@
                         <div><div class="text-[8px] text-slate-400 uppercase font-black mb-1">Бараа</div><div class="text-[11px] font-black text-slate-800 uppercase">${o.item}</div></div>
                         <div class="text-right"><div class="text-[8px] text-slate-400 uppercase font-black mb-1">Хэмжээ/Тоо</div><div class="text-[11px] font-black text-slate-800">${o.size} / ${o.quantity}ш</div></div>
                     </div>
+                    ${(o.status === 'Хүлээгдэж буй' && currentUser.type === 'admin') ? `
+                    <div class="grid grid-cols-2 gap-2 mt-4">
+                        <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="bg-emerald-500 text-white py-2 rounded-xl text-[10px] font-black uppercase">Олгох</button>
+                        <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="bg-rose-500 text-white py-2 rounded-xl text-[10px] font-black uppercase">Татгалзах</button>
+                    </div>` : ''}
                 </div>`;
             }).join('');
         }
 
+        async function updateStatus(id, status) {
+            if(!confirm("Шийдвэрийг баталгаажуулах уу?")) return;
+            toggleLoading(true);
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "update_status", id, status }) });
+            refreshData();
+        }
+
         async function addNewEmployee() {
-            const ovog = document.getElementById('emp-ovog').value;
-            const ner = document.getElementById('emp-ner').value;
-            const code = document.getElementById('emp-code').value;
-            const role = document.getElementById('emp-role').value;
-            if(!code || !ner) return alert("Мэдээлэл дутуу!");
-            document.getElementById('loading').style.display = 'flex';
-            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_employee", ovog, ner, code, role }) });
-            alert("Амжилттай бүртгэгдлээ!");
-            document.getElementById('loading').style.display = 'none';
+            const data = { action: "add_employee", ovog: document.getElementById('emp-ovog').value, ner: document.getElementById('emp-ner').value, code: document.getElementById('emp-code').value, role: document.getElementById('emp-role').value };
+            if(!data.code || !data.ner) return alert("Мэдээлэл дутуу!");
+            toggleLoading(true);
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
+            alert("Ажилтан бүртгэгдлээ (Pass: 1234)");
+            refreshData();
         }
 
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('open'); 
-            document.getElementById('sidebar-overlay').classList.toggle('show');
+        async function addNewItem() {
+            const name = document.getElementById('new-item-name').value;
+            const sizes = document.getElementById('new-item-sizes').value;
+            if(!name) return alert("Барааны нэр оруулна уу");
+            toggleLoading(true);
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_item", name, sizes }) });
+            alert("Бараа бүртгэгдлээ");
+            refreshData();
         }
 
-        function showTab(tab, btn) {
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden'));
-            document.getElementById('tab-' + tab).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            if(btn) btn.classList.add('active');
-            if(window.innerWidth < 1024) toggleSidebar();
+        async function loadEmployeeHistory() {
+            const code = document.getElementById('history-search-code').value;
+            if(!code) return alert("Код оруулна уу");
+            toggleLoading(true);
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
+                const data = await res.json();
+                const history = data.orders.filter(o => o.code.toString() === code.toString());
+                const resCont = document.getElementById('history-result');
+                resCont.innerHTML = history.length === 0 ? '<div class="p-10 text-center text-[10px] font-black text-slate-400 uppercase">Түүх олдсонгүй</div>' : history.reverse().map(h => `
+                    <div class="p-4 bg-white border rounded-xl flex justify-between items-center">
+                        <div><div class="text-[11px] font-black text-slate-800 uppercase">${h.item}</div><div class="text-[9px] text-slate-400 font-mono">${new Date(h.requestedDate).toLocaleDateString()}</div></div>
+                        <span class="text-[9px] font-black px-3 py-1 rounded-full bg-slate-100 uppercase">${h.status}</span>
+                    </div>
+                `).join('');
+            } catch(e) { alert("Алдаа гарлаа"); }
+            toggleLoading(false);
         }
 
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('show'); }
+        function showTab(tab, btn) { 
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.add('hidden')); 
+            document.getElementById('tab-' + tab).classList.remove('hidden'); 
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
+            if(btn) btn.classList.add('active'); 
+            if(window.innerWidth < 1024) toggleSidebar(); 
+        }
+        function toggleLoading(show) { document.getElementById('loading').classList.toggle('hidden', !show); }
         function logout() { localStorage.removeItem('ett_user'); location.reload(); }
     </script>
 </body>
