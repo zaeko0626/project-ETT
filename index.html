@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT PPE v7.1</title>
+    <title>ETT PPE v7.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -20,6 +20,8 @@
         .nav-btn.active { background: #2563eb; color: white; }
         input, select { border: 1px solid #e2e8f0; outline: none; font-weight: bold; width: 100%; border-radius: 10px; background: white; font-size: 11px; padding: 10px; }
         .filter-label { font-size: 7px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 2px; margin-left: 2px; display: block; }
+        .card { background: white; border-radius: 20px; padding: 15px; border: 1px solid #e2e8f0; margin-bottom: 12px; }
+        .btn-primary { background: #2563eb; color: white; padding: 12px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; width: 100%; }
     </style>
 </head>
 <body>
@@ -33,30 +35,26 @@
         <header class="app-header">
             <button onclick="window.toggleSidebar()" class="text-xl p-2"><i class="fas fa-bars"></i></button>
             <div class="font-black italic text-xs uppercase tracking-tighter text-blue-400">ETT PPE System</div>
-            <button onclick="window.refreshData()" class="bg-blue-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase flex items-center shadow-lg">
-                <i class="fas fa-sync-alt mr-1"></i> Шинэчлэх
-            </button>
+            <button onclick="window.refreshData()" class="bg-blue-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase flex items-center shadow-lg"><i class="fas fa-sync-alt mr-1"></i> Шинэчлэх</button>
         </header>
 
         <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
         <aside id="sidebar">
-            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
-                <span class="font-black italic text-blue-500 uppercase">Цэс</span>
-                <i class="fas fa-times text-slate-500" onclick="window.toggleSidebar()"></i>
-            </div>
-            <nav class="p-4 flex-1">
+            <div class="p-6 border-b border-slate-800"><span class="font-black italic text-blue-500 uppercase">Үндсэн цэс</span></div>
+            <nav class="p-4">
                 <button onclick="window.showTab('orders', this)" class="nav-btn active"><i class="fas fa-list-ul mr-3"></i> Жагсаалт</button>
+                <button onclick="window.showTab('request', this)" class="nav-btn"><i class="fas fa-plus-circle mr-3"></i> Хүсэлт гаргах</button>
                 <button id="nav-history" onclick="window.showTab('emp-history', this)" class="nav-btn"><i class="fas fa-history mr-3"></i> Ажилтны түүх</button>
                 <button id="nav-admin" onclick="window.showTab('admin-panel', this)" class="nav-btn"><i class="fas fa-user-shield mr-3"></i> Удирдлага</button>
-                <button id="nav-profile" onclick="window.showTab('profile', this)" class="nav-btn"><i class="fas fa-key mr-3"></i> Нууц үг</button>
+                <button onclick="window.showTab('profile', this)" class="nav-btn"><i class="fas fa-key mr-3"></i> Нууц үг солих</button>
             </nav>
-            <div class="p-4 border-t border-slate-800">
-                <button onclick="window.logout()" class="w-full bg-red-600/10 text-red-500 p-3 rounded-xl text-[10px] font-black uppercase font-bold">Системээс гарах</button>
+            <div class="p-4 absolute bottom-0 w-full border-t border-slate-800">
+                <button onclick="window.logout()" class="w-full bg-red-600/10 text-red-500 p-3 rounded-xl text-[10px] font-black uppercase">Системээс гарах</button>
             </div>
         </aside>
 
         <main class="scroll-area">
-            <div id="tab-orders" class="block">
+            <div id="tab-orders" class="tab-content block">
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-3 mb-4">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <div><label class="filter-label">Барааны нэр</label><select id="filter-item" onchange="window.applyFilters()"><option value="">Бүх бараа</option></select></div>
@@ -65,118 +63,131 @@
                         <div><label class="filter-label">Сар</label><select id="filter-month" onchange="window.applyFilters()"></select></div>
                     </div>
                     <div class="grid grid-cols-3 gap-1.5 border-t pt-2">
-                        <div><label class="filter-label">Ажилтны нэр</label><input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Хайх..." class="!px-2"></div>
-                        <div><label class="filter-label">Ажилтны код</label><input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Хайх..." class="!px-2"></div>
-                        <div><label class="filter-label">Албан тушаал</label><input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Албан тушаалаар шүүх..." class="!px-2"></div>
+                        <div><label class="filter-label">Ажилтны нэр</label><input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр..."></div>
+                        <div><label class="filter-label">Код</label><input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код..."></div>
+                        <div><label class="filter-label">Албан тушаал</label><input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Тушаал..."></div>
                     </div>
                 </div>
                 <div id="orders-list-container" class="space-y-3 pb-10"></div>
             </div>
 
-            <div id="tab-admin-panel" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Удирдлагын хэсэг</div></div>
-            <div id="tab-emp-history" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Ажилтны түүх</div></div>
-            <div id="tab-profile" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Нууц үг солих</div></div>
+            <div id="tab-request" class="tab-content hidden">
+                <div class="card">
+                    <h3 class="font-black uppercase text-xs mb-4 text-blue-600">Шинэ хүсэлт гаргах</h3>
+                    <div class="space-y-3">
+                        <div><label class="filter-label">Бараа сонгох</label><select id="req-item"></select></div>
+                        <div><label class="filter-label">Хэмжээ</label><input type="text" id="req-size" placeholder="Жишээ: L, 42, 175..."></div>
+                        <div><label class="filter-label">Тоо ширхэг</label><input type="number" id="req-qty" value="1"></div>
+                        <button onclick="window.submitRequest()" class="btn-primary mt-2">Хүсэлт илгээх</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-admin-panel" class="tab-content hidden">
+                <div class="card">
+                    <h3 class="font-black uppercase text-xs mb-4 text-green-600">Ажилтан бүртгэх</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="new-emp-code" placeholder="Ажилтны код">
+                        <input type="text" id="new-emp-lastname" placeholder="Овог">
+                        <input type="text" id="new-emp-name" placeholder="Нэр">
+                        <input type="text" id="new-emp-role" placeholder="Албан тушаал">
+                        <button onclick="window.addEmployee()" class="btn-primary bg-green-600">Хадгалах</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="font-black uppercase text-xs mb-4 text-orange-600">Бараа нэмэх</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="new-item-name" placeholder="Барааны нэр">
+                        <input type="text" id="new-item-sizes" placeholder="Хэмжээнүүд (таслалаар)">
+                        <button onclick="window.addItem()" class="btn-primary bg-orange-600">Бараа бүртгэх</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-profile" class="tab-content hidden">
+                <div class="card">
+                    <h3 class="font-black uppercase text-xs mb-4 text-red-600">Нууц үг солих</h3>
+                    <div class="space-y-3">
+                        <input type="password" id="old-pass" placeholder="Одоогийн нууц үг">
+                        <input type="password" id="new-pass" placeholder="Шинэ нууц үг">
+                        <input type="password" id="confirm-pass" placeholder="Шинэ нууц үг давтах">
+                        <button onclick="window.changePassword()" class="btn-primary bg-red-600">Шинэчлэх</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-emp-history" class="tab-content hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Түүх хоосон байна</div></div>
         </main>
     </div>
 
     <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6">
-        <div class="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-2xl">
-            <div class="text-center mb-8">
-                <div class="inline-block p-4 bg-blue-50 rounded-3xl mb-4"><i class="fas fa-shield-alt text-3xl text-blue-600"></i></div>
-                <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">PPE Нэвтрэх</h2>
-                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Системд нэвтрэх код таглана уу</p>
-            </div>
+        <div class="w-full max-w-sm bg-white p-8 rounded-[2.5rem] shadow-2xl text-center">
+            <div class="inline-block p-4 bg-blue-50 rounded-3xl mb-4"><i class="fas fa-shield-alt text-3xl text-blue-600"></i></div>
+            <h2 class="text-xl font-black text-slate-800 uppercase mb-8">PPE LOGIN</h2>
             <div class="space-y-4">
-                <input type="text" id="login-user" placeholder="Нэвтрэх код" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
+                <input type="text" id="login-user" placeholder="Код" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
                 <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
-                <button onclick="window.handleLogin()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Нэвтрэх</button>
+                <button onclick="window.handleLogin()" class="btn-primary py-5">Нэвтрэх</button>
             </div>
         </div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwaAbrQMAa8yfQc7x5nN3wPXIrdQB9oz4PyAR-j-Lw8OVcAtNlrGdpUpUTQwyve5N9C/exec";
-        let allOrders = [];
-        let currentUser = null;
+        const API_URL = "https://script.google.com/macros/s/AKfycbwUwFoYuXlnANKHDmvTU_aDt5HEXOmFhDkCyMvLfPnBxa-Cp8lAGaj6GX-FL81ujurj/exec";
+        let allOrders = [], currentUser = null;
 
-        window.toggleSidebar = function() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('sidebar-overlay').classList.toggle('show');
-        };
+        window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('sidebar-overlay').classList.toggle('show'); };
 
-        window.showTab = function(tabName, btn) {
-            ['orders', 'admin-panel', 'profile', 'emp-history'].forEach(t => {
-                const el = document.getElementById('tab-' + t);
-                if(el) el.classList.add('hidden');
-            });
-            const activeTab = document.getElementById('tab-' + tabName);
-            if(activeTab) activeTab.classList.remove('hidden');
+        window.showTab = (tabName, btn) => {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab-' + tabName).classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
             if(window.innerWidth < 1024) window.toggleSidebar();
         };
 
-        window.handleLogin = async function() {
-            const userCode = document.getElementById('login-user').value.trim();
-            const password = document.getElementById('login-pass').value.trim();
-            if(!userCode || !password) return alert("Мэдээллээ бүрэн бөглөнө үү!");
-
+        window.handleLogin = async () => {
+            const code = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            if(!code || !pass) return alert("Бөглөнө үү!");
             document.getElementById('loading').classList.remove('hidden');
             try {
-                // ТАНЫ SCRIPT-Д ТААРУУЛЖ 'pass' ТҮЛХҮҮР ҮГИЙГ АШИГЛАВ
-                const res = await fetch(API_URL, { 
-                    method: 'POST', 
-                    body: JSON.stringify({ action: "login", code: userCode, pass: password }) 
-                });
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "login", code, pass }) });
                 const result = await res.json();
-                if(result.success) {
-                    localStorage.setItem('ett_user', JSON.stringify(result.user));
-                    currentUser = result.user;
-                    initApp();
-                } else { alert("Код эсвэл нууц үг буруу байна!"); }
-            } catch(e) { alert("Холболтын алдаа!"); }
+                if(result.success) { localStorage.setItem('ett_user', JSON.stringify(result.user)); currentUser = result.user; initApp(); }
+                else alert("Буруу байна!");
+            } catch(e) { alert("Алдаа гарлаа!"); }
             document.getElementById('loading').classList.add('hidden');
-        };
-
-        window.logout = function() {
-            if(confirm("Та системээс гарахдаа итгэлтэй байна уу?")) {
-                localStorage.removeItem('ett_user');
-                location.reload(); 
-            }
         };
 
         function initApp() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-page').classList.remove('hidden');
-            
-            // ТАНЫ SCRIPT-ЭЭС ИРЖ БУЙ 'type' УТГААР ЦЭСИЙГ УДИРДАНА
-            if(currentUser && currentUser.type !== 'admin') {
+            if(currentUser.type !== 'admin') {
                 document.getElementById('nav-admin').style.display = 'none';
                 document.getElementById('nav-history').style.display = 'none';
             }
-            
             setupFilters();
             window.refreshData();
         }
 
-        window.refreshData = async function() {
+        window.refreshData = async () => {
             document.getElementById('loading').classList.remove('hidden');
             try {
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
                 const data = await res.json();
                 allOrders = data.orders || [];
-                
                 const items = [...new Set(allOrders.map(o => o.item))].filter(Boolean);
-                let itH = '<option value="">Бүх бараа</option>';
-                items.forEach(it => itH += `<option value="${it}">${it.toUpperCase()}</option>`);
+                let itH = '<option value="">Бүх бараа</option>', reqH = '';
+                items.forEach(it => { itH += `<option value="${it}">${it}</option>`; reqH += `<option value="${it}">${it}</option>`; });
                 document.getElementById('filter-item').innerHTML = itH;
-                
+                document.getElementById('req-item').innerHTML = reqH;
                 window.applyFilters();
-            } catch(e) { console.log(e); }
+            } catch(e) {}
             document.getElementById('loading').classList.add('hidden');
         };
 
-        window.applyFilters = function() {
+        window.applyFilters = () => {
             const nS = document.getElementById('search-name').value.toLowerCase();
             const cS = document.getElementById('search-code').value.trim();
             const rS = document.getElementById('search-role').value.toLowerCase();
@@ -186,15 +197,14 @@
             const mF = document.getElementById('filter-month').value;
 
             const filtered = allOrders.filter(o => {
-                // ТАНЫ SCRIPT-ИЙН 'get_all_data' ХЭСГИЙН ТҮЛХҮҮР ҮГСЭЭР:
-                const d = new Date(o.requestedDate); 
-                const mN = nS === "" || (o.ner && o.ner.toLowerCase().includes(nS)) || (o.ovog && o.ovog.toLowerCase().includes(nS));
-                const mC = cS === "" || (o.code && o.code.toString().includes(cS));
-                const mR = rS === "" || (o.role && o.role.toLowerCase().includes(rS));
-                const mI = iF === "" || o.item === iF;
-                const mS = sF === "" || o.status === sF;
-                const mY = yF === "" || d.getFullYear().toString() === yF;
-                const mM = mF === "" || (d.getMonth()+1).toString().padStart(2,'0') === mF;
+                const d = new Date(o.requestedDate);
+                const mN = !nS || (o.ner && o.ner.toLowerCase().includes(nS)) || (o.ovog && o.ovog.toLowerCase().includes(nS));
+                const mC = !cS || (o.code && o.code.toString().includes(cS));
+                const mR = !rS || (o.role && o.role.toLowerCase().includes(rS));
+                const mI = !iF || o.item === iF;
+                const mS = !sF || o.status === sF;
+                const mY = !yF || d.getFullYear().toString() === yF;
+                const mM = !mF || (d.getMonth()+1).toString().padStart(2,'0') === mF;
                 return mN && mC && mR && mI && mS && mY && mM;
             });
             renderOrders(filtered);
@@ -202,42 +212,57 @@
 
         function renderOrders(orders) {
             const container = document.getElementById('orders-list-container');
-            if(!orders.length) { container.innerHTML = '<div class="text-center p-10 text-slate-400 text-[10px] font-black uppercase italic">Мэдээлэл олдсонгүй</div>'; return; }
-            
-            container.innerHTML = orders.slice().reverse().map(o => {
+            container.innerHTML = orders.length ? orders.slice().reverse().map(o => {
                 let color = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-700' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
-                return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
-                    <div class="flex justify-between items-start mb-2">
-                        <div class="text-[11px] font-black uppercase">${o.ovog || ''} ${o.ner || ''} <span class="text-blue-600 block text-[8px]">ID: ${o.code} | ${o.role || ''}</span></div>
-                        <span class="${color} text-[7px] font-black px-2 py-1 rounded-full uppercase">${o.status}</span>
-                    </div>
-                    <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-[10px] font-bold">
-                        <div><span class="text-[7px] text-slate-400 block uppercase">Бараа</span>${o.item}</div>
-                        <div class="text-right"><span class="text-[7px] text-slate-400 block uppercase">Хэмжээ / Тоо</span>${o.size} / ${o.quantity}ш</div>
-                    </div>
-                </div>`;
-            }).join('');
+                return `<div class="card"><div class="flex justify-between items-start mb-2"><div class="text-[11px] font-black uppercase">${o.ovog} ${o.ner} <span class="text-blue-600 block text-[8px]">ID: ${o.code} | ${o.role}</span></div><span class="${color} text-[7px] font-black px-2 py-1 rounded-full uppercase">${o.status}</span></div><div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-[10px] font-bold"><div>${o.item}</div><div>${o.size} / ${o.quantity}ш</div></div></div>`;
+            }).join('') : '<div class="text-center p-10 text-[10px] uppercase font-black text-slate-400 italic">Мэдээлэл байхгүй</div>';
+        }
+
+        // ҮЙЛДЛҮҮД
+        window.addEmployee = async () => {
+            const data = { action: "add_employee", code: document.getElementById('new-emp-code').value, ner: document.getElementById('new-emp-name').value, ovog: document.getElementById('new-emp-lastname').value, role: document.getElementById('new-emp-role').value };
+            if(!data.code || !data.ner) return alert("Бөглөнө үү!");
+            await apiCall(data, "Ажилтан бүртгэгдлээ");
+        };
+
+        window.addItem = async () => {
+            const data = { action: "add_item", name: document.getElementById('new-item-name').value, sizes: document.getElementById('new-item-sizes').value };
+            if(!data.name) return alert("Нэр оруул!");
+            await apiCall(data, "Бараа нэмэгдлээ");
+        };
+
+        window.submitRequest = async () => {
+            const data = { action: "add_order", code: currentUser.code, item: document.getElementById('req-item').value, size: document.getElementById('req-size').value, qty: document.getElementById('req-qty').value };
+            await apiCall(data, "Хүсэлт илгээгдлээ");
+            window.refreshData();
+        };
+
+        window.changePassword = async () => {
+            const newP = document.getElementById('new-pass').value;
+            if(newP !== document.getElementById('confirm-pass').value) return alert("Нууц үг зөрүүтэй!");
+            await apiCall({ action: "change_pass", code: currentUser.code, oldP: document.getElementById('old-pass').value, newP }, "Нууц үг солигдлоо");
+        };
+
+        async function apiCall(body, msg) {
+            document.getElementById('loading').classList.remove('hidden');
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(body) });
+                const r = await res.json();
+                if(r.success) alert(msg); else alert("Алдаа: " + (r.msg || "Болсонгүй"));
+            } catch(e) { alert("Сүлжээний алдаа"); }
+            document.getElementById('loading').classList.add('hidden');
         }
 
         function setupFilters() {
-            let yH = '<option value="">БҮХ ОН</option>';
-            for(let y = 2024; y <= 2027; y++) yH += `<option value="${y}">${y}</option>`;
+            let yH = '<option value="">БҮХ ОН</option>', mH = '<option value="">БҮХ САР</option>';
+            for(let y=2024; y<=2026; y++) yH += `<option value="${y}">${y}</option>`;
+            for(let m=1; m<=12; m++) mH += `<option value="${m.toString().padStart(2,'0')}">${m} сар</option>`;
             document.getElementById('filter-year').innerHTML = yH;
-            let mH = '<option value="">БҮХ САР</option>';
-            for(let m = 1; m <= 12; m++) mH += `<option value="${m.toString().padStart(2,'0')}">${m} сар</option>`;
             document.getElementById('filter-month').innerHTML = mH;
         }
 
-        window.onload = () => {
-            const saved = localStorage.getItem('ett_user');
-            if(saved) {
-                currentUser = JSON.parse(saved);
-                initApp();
-            } else {
-                document.getElementById('login-page').classList.remove('hidden');
-                document.getElementById('main-page').classList.add('hidden');
-            }
-        };
+        window.logout = () => { if(confirm("Гарах уу?")) { localStorage.clear(); location.reload(); } };
+        window.onload = () => { currentUser = JSON.parse(localStorage.getItem('ett_user')); if(currentUser) initApp(); else document.getElementById('login-page').classList.remove('hidden'); };
     </script>
 </body>
 </html>
