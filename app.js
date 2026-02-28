@@ -4,6 +4,9 @@ let allOrders = [];
 let allItems = [];
 let currentUser = null;
 
+// --------------------
+// Sidebar
+// --------------------
 window.openSidebar = () => {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebar-overlay').classList.add('show');
@@ -17,6 +20,9 @@ window.toggleSidebar = () => {
   isOpen ? window.closeSidebar() : window.openSidebar();
 };
 
+// --------------------
+// Tabs
+// --------------------
 window.showTab = (tabName, btn) => {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   document.getElementById('tab-' + tabName).classList.remove('hidden');
@@ -27,29 +33,52 @@ window.showTab = (tabName, btn) => {
   if (window.innerWidth < 1024) window.closeSidebar();
 };
 
+// --------------------
+// Loading
+// --------------------
 function showLoading(show) {
-  document.getElementById('loading-overlay').classList.toggle('hidden', !show);
+  const el = document.getElementById('loading-overlay');
+  if (!el) return;
+  el.classList.toggle('hidden', !show);
 }
 
+// --------------------
+// Helpers
+// --------------------
+function safeJsonParse(str) {
+  try { return JSON.parse(str); } catch { return null; }
+}
+
+async function postJson(payload) {
+  const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+  const text = await res.text();
+  const json = safeJsonParse(text);
+  if (!json) {
+    console.error("API non-JSON response:", text);
+    throw new Error("API non-JSON response");
+  }
+  return json;
+}
+
+function forceToLogin() {
+  currentUser = null;
+  localStorage.removeItem('ett_user');
+  // UI
+  document.getElementById('main-page')?.classList.add('hidden');
+  document.getElementById('login-page')?.classList.remove('hidden');
+  showLoading(false);
+}
+
+// --------------------
+// Login
+// --------------------
 window.handleLogin = async () => {
   const code = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: "login", code, pass })
-    });
-
-    const text = await res.text();
-    let result;
-    try { result = JSON.parse(text); }
-    catch {
-      console.error("Login non-JSON:", text);
-      alert("API JSON биш хариу өглөө. Apps Script Deploy/Access шалга.");
-      return;
-    }
+    const result = await postJson({ action: "login", code, pass });
 
     if (result.success) {
       currentUser = result.user;
@@ -60,7 +89,7 @@ window.handleLogin = async () => {
     }
   } catch (e) {
     console.error(e);
-    alert("API хүрэхгүй байна (login).");
+    alert("API хүрэхгүй байна (login) эсвэл JSON биш хариу өглөө.");
   } finally {
     showLoading(false);
   }
@@ -71,7 +100,7 @@ function initApp() {
   document.getElementById('main-page').classList.remove('hidden');
 
   document.getElementById('user-display-name').innerText =
-    currentUser && currentUser.ovog ? `${currentUser.ovog} ${currentUser.ner}` : (currentUser?.ner || "");
+    (currentUser && currentUser.ovog) ? `${currentUser.ovog} ${currentUser.ner}` : (currentUser?.ner || "");
 
   if (currentUser && currentUser.type === 'admin') {
     document.getElementById('nav-request').classList.add('hidden');
@@ -84,6 +113,9 @@ function initApp() {
   window.refreshData();
 }
 
+// --------------------
+// Filters
+// --------------------
 function setupFilters() {
   const years = new Set();
   allOrders.forEach(o => {
@@ -106,22 +138,13 @@ function setupFilters() {
   document.getElementById('filter-month').innerHTML = mH;
 }
 
+// --------------------
+// Data
+// --------------------
 window.refreshData = async () => {
   showLoading(true);
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: "get_all_data" })
-    });
-
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); }
-    catch {
-      console.error("get_all_data non-JSON:", text);
-      alert("API JSON биш хариу өглөө. Apps Script Deploy/Access шалга.");
-      return;
-    }
+    const data = await postJson({ action: "get_all_data" });
 
     if (data.success === false) {
       alert(data.msg || "Дата татахад алдаа");
@@ -131,6 +154,7 @@ window.refreshData = async () => {
     allOrders = data.orders || [];
     allItems = data.items || [];
 
+    // dropdowns
     let itH = '<option value="">Бүх бараа</option>';
     let reqH = '<option value="">Сонгох...</option>';
 
@@ -147,15 +171,18 @@ window.refreshData = async () => {
     window.applyFilters();
   } catch (e) {
     console.error(e);
-    alert("API хүрэхгүй байна (get_all_data).");
+    // ✅ хамгийн чухал: гацуулахгүйгээр login руу буцаана
+    alert("Өгөгдөл татахад алдаа гарлаа. (API/Deploy/URL шалга)");
+    forceToLogin();
   } finally {
     showLoading(false);
   }
 };
 
 window.updateSizeOptions = () => {
-  const name = document.getElementById('req-item').value;
+  const name = document.getElementById('req-item')?.value;
   const select = document.getElementById('req-size');
+  if (!select) return;
 
   if (!name) {
     select.innerHTML = '<option value="">Сонгох...</option>';
@@ -171,14 +198,17 @@ window.updateSizeOptions = () => {
   }
 };
 
+// --------------------
+// Apply filters + render
+// --------------------
 window.applyFilters = () => {
-  const nS = document.getElementById('search-name').value.toLowerCase();
-  const cS = document.getElementById('search-code').value.trim();
-  const rS = document.getElementById('search-role').value.toLowerCase();
-  const iF = document.getElementById('filter-item').value;
-  const sF = document.getElementById('filter-status').value;
-  const yF = document.getElementById('filter-year').value;
-  const mF = document.getElementById('filter-month').value;
+  const nS = (document.getElementById('search-name')?.value || "").toLowerCase();
+  const cS = (document.getElementById('search-code')?.value || "").trim();
+  const rS = (document.getElementById('search-role')?.value || "").toLowerCase();
+  const iF = document.getElementById('filter-item')?.value || "";
+  const sF = document.getElementById('filter-status')?.value || "";
+  const yF = document.getElementById('filter-year')?.value || "";
+  const mF = document.getElementById('filter-month')?.value || "";
 
   const filtered = allOrders.filter(o => {
     const d = new Date(o.requestedDate);
@@ -197,6 +227,7 @@ window.applyFilters = () => {
 
 function renderOrders(orders) {
   const container = document.getElementById('orders-list-container');
+  if (!container) return;
 
   container.innerHTML = orders.length
     ? orders.slice().reverse().map(o => {
@@ -231,15 +262,16 @@ function renderOrders(orders) {
     : '<div class="text-center p-10 text-[9px] font-black text-slate-400 uppercase italic">Мэдээлэл олдсонгүй</div>';
 }
 
+// --------------------
+// Actions
+// --------------------
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "update_status", id, status }) });
-    const text = await res.text();
-    const r = JSON.parse(text);
+    const r = await postJson({ action: "update_status", id, status });
     if (r.success) window.refreshData();
     else alert(r.msg || "Status update error");
-  } catch(e) {
+  } catch (e) {
     console.error(e);
     alert("Алдаа! (update_status)");
   } finally {
@@ -248,14 +280,12 @@ window.updateStatus = async (id, status) => {
 };
 
 window.fetchEmpHistory = async () => {
-  const code = document.getElementById('hist-search-code').value.trim();
+  const code = (document.getElementById('hist-search-code')?.value || "").trim();
   if (!code) return alert("Код оруулна уу!");
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_employee_history", empCode: code }) });
-    const text = await res.text();
-    const r = JSON.parse(text);
+    const r = await postJson({ action: "get_employee_history", empCode: code });
 
     if (r.success) {
       document.getElementById('emp-details-card').classList.remove('hidden');
@@ -289,9 +319,7 @@ window.submitRequest = async () => {
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_order", code: currentUser.code, item, size, qty }) });
-    const text = await res.text();
-    const r = JSON.parse(text);
+    const r = await postJson({ action: "add_order", code: currentUser.code, item, size, qty });
 
     if (r.success) {
       alert("Хүсэлт илгээгдлээ!");
@@ -309,7 +337,7 @@ window.submitRequest = async () => {
 };
 
 window.addEmployee = async () => {
-  const data = {
+  const payload = {
     action: "add_employee",
     code: document.getElementById('new-emp-code').value.trim(),
     ner: document.getElementById('new-emp-name').value.trim(),
@@ -317,13 +345,11 @@ window.addEmployee = async () => {
     role: document.getElementById('new-emp-role').value.trim()
   };
 
-  if (!data.code || !data.ner) return alert("Мэдээллээ шалгана уу!");
+  if (!payload.code || !payload.ner) return alert("Мэдээллээ шалгана уу!");
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-    const text = await res.text();
-    const r = JSON.parse(text);
+    const r = await postJson(payload);
     if (r.success) alert(r.msg || "Ажилтан нэмэгдлээ");
     else alert(r.msg || "Add employee error");
   } catch (e) {
@@ -335,20 +361,17 @@ window.addEmployee = async () => {
 };
 
 window.addItem = async () => {
-  const data = {
+  const payload = {
     action: "add_item",
     name: document.getElementById('new-item-name').value.trim(),
     sizes: document.getElementById('new-item-sizes').value.trim()
   };
 
-  if (!data.name) return alert("Нэр оруулна уу!");
+  if (!payload.name) return alert("Нэр оруулна уу!");
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-    const text = await res.text();
-    const r = JSON.parse(text);
-
+    const r = await postJson(payload);
     if (r.success) {
       alert("Бараа нэмэгдлээ");
       window.refreshData();
@@ -372,9 +395,7 @@ window.changePassword = async () => {
 
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "change_pass", code: currentUser.code, oldP, newP }) });
-    const text = await res.text();
-    const r = JSON.parse(text);
+    const r = await postJson({ action: "change_pass", code: currentUser.code, oldP, newP });
     if (r.success) alert("Амжилттай!");
     else alert(r.msg || "Password change error");
   } catch (e) {
@@ -390,8 +411,25 @@ window.logout = () => {
   location.reload();
 };
 
+// --------------------
+// Startup (A-case fix)
+// --------------------
 window.onload = () => {
-  currentUser = JSON.parse(localStorage.getItem('ett_user'));
-  if (currentUser) initApp();
-  else document.getElementById('login-page').classList.remove('hidden');
+  showLoading(false); // ✅ эхэндээ заавал хаана
+
+  // эвдэрхий localStorage байж болно → safe parse
+  const stored = localStorage.getItem('ett_user');
+  if (!stored) {
+    document.getElementById('login-page').classList.remove('hidden');
+    return;
+  }
+
+  const parsed = safeJsonParse(stored);
+  if (!parsed || !parsed.code) {
+    forceToLogin();
+    return;
+  }
+
+  currentUser = parsed;
+  initApp();
 };
