@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT PPE v6.9 (Final Login)</title>
+    <title>ETT PPE v6.9 (Final Login Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -72,6 +72,9 @@
                 </div>
                 <div id="orders-list-container" class="space-y-3 pb-10"></div>
             </div>
+            <div id="tab-admin-panel" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Удирдлагын хэсэг</div></div>
+            <div id="tab-emp-history" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Ажилтны түүх</div></div>
+            <div id="tab-profile" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Нууц үг солих</div></div>
         </main>
     </div>
 
@@ -101,7 +104,8 @@
         };
 
         window.showTab = function(tabName, btn) {
-            ['orders', 'admin-panel', 'profile', 'emp-history'].forEach(t => {
+            const tabs = ['orders', 'admin-panel', 'profile', 'emp-history'];
+            tabs.forEach(t => {
                 const el = document.getElementById('tab-' + t);
                 if(el) el.classList.add('hidden');
             });
@@ -143,6 +147,16 @@
         function initApp() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-page').classList.remove('hidden');
+            
+            // Админ эрхийг шалгаж цэсүүдийг харуулах/нуух
+            if(currentUser && currentUser.type !== 'admin') {
+                if(document.getElementById('nav-admin')) document.getElementById('nav-admin').classList.add('hidden');
+                if(document.getElementById('nav-history')) document.getElementById('nav-history').classList.add('hidden');
+            } else {
+                if(document.getElementById('nav-admin')) document.getElementById('nav-admin').classList.remove('hidden');
+                if(document.getElementById('nav-history')) document.getElementById('nav-history').classList.remove('hidden');
+            }
+            
             setupFilters();
             refreshData();
         }
