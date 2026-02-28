@@ -2,14 +2,15 @@
 <html lang="mn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ETT PPE System v7.7</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ETT PPE System</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
   <link rel="stylesheet" href="./styles.css" />
 </head>
+
 <body>
 
   <div id="loading-overlay" class="hidden">
@@ -33,7 +34,7 @@
       </button>
     </header>
 
-    <div id="sidebar-overlay" onclick="window.closeSidebar()"></div>
+    <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 
     <aside id="sidebar">
       <div class="p-8 border-b border-slate-800">
@@ -44,16 +45,12 @@
         <button onclick="window.showTab('orders', this)" class="nav-btn active">
           <i class="fas fa-list-ul mr-3"></i> Жагсаалт
         </button>
-
         <button id="nav-request" onclick="window.showTab('request', this)" class="nav-btn">
           <i class="fas fa-plus-circle mr-3"></i> Хүсэлт гаргах
         </button>
-
-        <!-- ✅ admin button default hidden -->
-        <button id="nav-admin" onclick="window.showTab('admin-panel', this)" class="nav-btn hidden">
+        <button id="nav-admin" onclick="window.showTab('admin-panel', this)" class="nav-btn">
           <i class="fas fa-user-shield mr-3"></i> Удирдлага
         </button>
-
         <button onclick="window.showTab('profile', this)" class="nav-btn">
           <i class="fas fa-key mr-3"></i> Нууц үг
         </button>
@@ -67,7 +64,6 @@
     </aside>
 
     <main class="scroll-area">
-
       <div id="tab-orders" class="tab-content block">
         <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -107,23 +103,19 @@
       <div id="tab-request" class="tab-content hidden">
         <div class="max-w-md mx-auto card">
           <h3 class="font-black uppercase text-xs mb-6 text-blue-600">Шинэ хүсэлт</h3>
-
           <div class="space-y-4">
             <div>
               <label class="filter-label">Бараа</label>
               <select id="req-item" onchange="window.updateSizeOptions()"></select>
             </div>
-
             <div>
               <label class="filter-label">Хэмжээ</label>
               <select id="req-size"></select>
             </div>
-
             <div>
               <label class="filter-label">Тоо</label>
-              <input type="number" id="req-qty" value="1" min="1">
+              <input type="number" id="req-qty" value="1">
             </div>
-
             <button onclick="window.submitRequest()" class="btn-primary">Илгээх</button>
           </div>
         </div>
@@ -133,7 +125,6 @@
         <div class="space-y-6">
           <div class="card bg-blue-50/50 border-blue-200">
             <h3 class="font-black uppercase text-[10px] mb-4 text-blue-700">Ажилтны олголтын түүх</h3>
-
             <div class="flex gap-2">
               <input type="text" id="hist-search-code" placeholder="Ажилтны ID...">
               <button onclick="window.fetchEmpHistory()" class="bg-blue-600 text-white px-4 rounded-xl font-black text-[10px] uppercase">Хайх</button>
@@ -150,10 +141,10 @@
             <div class="card">
               <h3 class="font-black uppercase text-[10px] mb-4 text-green-600">Ажилтан нэмэх</h3>
               <div class="space-y-3">
-                <input type="text" id="new-emp-code" placeholder="ID">
-                <input type="text" id="new-emp-lastname" placeholder="Lastname">
-                <input type="text" id="new-emp-name" placeholder="Name">
-                <input type="text" id="new-emp-role" placeholder="Role">
+                <input type="text" id="new-emp-code" placeholder="Код">
+                <input type="text" id="new-emp-lastname" placeholder="Овог">
+                <input type="text" id="new-emp-name" placeholder="Нэр">
+                <input type="text" id="new-emp-role" placeholder="Албан тушаал">
                 <button onclick="window.addEmployee()" class="btn-primary bg-green-600">Бүртгэх</button>
               </div>
             </div>
@@ -161,8 +152,8 @@
             <div class="card">
               <h3 class="font-black uppercase text-[10px] mb-4 text-orange-600">Бараа нэмэх</h3>
               <div class="space-y-3">
-                <input type="text" id="new-item-name" placeholder="Name">
-                <input type="text" id="new-item-sizes" placeholder="Sizes (S,M,L)">
+                <input type="text" id="new-item-name" placeholder="Нэр">
+                <input type="text" id="new-item-sizes" placeholder="Размер (S,M,L)">
                 <button onclick="window.addItem()" class="btn-primary bg-orange-600">Нэмэх</button>
               </div>
             </div>
@@ -185,18 +176,17 @@
     </main>
   </div>
 
-  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6">
+  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6 hidden">
     <div class="w-full max-w-sm bg-white p-10 rounded-[3rem] text-center">
       <h2 class="text-xl font-black text-slate-800 uppercase mb-8">PPE LOGIN</h2>
       <div class="space-y-4">
-        <input type="text" id="login-user" placeholder="ID" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
-        <input type="password" id="login-pass" placeholder="Password" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
+        <input type="text" id="login-user" placeholder="Код" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
+        <input type="password" id="login-pass" placeholder="Нууц үг" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
         <button onclick="window.handleLogin()" class="btn-primary py-5">Нэвтрэх</button>
       </div>
     </div>
   </div>
 
   <script src="./app.js"></script>
-  <!-- republish -->
 </body>
 </html>
