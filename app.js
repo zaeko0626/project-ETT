@@ -1,13 +1,9 @@
-// ✅ 1) API URL: Apps Script Web App URL-ээ энд тавина
-const API_URL = "https://script.google.com/macros/s/AKfycbx1iUbzrQIlb-Smh8mMq8gLh5YyTkeUQGha1ir1_mprxddjxQzsX6v1DcD4glhOAjPh/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbz0x6Xv9a9_A0DqTPOI4aPH6JpA91efnomjnA2v6zzxz19HbHSg_0eDPTwSaWU1XDOk/exec";
 
 let allOrders = [];
 let allItems = [];
 let currentUser = null;
 
-// --------------------
-// Sidebar controls (toggle bug fix included)
-// --------------------
 window.openSidebar = () => {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebar-overlay').classList.add('show');
@@ -21,9 +17,6 @@ window.toggleSidebar = () => {
   isOpen ? window.closeSidebar() : window.openSidebar();
 };
 
-// --------------------
-// Tabs
-// --------------------
 window.showTab = (tabName, btn) => {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
   document.getElementById('tab-' + tabName).classList.remove('hidden');
@@ -31,19 +24,13 @@ window.showTab = (tabName, btn) => {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
-  if (window.innerWidth < 1024) window.closeSidebar(); // ✅ no toggle surprise
+  if (window.innerWidth < 1024) window.closeSidebar();
 };
 
-// --------------------
-// Loading
-// --------------------
 function showLoading(show) {
   document.getElementById('loading-overlay').classList.toggle('hidden', !show);
 }
 
-// --------------------
-// Login
-// --------------------
 window.handleLogin = async () => {
   const code = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
@@ -54,7 +41,15 @@ window.handleLogin = async () => {
       method: 'POST',
       body: JSON.stringify({ action: "login", code, pass })
     });
-    const result = await res.json();
+
+    const text = await res.text();
+    let result;
+    try { result = JSON.parse(text); }
+    catch {
+      console.error("Login non-JSON:", text);
+      alert("API JSON биш хариу өглөө. Apps Script Deploy/Access шалга.");
+      return;
+    }
 
     if (result.success) {
       currentUser = result.user;
@@ -64,9 +59,11 @@ window.handleLogin = async () => {
       alert(result.msg || "Нэвтрэхэд алдаа гарлаа");
     }
   } catch (e) {
-    alert("Алдаа! (fetch/login)");
+    console.error(e);
+    alert("API хүрэхгүй байна (login).");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
 function initApp() {
@@ -74,9 +71,9 @@ function initApp() {
   document.getElementById('main-page').classList.remove('hidden');
 
   document.getElementById('user-display-name').innerText =
-    currentUser.ovog ? `${currentUser.ovog} ${currentUser.ner}` : currentUser.ner;
+    currentUser && currentUser.ovog ? `${currentUser.ovog} ${currentUser.ner}` : (currentUser?.ner || "");
 
-  if (currentUser.type === 'admin') {
+  if (currentUser && currentUser.type === 'admin') {
     document.getElementById('nav-request').classList.add('hidden');
     document.getElementById('nav-admin').classList.remove('hidden');
   } else {
@@ -87,9 +84,6 @@ function initApp() {
   window.refreshData();
 }
 
-// --------------------
-// Filters (built after data fetched)
-// --------------------
 function setupFilters() {
   const years = new Set();
   allOrders.forEach(o => {
@@ -112,25 +106,31 @@ function setupFilters() {
   document.getElementById('filter-month').innerHTML = mH;
 }
 
-// --------------------
-// Data refresh
-// --------------------
 window.refreshData = async () => {
   showLoading(true);
   try {
-    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
-    const data = await res.json();
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: "get_all_data" })
+    });
 
-    if (!data.success && data.success !== undefined) {
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); }
+    catch {
+      console.error("get_all_data non-JSON:", text);
+      alert("API JSON биш хариу өглөө. Apps Script Deploy/Access шалга.");
+      return;
+    }
+
+    if (data.success === false) {
       alert(data.msg || "Дата татахад алдаа");
-      showLoading(false);
       return;
     }
 
     allOrders = data.orders || [];
     allItems = data.items || [];
 
-    // Build item dropdowns
     let itH = '<option value="">Бүх бараа</option>';
     let reqH = '<option value="">Сонгох...</option>';
 
@@ -142,19 +142,17 @@ window.refreshData = async () => {
     document.getElementById('filter-item').innerHTML = itH;
     document.getElementById('req-item').innerHTML = reqH;
 
-    window.updateSizeOptions(); // ✅ prevent empty size dropdown
+    window.updateSizeOptions();
     setupFilters();
     window.applyFilters();
-
   } catch (e) {
-    alert("Алдаа! (fetch/get_all_data)");
+    console.error(e);
+    alert("API хүрэхгүй байна (get_all_data).");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Request sizes
-// --------------------
 window.updateSizeOptions = () => {
   const name = document.getElementById('req-item').value;
   const select = document.getElementById('req-size');
@@ -166,20 +164,13 @@ window.updateSizeOptions = () => {
 
   const item = allItems.find(i => i.name === name);
   if (item && item.sizes) {
-    select.innerHTML = item.sizes
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean)
-      .map(s => `<option value="${s}">${s}</option>`)
-      .join('');
+    select.innerHTML = item.sizes.split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => `<option value="${s}">${s}</option>`).join('');
   } else {
     select.innerHTML = '<option value="ST">Стандарт</option>';
   }
 };
 
-// --------------------
-// Apply filters
-// --------------------
 window.applyFilters = () => {
   const nS = document.getElementById('search-name').value.toLowerCase();
   const cS = document.getElementById('search-code').value.trim();
@@ -213,14 +204,12 @@ function renderOrders(orders) {
       if (o.status === 'Зөвшөөрсөн') sC = "bg-green-100 text-green-700";
       if (o.status === 'Татгалзсан') sC = "bg-red-100 text-red-700";
 
-      const adminActions = currentUser.type === 'admin'
-        ? `
-          <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button onclick="window.updateStatus('${o.id}', 'Зөвшөөрсөн')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Зөвшөөрөх</button>
-            <button onclick="window.updateStatus('${o.id}', 'Татгалзсан')" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Татгалзах</button>
-          </div>
-        `
-        : '';
+      const adminActions = (currentUser && currentUser.type === 'admin') ? `
+        <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+          <button onclick="window.updateStatus('${o.id}', 'Зөвшөөрсөн')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Зөвшөөрөх</button>
+          <button onclick="window.updateStatus('${o.id}', 'Татгалзсан')" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Татгалзах</button>
+        </div>
+      ` : '';
 
       return `
         <div class="card animate-fade-in">
@@ -242,25 +231,22 @@ function renderOrders(orders) {
     : '<div class="text-center p-10 text-[9px] font-black text-slate-400 uppercase italic">Мэдээлэл олдсонгүй</div>';
 }
 
-// --------------------
-// Admin update status
-// --------------------
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "update_status", id, status }) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
     if (r.success) window.refreshData();
     else alert(r.msg || "Status update error");
   } catch(e) {
+    console.error(e);
     alert("Алдаа! (update_status)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Employee history (Admin)
-// --------------------
 window.fetchEmpHistory = async () => {
   const code = document.getElementById('hist-search-code').value.trim();
   if (!code) return alert("Код оруулна уу!");
@@ -268,7 +254,8 @@ window.fetchEmpHistory = async () => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_employee_history", empCode: code }) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
 
     if (r.success) {
       document.getElementById('emp-details-card').classList.remove('hidden');
@@ -276,26 +263,23 @@ window.fetchEmpHistory = async () => {
       document.getElementById('hist-role').innerText = `${r.user.code} | ${r.user.role}`;
 
       document.getElementById('hist-items-container').innerHTML =
-        r.history.length
-          ? r.history.map(h => `
-            <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[9px] font-bold">
-              <div>${h.item} <span class="text-slate-400 ml-2">${new Date(h.date).toLocaleDateString()}</span></div>
-              <div class="text-blue-600">${h.size} / ${h.qty}ш</div>
-            </div>
-          `).join('')
-          : '<div class="text-center text-[8px] text-slate-400 italic">Түүх байхгүй</div>';
+        r.history.length ? r.history.map(h => `
+          <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[9px] font-bold">
+            <div>${h.item} <span class="text-slate-400 ml-2">${new Date(h.date).toLocaleDateString()}</span></div>
+            <div class="text-blue-600">${h.size} / ${h.qty}ш</div>
+          </div>
+        `).join('') : '<div class="text-center text-[8px] text-slate-400 italic">Түүх байхгүй</div>';
     } else {
       alert(r.msg || "Түүх татахад алдаа");
     }
   } catch (e) {
+    console.error(e);
     alert("Алдаа! (get_employee_history)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Submit request
-// --------------------
 window.submitRequest = async () => {
   const item = document.getElementById('req-item').value;
   const size = document.getElementById('req-size').value;
@@ -306,7 +290,8 @@ window.submitRequest = async () => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_order", code: currentUser.code, item, size, qty }) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
 
     if (r.success) {
       alert("Хүсэлт илгээгдлээ!");
@@ -316,14 +301,13 @@ window.submitRequest = async () => {
       alert(r.msg || "Хүсэлт илгээхэд алдаа");
     }
   } catch (e) {
+    console.error(e);
     alert("Алдаа! (add_order)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Add employee (Admin)
-// --------------------
 window.addEmployee = async () => {
   const data = {
     action: "add_employee",
@@ -338,18 +322,18 @@ window.addEmployee = async () => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
     if (r.success) alert(r.msg || "Ажилтан нэмэгдлээ");
     else alert(r.msg || "Add employee error");
   } catch (e) {
+    console.error(e);
     alert("Алдаа! (add_employee)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Add item (Admin)
-// --------------------
 window.addItem = async () => {
   const data = {
     action: "add_item",
@@ -362,7 +346,9 @@ window.addItem = async () => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(data) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
+
     if (r.success) {
       alert("Бараа нэмэгдлээ");
       window.refreshData();
@@ -370,14 +356,13 @@ window.addItem = async () => {
       alert(r.msg || "Add item error");
     }
   } catch (e) {
+    console.error(e);
     alert("Алдаа! (add_item)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Change password
-// --------------------
 window.changePassword = async () => {
   const oldP = document.getElementById('old-pass').value;
   const newP = document.getElementById('new-pass').value;
@@ -388,26 +373,23 @@ window.changePassword = async () => {
   showLoading(true);
   try {
     const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "change_pass", code: currentUser.code, oldP, newP }) });
-    const r = await res.json();
+    const text = await res.text();
+    const r = JSON.parse(text);
     if (r.success) alert("Амжилттай!");
     else alert(r.msg || "Password change error");
   } catch (e) {
+    console.error(e);
     alert("Алдаа! (change_pass)");
+  } finally {
+    showLoading(false);
   }
-  showLoading(false);
 };
 
-// --------------------
-// Logout
-// --------------------
 window.logout = () => {
   localStorage.removeItem('ett_user');
   location.reload();
 };
 
-// --------------------
-// Startup
-// --------------------
 window.onload = () => {
   currentUser = JSON.parse(localStorage.getItem('ett_user'));
   if (currentUser) initApp();
