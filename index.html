@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETT PPE v6.9 (Final Login Fixed)</title>
+    <title>ETT PPE v7.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -31,27 +31,27 @@
 
     <div id="main-page" class="h-screen flex flex-col overflow-hidden hidden">
         <header class="app-header">
-            <button onclick="toggleSidebar()" class="text-xl p-2"><i class="fas fa-bars"></i></button>
+            <button onclick="window.toggleSidebar()" class="text-xl p-2"><i class="fas fa-bars"></i></button>
             <div class="font-black italic text-xs uppercase tracking-tighter text-blue-400">ETT PPE System</div>
-            <button onclick="refreshData()" class="bg-blue-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase flex items-center shadow-lg">
+            <button onclick="window.refreshData()" class="bg-blue-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase flex items-center shadow-lg">
                 <i class="fas fa-sync-alt mr-1"></i> Шинэчлэх
             </button>
         </header>
 
-        <div id="sidebar-overlay" onclick="toggleSidebar()"></div>
+        <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
         <aside id="sidebar">
             <div class="p-6 border-b border-slate-800 flex justify-between items-center">
                 <span class="font-black italic text-blue-500 uppercase">Цэс</span>
-                <i class="fas fa-times text-slate-500" onclick="toggleSidebar()"></i>
+                <i class="fas fa-times text-slate-500" onclick="window.toggleSidebar()"></i>
             </div>
             <nav class="p-4 flex-1">
-                <button onclick="showTab('orders', this)" class="nav-btn active"><i class="fas fa-list-ul mr-3"></i> Жагсаалт</button>
-                <button id="nav-history" onclick="showTab('emp-history', this)" class="nav-btn"><i class="fas fa-history mr-3"></i> Ажилтны түүх</button>
-                <button id="nav-admin" onclick="showTab('admin-panel', this)" class="nav-btn"><i class="fas fa-user-shield mr-3"></i> Удирдлага</button>
-                <button id="nav-profile" onclick="showTab('profile', this)" class="nav-btn"><i class="fas fa-key mr-3"></i> Нууц үг</button>
+                <button onclick="window.showTab('orders', this)" class="nav-btn active"><i class="fas fa-list-ul mr-3"></i> Жагсаалт</button>
+                <button id="nav-history" onclick="window.showTab('emp-history', this)" class="nav-btn"><i class="fas fa-history mr-3"></i> Ажилтны түүх</button>
+                <button id="nav-admin" onclick="window.showTab('admin-panel', this)" class="nav-btn"><i class="fas fa-user-shield mr-3"></i> Удирдлага</button>
+                <button id="nav-profile" onclick="window.showTab('profile', this)" class="nav-btn"><i class="fas fa-key mr-3"></i> Нууц үг</button>
             </nav>
             <div class="p-4 border-t border-slate-800">
-                <button onclick="logout()" class="w-full bg-red-600/10 text-red-500 p-3 rounded-xl text-[10px] font-black uppercase font-bold">Системээс гарах</button>
+                <button onclick="window.logout()" class="w-full bg-red-600/10 text-red-500 p-3 rounded-xl text-[10px] font-black uppercase font-bold">Системээс гарах</button>
             </div>
         </aside>
 
@@ -59,19 +59,20 @@
             <div id="tab-orders" class="block">
                 <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-3 mb-4">
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div><label class="filter-label">Барааны нэр</label><select id="filter-item" onchange="applyFilters()"><option value="">Бүх бараа</option></select></div>
-                        <div><label class="filter-label">Төлөв</label><select id="filter-status" onchange="applyFilters()"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Зөвшөөрсөн">Олгосон</option><option value="Татгалзсан">Татгалзсан</option></select></div>
-                        <div><label class="filter-label">Он</label><select id="filter-year" onchange="applyFilters()"></select></div>
-                        <div><label class="filter-label">Сар</label><select id="filter-month" onchange="applyFilters()"></select></div>
+                        <div><label class="filter-label">Барааны нэр</label><select id="filter-item" onchange="window.applyFilters()"><option value="">Бүх бараа</option></select></div>
+                        <div><label class="filter-label">Төлөв</label><select id="filter-status" onchange="window.applyFilters()"><option value="">Бүх төлөв</option><option value="Хүлээгдэж буй">Хүлээгдэж буй</option><option value="Зөвшөөрсөн">Зөвшөөрсөн</option><option value="Татгалзсан">Татгалзсан</option></select></div>
+                        <div><label class="filter-label">Он</label><select id="filter-year" onchange="window.applyFilters()"></select></div>
+                        <div><label class="filter-label">Сар</label><select id="filter-month" onchange="window.applyFilters()"></select></div>
                     </div>
                     <div class="grid grid-cols-3 gap-1.5 border-t pt-2">
-                        <div><label class="filter-label">Ажилтны нэр</label><input type="text" id="search-name" oninput="applyFilters()" placeholder="Нэр..." class="!px-2"></div>
-                        <div><label class="filter-label">Код</label><input type="text" id="search-code" oninput="applyFilters()" placeholder="Код..." class="!px-2"></div>
-                        <div><label class="filter-label">Албан тушаал</label><input type="text" id="search-role" oninput="applyFilters()" placeholder="Тушаал..." class="!px-2"></div>
+                        <div><label class="filter-label">Ажилтны нэр</label><input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Хайх..." class="!px-2"></div>
+                        <div><label class="filter-label">Ажилтны код</label><input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Хайх..." class="!px-2"></div>
+                        <div><label class="filter-label">Албан тушаал</label><input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Албан тушаалаар шүүх..." class="!px-2"></div>
                     </div>
                 </div>
                 <div id="orders-list-container" class="space-y-3 pb-10"></div>
             </div>
+
             <div id="tab-admin-panel" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Удирдлагын хэсэг</div></div>
             <div id="tab-emp-history" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Ажилтны түүх</div></div>
             <div id="tab-profile" class="hidden"><div class="p-10 text-center text-slate-400 font-bold uppercase text-[10px]">Нууц үг солих</div></div>
@@ -83,12 +84,12 @@
             <div class="text-center mb-8">
                 <div class="inline-block p-4 bg-blue-50 rounded-3xl mb-4"><i class="fas fa-shield-alt text-3xl text-blue-600"></i></div>
                 <h2 class="text-xl font-black text-slate-800 uppercase tracking-tight">PPE Нэвтрэх</h2>
-                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Ажилтны код болон нууц үгээ оруулна уу</p>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Системд нэвтрэх код таглана уу</p>
             </div>
             <div class="space-y-4">
-                <input type="text" id="login-user" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
+                <input type="text" id="login-user" placeholder="Нэвтрэх код" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
                 <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border-none rounded-2xl text-center font-bold">
-                <button onclick="handleLogin()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Нэвтрэх</button>
+                <button onclick="window.handleLogin()" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Нэвтрэх</button>
             </div>
         </div>
     </div>
@@ -104,8 +105,7 @@
         };
 
         window.showTab = function(tabName, btn) {
-            const tabs = ['orders', 'admin-panel', 'profile', 'emp-history'];
-            tabs.forEach(t => {
+            ['orders', 'admin-panel', 'profile', 'emp-history'].forEach(t => {
                 const el = document.getElementById('tab-' + t);
                 if(el) el.classList.add('hidden');
             });
@@ -113,29 +113,30 @@
             if(activeTab) activeTab.classList.remove('hidden');
             document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             if(btn) btn.classList.add('active');
-            if(window.innerWidth < 1024) toggleSidebar();
+            if(window.innerWidth < 1024) window.toggleSidebar();
         };
 
-        async function handleLogin() {
+        window.handleLogin = async function() {
             const userCode = document.getElementById('login-user').value.trim();
             const password = document.getElementById('login-pass').value.trim();
             if(!userCode || !password) return alert("Мэдээллээ бүрэн бөглөнө үү!");
 
             document.getElementById('loading').classList.remove('hidden');
             try {
+                // ТАНЫ SCRIPT-Д ТААРУУЛЖ 'pass' ТҮЛХҮҮР ҮГИЙГ АШИГЛАВ
                 const res = await fetch(API_URL, { 
                     method: 'POST', 
-                    body: JSON.stringify({ action: "login", code: userCode, password: password }) 
+                    body: JSON.stringify({ action: "login", code: userCode, pass: password }) 
                 });
-                const user = await res.json();
-                if(user.success) {
-                    localStorage.setItem('ett_user', JSON.stringify(user));
-                    currentUser = user;
+                const result = await res.json();
+                if(result.success) {
+                    localStorage.setItem('ett_user', JSON.stringify(result.user));
+                    currentUser = result.user;
                     initApp();
                 } else { alert("Код эсвэл нууц үг буруу байна!"); }
             } catch(e) { alert("Холболтын алдаа!"); }
             document.getElementById('loading').classList.add('hidden');
-        }
+        };
 
         window.logout = function() {
             if(confirm("Та системээс гарахдаа итгэлтэй байна уу?")) {
@@ -148,17 +149,14 @@
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-page').classList.remove('hidden');
             
-            // Админ эрхийг шалгаж цэсүүдийг харуулах/нуух
+            // ТАНЫ SCRIPT-ЭЭС ИРЖ БУЙ 'type' УТГААР ЦЭСИЙГ УДИРДАНА
             if(currentUser && currentUser.type !== 'admin') {
-                if(document.getElementById('nav-admin')) document.getElementById('nav-admin').classList.add('hidden');
-                if(document.getElementById('nav-history')) document.getElementById('nav-history').classList.add('hidden');
-            } else {
-                if(document.getElementById('nav-admin')) document.getElementById('nav-admin').classList.remove('hidden');
-                if(document.getElementById('nav-history')) document.getElementById('nav-history').classList.remove('hidden');
+                document.getElementById('nav-admin').style.display = 'none';
+                document.getElementById('nav-history').style.display = 'none';
             }
             
             setupFilters();
-            refreshData();
+            window.refreshData();
         }
 
         window.refreshData = async function() {
@@ -167,11 +165,13 @@
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
                 const data = await res.json();
                 allOrders = data.orders || [];
+                
                 const items = [...new Set(allOrders.map(o => o.item))].filter(Boolean);
                 let itH = '<option value="">Бүх бараа</option>';
                 items.forEach(it => itH += `<option value="${it}">${it.toUpperCase()}</option>`);
                 document.getElementById('filter-item').innerHTML = itH;
-                applyFilters();
+                
+                window.applyFilters();
             } catch(e) { console.log(e); }
             document.getElementById('loading').classList.add('hidden');
         };
@@ -186,7 +186,8 @@
             const mF = document.getElementById('filter-month').value;
 
             const filtered = allOrders.filter(o => {
-                const d = new Date(o.requestedDate);
+                // ТАНЫ SCRIPT-ИЙН 'get_all_data' ХЭСГИЙН ТҮЛХҮҮР ҮГСЭЭР:
+                const d = new Date(o.requestedDate); 
                 const mN = nS === "" || (o.ner && o.ner.toLowerCase().includes(nS)) || (o.ovog && o.ovog.toLowerCase().includes(nS));
                 const mC = cS === "" || (o.code && o.code.toString().includes(cS));
                 const mR = rS === "" || (o.role && o.role.toLowerCase().includes(rS));
@@ -202,6 +203,7 @@
         function renderOrders(orders) {
             const container = document.getElementById('orders-list-container');
             if(!orders.length) { container.innerHTML = '<div class="text-center p-10 text-slate-400 text-[10px] font-black uppercase italic">Мэдээлэл олдсонгүй</div>'; return; }
+            
             container.innerHTML = orders.slice().reverse().map(o => {
                 let color = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-700' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 return `<div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-3">
@@ -211,7 +213,7 @@
                     </div>
                     <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-[10px] font-bold">
                         <div><span class="text-[7px] text-slate-400 block uppercase">Бараа</span>${o.item}</div>
-                        <div class="text-right"><span class="text-[7px] text-slate-400 block uppercase">Хэмжээ</span>${o.size} / ${o.quantity}ш</div>
+                        <div class="text-right"><span class="text-[7px] text-slate-400 block uppercase">Хэмжээ / Тоо</span>${o.size} / ${o.quantity}ш</div>
                     </div>
                 </div>`;
             }).join('');
