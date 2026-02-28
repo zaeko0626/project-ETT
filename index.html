@@ -11,6 +11,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Manrope', sans-serif; background-color: #f8fafc; height: 100vh; overflow: hidden; }
         
+        /* Layout */
         .main-wrapper { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
         #sidebar { 
             position: fixed; left: 0; top: 0; bottom: 0; width: 280px; 
@@ -23,6 +24,7 @@
             #sidebar-overlay { display: none !important; }
         }
 
+        /* Sidebar Buttons */
         .nav-btn {
             width: 100%; padding: 14px 20px; border-radius: 12px;
             display: flex; align-items: center; font-weight: 800; font-size: 11px;
@@ -40,19 +42,18 @@
             padding: 12px 20px; background: #0f172a; color: white; flex-shrink: 0;
         }
 
-        /* Card Design */
+        /* Order Card */
         .order-card { background: white; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .card-grid { display: grid; grid-template-columns: 1.5fr 1.5fr 0.8fr 1fr; padding: 16px 20px; align-items: center; gap: 15px; }
         
         .label-text { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
-        .val-full-name { font-size: 14px; font-weight: 800; color: #1e293b; text-transform: uppercase; line-height: 1.2; }
+        .val-full-name { font-size: 13px; font-weight: 800; color: #1e293b; text-transform: uppercase; }
         .val-role { font-size: 10px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-top: 2px; }
-        .val-id-code { font-size: 10px; font-weight: 800; color: #64748b; margin-top: 2px; font-family: monospace; }
+        .val-id-code { font-size: 10px; font-weight: 800; color: #64748b; margin-top: 2px; }
 
-        .btn-action { padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-action { padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 6px; border: none; cursor: pointer; }
         .btn-approve { background: #10b981; color: white; }
         .btn-reject { background: #ef4444; color: white; }
-        .btn-action:active { transform: scale(0.95); }
 
         .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 9px; font-weight: 800; text-transform: uppercase; display: inline-block; }
 
@@ -69,8 +70,8 @@
     <div id="login-page" class="flex h-screen items-center justify-center p-6 bg-slate-100">
         <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
             <h1 class="text-4xl font-black mb-10 italic text-slate-900">ETT <span class="text-blue-600">PPE</span></h1>
-            <input type="text" id="login-code" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border rounded-2xl mb-4 font-bold text-center outline-none">
-            <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border rounded-2xl mb-6 font-bold text-center outline-none">
+            <input type="text" id="login-code" placeholder="Ажилтны код" class="w-full p-4 bg-slate-50 border rounded-2xl mb-4 font-bold text-center outline-none focus:border-blue-500">
+            <input type="password" id="login-pass" placeholder="Нууц үг" class="w-full p-4 bg-slate-50 border rounded-2xl mb-6 font-bold text-center outline-none focus:border-blue-500">
             <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl uppercase shadow-lg active:scale-95 transition-all">Нэвтрэх</button>
         </div>
     </div>
@@ -98,9 +99,9 @@
         <div class="content-area">
             <header class="mobile-header">
                 <button onclick="toggleSidebar()" class="text-xl lg:hidden"><i class="fas fa-bars"></i></button>
-                <span class="font-black italic text-[11px] uppercase tracking-widest">ХҮСЭЛТИЙН ЖАГСААЛТ</span>
-                <button onclick="refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase flex items-center shadow-lg active:scale-95 transition-all">
-                    <i class="fas fa-sync-alt mr-2"></i> ШИНЭЧЛЭХ
+                <span class="font-black italic text-[11px] uppercase tracking-widest" id="header-title">ХҮСЭЛТИЙН ЖАГСААЛТ</span>
+                <button onclick="refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-white font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all">
+                    <i class="fas fa-sync-alt mr-1"></i> ШИНЭЧЛЭХ
                 </button>
             </header>
 
@@ -116,7 +117,7 @@
                         <select id="filter-year" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black outline-none"></select>
                         <select id="filter-month" onchange="applyFilters()" class="p-3 bg-white border rounded-xl text-[10px] font-black outline-none"></select>
                     </div>
-                    <div id="orders-list-container" class="space-y-2"></div>
+                    <div id="orders-list-container"></div>
                 </div>
 
                 <div id="tab-admin-panel" class="hidden space-y-4">
@@ -152,7 +153,10 @@
         let currentUser = JSON.parse(localStorage.getItem('ett_user'));
         let allOrders = [];
 
-        window.onload = () => { setupFilters(); if(currentUser) initSystem(); };
+        window.onload = () => { 
+            setupFilters(); 
+            if(currentUser) initSystem(); 
+        };
 
         function setupFilters() {
             const yearSelect = document.getElementById('filter-year');
@@ -167,18 +171,35 @@
         }
 
         async function handleLogin() {
-            const code = document.getElementById('login-code').value;
-            const pass = document.getElementById('login-pass').value;
-            if(code === "admin" && pass === "12345") {
-                currentUser = { code: "admin", type: "admin", ner: "Администратор" };
-                localStorage.setItem('ett_user', JSON.stringify(currentUser));
-                initSystem();
-            } else { alert("Нэвтрэх код буруу!"); }
+            const inputCode = document.getElementById('login-code').value.trim();
+            const inputPass = document.getElementById('login-pass').value.trim();
+            if(!inputCode || !inputPass) return alert("Мэдээллээ оруулна уу!");
+
+            document.getElementById('loading').style.display = 'flex';
+            try {
+                // Sheets-ээс хэрэглэгч шалгах
+                const res = await fetch(API_URL, { 
+                    method: 'POST', 
+                    body: JSON.stringify({ action: "login", code: inputCode, pass: inputPass }) 
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    currentUser = result.user;
+                    localStorage.setItem('ett_user', JSON.stringify(currentUser));
+                    initSystem();
+                } else { alert("Код эсвэл нууц үг буруу!"); }
+            } catch(e) { alert("Холболтын алдаа!"); }
+            document.getElementById('loading').style.display = 'none';
         }
 
         function initSystem() {
             document.getElementById('login-page').classList.add('hidden');
             document.getElementById('main-page').classList.remove('hidden');
+            if(currentUser.type !== 'admin') {
+                document.getElementById('nav-admin').classList.add('hidden');
+                document.getElementById('nav-history').classList.add('hidden');
+            }
             refreshData();
         }
 
@@ -188,6 +209,10 @@
                 const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_all_data" }) });
                 const data = await res.json();
                 allOrders = data.orders || [];
+                
+                if(currentUser.type !== 'admin') {
+                    allOrders = allOrders.filter(o => o.code == currentUser.code);
+                }
                 applyFilters();
             } catch(e) { console.error(e); }
             document.getElementById('loading').style.display = 'none';
@@ -213,15 +238,13 @@
         function renderOrders(orders) {
             const container = document.getElementById('orders-list-container');
             if(orders.length === 0) {
-                container.innerHTML = '<div class="text-center p-10 text-slate-400 font-bold text-xs uppercase">Мэдээлэл олдсонгүй</div>';
+                container.innerHTML = '<div class="text-center p-10 text-slate-400 font-bold text-[10px] uppercase">Мэдээлэл олдсонгүй</div>';
                 return;
             }
             container.innerHTML = orders.slice().reverse().map(o => {
                 const isPending = o.status === 'Хүлээгдэж буй';
                 let statusClass = o.status === 'Зөвшөөрсөн' ? 'bg-green-100 text-green-700' : (o.status === 'Татгалзсан' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
                 let statusText = o.status === 'Зөвшөөрсөн' ? 'ОЛГОСОН' : o.status.toUpperCase();
-                
-                // Огноо формат
                 const d = new Date(o.requestedDate);
                 const dateStr = `${d.getFullYear()}.${(d.getMonth()+1).toString().padStart(2,'0')}.${d.getDate().toString().padStart(2,'0')}`;
 
@@ -234,24 +257,21 @@
                             <div class="val-role">${o.role || 'Ажилтан'}</div>
                             <div class="val-id-code">ID: ${o.code || '---'}</div>
                         </div>
-
                         <div>
                             <div class="label-text">Нэг бүрийн хамгаалах хэрэгсэл</div>
                             <div class="val-full-name text-blue-600">${o.item || ''}</div>
-                            <div class="text-[10px] font-bold text-slate-500 mt-1 uppercase">Размер: ${o.size || '-'} | Тоо: ${o.quantity || '1'}</div>
+                            <div class="text-[10px] font-bold text-slate-500 mt-1 uppercase">РАЗМЕР: ${o.size || '-'} | ТОО: ${o.quantity || '1'}</div>
                         </div>
-
                         <div class="text-center">
                             <div class="label-text">Төлөв</div>
                             <span class="status-badge ${statusClass}">${statusText}</span>
                             <div class="text-[8px] text-slate-400 mt-2 font-mono">${dateStr}</div>
                         </div>
-
                         <div class="flex flex-col gap-2">
-                            ${isPending ? `
+                            ${(isPending && currentUser.type === 'admin') ? `
                                 <button onclick="updateStatus('${o.id}', 'Зөвшөөрсөн')" class="btn-action btn-approve"><i class="fas fa-check"></i> Олгох</button>
                                 <button onclick="updateStatus('${o.id}', 'Татгалзсан')" class="btn-action btn-reject"><i class="fas fa-times"></i> Татгалзах</button>
-                            ` : '<div class="text-center text-[9px] font-black text-slate-300 italic uppercase">Шийдвэрлэсэн</div>'}
+                            ` : `<div class="text-center text-[9px] font-black text-slate-300 italic uppercase">${isPending ? 'Хүлээгдэж буй' : 'Шийдвэрлэсэн'}</div>`}
                         </div>
                     </div>
                 </div>`;
@@ -259,12 +279,40 @@
         }
 
         async function updateStatus(id, status) {
-            if(!confirm("Та энэ шийдвэрийг баталгаажуулах уу?")) return;
+            if(!confirm("Баталгаажуулах уу?")) return;
             document.getElementById('loading').style.display = 'flex';
-            try {
-                await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "update_status", id, status }) });
-                refreshData();
-            } catch(e) { alert("Алдаа гарлаа"); }
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "update_status", id, status }) });
+            refreshData();
+        }
+
+        async function addNewItem() {
+            const name = document.getElementById('new-item-name').value;
+            const sizes = document.getElementById('new-item-sizes').value;
+            if(!name) return alert("Нэр оруулна уу");
+            document.getElementById('loading').style.display = 'flex';
+            await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "add_item", name, sizes }) });
+            alert("Амжилттай бүртгэгдлээ");
+            document.getElementById('new-item-name').value = '';
+            document.getElementById('new-item-sizes').value = '';
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        async function loadEmployeeHistory() {
+            const code = document.getElementById('history-search-code').value;
+            if(!code) return alert("Код оруулна уу");
+            document.getElementById('loading').style.display = 'flex';
+            const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: "get_history", code }) });
+            const history = await res.json();
+            const resCont = document.getElementById('history-result');
+            if(history.length === 0) resCont.innerHTML = "Түүх олдсонгүй";
+            else {
+                resCont.innerHTML = history.map(h => `
+                    <div class="p-4 bg-white border-b flex justify-between items-center">
+                        <div><b class="text-xs">${h.item}</b><br><small>${h.date}</small></div>
+                        <span class="text-[10px] font-black">${h.status}</span>
+                    </div>
+                `).join('');
+            }
             document.getElementById('loading').style.display = 'none';
         }
 
