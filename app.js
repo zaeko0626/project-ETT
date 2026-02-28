@@ -1,5 +1,5 @@
 // ✅ 1) API URL: Apps Script Web App URL-ээ энд тавина
-const API_URL = "https://script.google.com/macros/s/AKfycbw3yXsQ-A3H6U7xhy-6E3Q1C5a4xmbnnZfpWj-FeCG2-zpg0sFby01-RWgUK9XolKay/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx1iUbzrQIlb-Smh8mMq8gLh5YyTkeUQGha1ir1_mprxddjxQzsX6v1DcD4glhOAjPh/exec";
 
 let allOrders = [];
 let allItems = [];
