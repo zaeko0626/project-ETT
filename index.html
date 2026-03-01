@@ -11,8 +11,7 @@
 </head>
 
 <body>
-
-  <!-- LOADING (full page) -->
+  <!-- LOADING -->
   <div id="loading-overlay" class="hidden">
     <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-4"></div>
     <p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Түр хүлээнэ үү...</p>
@@ -22,7 +21,7 @@
   <div id="modal-overlay" class="hidden fixed inset-0 z-[999999]">
     <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="window.closeModal()"></div>
     <div class="relative w-full h-full flex items-center justify-center p-4">
-      <div class="w-full max-w-2xl bg-white rounded-[24px] border border-slate-200 shadow-xl overflow-hidden animate-fade-in">
+      <div class="w-full max-w-3xl bg-white rounded-[24px] border border-slate-200 shadow-xl overflow-hidden animate-fade-in">
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
           <div id="modal-title" class="font-black uppercase text-[12px] text-slate-800">Modal</div>
           <button class="text-slate-500 hover:text-slate-900" onclick="window.closeModal()">
@@ -34,7 +33,6 @@
     </div>
   </div>
 
-  <!-- MAIN APP -->
   <div id="main-page" class="h-screen flex flex-col overflow-hidden hidden">
     <header class="app-header">
       <button onclick="window.toggleSidebar()" class="text-xl p-2 rounded-lg">
@@ -57,11 +55,11 @@
       <div class="p-6 border-b border-slate-800 space-y-4">
         <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
 
-        <!-- User card -->
         <div class="sb-card">
           <div id="sb-name" class="sb-name"></div>
           <div id="sb-id" class="sb-id"></div>
           <div id="sb-role" class="sb-role"></div>
+          <div id="sb-extra" class="sb-extra"></div>
         </div>
       </div>
 
@@ -76,7 +74,6 @@
           <span class="nav-text">Хүсэлт гаргах</span>
         </button>
 
-        <!-- Admin: Items -->
         <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn hidden">
           <i class="fa-solid fa-boxes-stacked"></i>
           <span class="nav-text">Барааны мэдээлэл</span>
@@ -100,6 +97,8 @@
       <!-- ORDERS -->
       <div id="tab-orders" class="tab-content block">
         <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
+
+          <!-- filters row 1 -->
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label class="filter-label">Бараа</label>
@@ -124,6 +123,23 @@
             </div>
           </div>
 
+          <!-- filters row 2: Place / Dept / Shift -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-4">
+            <div>
+              <label class="filter-label">Газар</label>
+              <select id="filter-place" onchange="window.onPlaceChange()"></select>
+            </div>
+            <div>
+              <label class="filter-label">Хэлтэс</label>
+              <select id="filter-dept" onchange="window.applyFilters()"></select>
+            </div>
+            <div>
+              <label class="filter-label">Ээлж</label>
+              <select id="filter-shift" onchange="window.applyFilters()"></select>
+            </div>
+          </div>
+
+          <!-- search row -->
           <div class="grid grid-cols-3 gap-2 border-t pt-4">
             <input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр..." />
             <input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код..." />
@@ -156,11 +172,9 @@
         </div>
       </div>
 
-      <!-- ITEMS (ADMIN) -->
+      <!-- ITEMS -->
       <div id="tab-items" class="tab-content hidden">
         <div class="max-w-6xl mx-auto space-y-4">
-
-          <!-- Add item card -->
           <div class="card card-add-item">
             <div class="flex items-center gap-3 mb-3">
               <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
@@ -178,20 +192,15 @@
             </div>
           </div>
 
-          <!-- Filter -->
           <div class="card">
             <div class="flex flex-col md:flex-row md:items-center gap-3">
               <div class="flex-1">
                 <label class="filter-label">Бараа шүүх</label>
                 <input id="items-filter" placeholder="Нэр эсвэл размер..." oninput="window.renderItemsList()" />
               </div>
-              <button class="btn-primary md:w-[180px]" onclick="window.renderItemsList(true)">
-                Дахин ачааллах
-              </button>
             </div>
           </div>
 
-          <!-- List -->
           <div id="items-list-container" class="space-y-3 pb-24"></div>
         </div>
       </div>
@@ -224,7 +233,6 @@
     </div>
   </div>
 
-  <!-- IMPORTANT: no backslash here -->
   <script src="./app.js?v=20260302"></script>
 </body>
 </html>
