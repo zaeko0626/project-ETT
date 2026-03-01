@@ -372,3 +372,49 @@ input:focus,select:focus{
   -webkit-overflow-scrolling:touch;
   background:#f1f5f9;
 }
+/* ---------- Header Update ---------- */
+.app-title{
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.header-btn{
+  border:none;
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  height:38px;
+  min-width:38px;
+  padding:0 12px;
+  border-radius:14px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  font-weight:800;
+  font-size:11px;
+}
+
+.header-btn:hover{
+  background:rgba(255,255,255,.18);
+}
+
+.refresh-btn{
+  background:#2563eb;
+}
+
+.refresh-btn:hover{
+  background:#1d4ed8;
+}
+
+.refresh-text{
+  display:none;
+}
+
+/* PC дээр text харагдана */
+@media(min-width:1024px){
+  .refresh-text{
+    display:inline;
+  }
+}
