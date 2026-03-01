@@ -2,25 +2,39 @@
 <html lang="mn">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ETT PPE System</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
-  <!-- cache-bust: өөрчлөлт бүрт тоогоо соль -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css?v=20260302" />
 </head>
 
 <body>
 
-  <!-- Loading -->
+  <!-- LOADING (full page) -->
   <div id="loading-overlay" class="hidden">
     <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-4"></div>
     <p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Түр хүлээнэ үү...</p>
   </div>
 
-  <!-- Main -->
+  <!-- MODAL -->
+  <div id="modal-overlay" class="hidden fixed inset-0 z-[999999]">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="window.closeModal()"></div>
+    <div class="relative w-full h-full flex items-center justify-center p-4">
+      <div class="w-full max-w-2xl bg-white rounded-[24px] border border-slate-200 shadow-xl overflow-hidden animate-fade-in">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+          <div id="modal-title" class="font-black uppercase text-[12px] text-slate-800">Modal</div>
+          <button class="text-slate-500 hover:text-slate-900" onclick="window.closeModal()">
+            <i class="fa-solid fa-xmark text-xl"></i>
+          </button>
+        </div>
+        <div id="modal-body" class="p-5 max-h-[70vh] overflow-y-auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
   <div id="main-page" class="h-screen flex flex-col overflow-hidden hidden">
     <header class="app-header">
       <button onclick="window.toggleSidebar()" class="text-xl p-2 rounded-lg">
@@ -28,7 +42,7 @@
       </button>
 
       <div class="flex flex-col items-center text-center">
-        <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE System</div>
+        <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE SYSTEM</div>
         <div id="user-display-name" class="text-[7px] font-black uppercase text-slate-400"></div>
       </div>
 
@@ -40,14 +54,14 @@
     <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 
     <aside id="sidebar">
-      <div class="p-6 border-b border-slate-800">
+      <div class="p-6 border-b border-slate-800 space-y-4">
         <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
 
-        <!-- User/Admin card -->
-        <div id="sidebar-user-card" class="mt-4 sb-card">
-          <div id="sb-name" class="sb-name">...</div>
-          <div id="sb-id" class="sb-id">...</div>
-          <div id="sb-role" class="sb-role">...</div>
+        <!-- User card -->
+        <div class="sb-card">
+          <div id="sb-name" class="sb-name"></div>
+          <div id="sb-id" class="sb-id"></div>
+          <div id="sb-role" class="sb-role"></div>
         </div>
       </div>
 
@@ -62,8 +76,9 @@
           <span class="nav-text">Хүсэлт гаргах</span>
         </button>
 
-        <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn">
-          <i class="fas fa-box-open"></i>
+        <!-- Admin: Items -->
+        <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn hidden">
+          <i class="fa-solid fa-boxes-stacked"></i>
           <span class="nav-text">Барааны мэдээлэл</span>
         </button>
 
@@ -82,7 +97,7 @@
 
     <main class="scroll-area">
 
-      <!-- Orders -->
+      <!-- ORDERS -->
       <div id="tab-orders" class="tab-content block">
         <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -95,7 +110,7 @@
               <select id="filter-status" onchange="window.applyFilters()">
                 <option value="">Бүгд</option>
                 <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-                <option value="Зөвшөөрсөн">Зөвшөөрсөн</option>
+                <option value="Зөвшөөрсөн">Олгосон</option>
                 <option value="Татгалзсан">Татгалзсан</option>
               </select>
             </div>
@@ -110,16 +125,16 @@
           </div>
 
           <div class="grid grid-cols-3 gap-2 border-t pt-4">
-            <input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр...">
-            <input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код...">
-            <input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Талбар...">
+            <input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр..." />
+            <input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код..." />
+            <input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Талбар..." />
           </div>
         </div>
 
         <div id="orders-list-container" class="space-y-3 pb-24"></div>
       </div>
 
-      <!-- Request (user) -->
+      <!-- REQUEST -->
       <div id="tab-request" class="tab-content hidden">
         <div class="max-w-md mx-auto card">
           <h3 class="font-black uppercase text-xs mb-6 text-blue-600">Шинэ хүсэлт</h3>
@@ -134,62 +149,61 @@
             </div>
             <div>
               <label class="filter-label">Тоо</label>
-              <input type="number" id="req-qty" value="1">
+              <input type="number" id="req-qty" value="1" />
             </div>
             <button onclick="window.submitRequest()" class="btn-primary">Илгээх</button>
           </div>
         </div>
       </div>
 
-      <!-- Items (admin) -->
+      <!-- ITEMS (ADMIN) -->
       <div id="tab-items" class="tab-content hidden">
-        <!-- Top: Add item (compact) -->
-      <div class="card card-add-item">
-          <div class="flex items-center justify-between mb-3">
-            <div class="font-black uppercase text-[11px] text-slate-800">Бараа нэмэх</div>
-            <div class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></div>
+        <div class="max-w-6xl mx-auto space-y-4">
+
+          <!-- Add item card -->
+          <div class="card card-add-item">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
+              <div class="flex-1">
+                <div class="font-black uppercase text-[11px] text-slate-800">Бараа нэмэх</div>
+                <div class="text-[9px] font-bold text-slate-500">Нэр + размерууд (таслалаар)</div>
+              </div>
+              <div class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <input type="text" id="new-item-name" placeholder="Барааны нэр" />
+              <input type="text" id="new-item-sizes" placeholder="Ж: 38,39,40" />
+              <button onclick="window.addItem()" class="btn-primary">Нэмэх</button>
+            </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div>
-              <label class="filter-label">Нэр</label>
-              <input type="text" id="new-item-name" placeholder="Ж: Гутал">
-            </div>
-            <div>
-              <label class="filter-label">Размерууд</label>
-              <input type="text" id="new-item-sizes" placeholder="Ж: 38,39,40">
-            </div>
-            <div class="flex items-end">
-              <button onclick="window.addItem()" class="btn-primary bg-orange-600">Нэмэх</button>
+          <!-- Filter -->
+          <div class="card">
+            <div class="flex flex-col md:flex-row md:items-center gap-3">
+              <div class="flex-1">
+                <label class="filter-label">Бараа шүүх</label>
+                <input id="items-filter" placeholder="Нэр эсвэл размер..." oninput="window.renderItemsList()" />
+              </div>
+              <button class="btn-primary md:w-[180px]" onclick="window.renderItemsList(true)">
+                Дахин ачааллах
+              </button>
             </div>
           </div>
+
+          <!-- List -->
+          <div id="items-list-container" class="space-y-3 pb-24"></div>
         </div>
-
-        <!-- Filter like Orders -->
-        <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-3 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="filter-label">Шүүх (нэр / размер)</label>
-              <input type="text" id="items-filter" placeholder="Ж: гутал / 40" oninput="window.renderItemsList()">
-            </div>
-            <div class="text-[9px] font-bold text-slate-500 flex items-end">
-              Нэр эсвэл размер бичээд автоматаар шүүнэ
-            </div>
-          </div>
-        </div>
-
-        <!-- List -->
-        <div id="items-list-container" class="space-y-3 pb-24"></div>
       </div>
 
-      <!-- Profile -->
+      <!-- PROFILE -->
       <div id="tab-profile" class="tab-content hidden">
         <div class="max-w-md mx-auto card text-center">
           <h3 class="font-black uppercase text-xs mb-6">Нууц үг солих</h3>
           <div class="space-y-4">
-            <input type="password" id="old-pass" placeholder="Хуучин">
-            <input type="password" id="new-pass" placeholder="Шинэ">
-            <input type="password" id="confirm-pass" placeholder="Давтах">
+            <input type="password" id="old-pass" placeholder="Хуучин" />
+            <input type="password" id="new-pass" placeholder="Шинэ" />
+            <input type="password" id="confirm-pass" placeholder="Давтах" />
             <button onclick="window.changePassword()" class="btn-primary bg-slate-800">Хадгалах</button>
           </div>
         </div>
@@ -198,29 +212,19 @@
     </main>
   </div>
 
-  <!-- Login -->
-  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6 hidden">
+  <!-- LOGIN -->
+  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6">
     <div class="w-full max-w-sm bg-white p-10 rounded-[3rem] text-center">
       <h2 class="text-xl font-black text-slate-800 uppercase mb-8">PPE LOGIN</h2>
       <div class="space-y-4">
-        <input type="text" id="login-user" placeholder="Код" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
-        <input type="password" id="login-pass" placeholder="Нууц үг" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
+        <input type="text" id="login-user" placeholder="Код" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black" />
+        <input type="password" id="login-pass" placeholder="Нууц үг" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black" />
         <button onclick="window.handleLogin()" class="btn-primary py-5">Нэвтрэх</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal -->
-  <div id="modal-overlay" class="modal-overlay hidden" onclick="window.closeModal()">
-    <div class="modal-card" onclick="event.stopPropagation()">
-      <div class="modal-head">
-        <div class="modal-title" id="modal-title">...</div>
-        <button class="modal-x" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-      <div id="modal-body" class="modal-body"></div>
-    </div>
-  </div>
-
+  <!-- IMPORTANT: no backslash here -->
   <script src="./app.js?v=20260302"></script>
 </body>
 </html>
