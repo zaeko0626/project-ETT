@@ -1,4 +1,4 @@
-const API_URL = "PUT_YOUR_SCRIPT_WEBAPP_URL_HERE";
+const API_URL = "https://script.google.com/macros/s/AKfycbwIAe-j6K7UWsgWf0WbrdQkogMFdYh5eItXS0RFkeHHG0MpFAA4P4s6UqT19Ctn18p7/exec";
 
 let allOrders = [];
 let allItems = [];
