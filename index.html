@@ -46,11 +46,10 @@
   </div>
 
   <!-- Right: refresh -->
-  <button class="header-btn refresh-btn" onclick="refreshData()">
-    <i class="fa-solid fa-rotate-right"></i>
-    <span class="refresh-text">Сэргээх</span>
-  </button>
-</div>
+<button class="header-btn refresh-btn" onclick="refreshData()">
+  <i class="fa-solid fa-rotate"></i>
+  <span class="refresh-text">СЭРГЭЭХ</span>
+</button>
 
     <!-- Sidebar overlay -->
     <div id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -115,7 +114,6 @@
       <div id="tab-orders" class="tab-content">
         <div class="tab-top">
           <div class="tab-title">Захиалгууд</div>
-          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
@@ -207,7 +205,6 @@
       <div id="tab-request" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">PPE хүсэлт</div>
-          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
@@ -241,7 +238,6 @@
       <div id="tab-items" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Барааны мэдээлэл</div>
-          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card card-add-item">
@@ -256,9 +252,9 @@
           <div style="height:12px"></div>
 
           <div class="filter-label">Нэр + размерууд (таслалаар)</div>
-          <input id="new-item-name" placeholder="Ж: Хувцас" />
+          <input id="new-item-name" placeholder="Жишээ нь: Өмд" />
           <div style="height:8px"></div>
-          <input id="new-item-sizes" placeholder="Ж: S,M,L,XL" />
+          <input id="new-item-sizes" placeholder="Жишээ нь: S,M,L,XL" />
 
           <div style="height:12px"></div>
           <button class="btn-primary" onclick="addItem()">Нэмэх</button>
@@ -287,7 +283,6 @@
       <div id="tab-employees" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Ажилтны мэдээлэл</div>
-          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card card-add-item">
@@ -305,11 +300,11 @@
           <div class="form-grid">
             <div>
               <div class="filter-label">Код (ID)</div>
-              <input id="emp-code" placeholder="Ж: 12345" />
+              <input id="emp-code" placeholder="Жишээ нь: 12345" />
             </div>
             <div>
               <div class="filter-label">Нууц үг</div>
-              <input id="emp-pass" placeholder="Ж: 12345" />
+              <input id="emp-pass" placeholder="Жишээ нь: 12345" />
             </div>
             <div>
               <div class="filter-label">Овог</div>
@@ -391,7 +386,6 @@
       <div id="tab-profile" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Нууц үг</div>
-          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
