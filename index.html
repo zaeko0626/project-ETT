@@ -8,8 +8,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-  <!-- cache-bust: тоог update бүрт өөрчил -->
-  <link rel="stylesheet" href="./styles.css?v=20260301" />
+  <!-- cache-bust: өөрчлөлт бүрт тоогоо соль -->
+  <link rel="stylesheet" href="./styles.css?v=20260302" />
 </head>
 
 <body>
@@ -29,7 +29,6 @@
 
       <div class="flex flex-col items-center text-center">
         <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE System</div>
-        <!-- ажилтан дээр app.js энэ мөрийг нуух -->
         <div id="user-display-name" class="text-[7px] font-black uppercase text-slate-400"></div>
       </div>
 
@@ -58,13 +57,11 @@
           <span class="nav-text">Жагсаалт</span>
         </button>
 
-        <!-- user only -->
         <button id="nav-request" onclick="window.showTab('request', this)" class="nav-btn">
           <i class="fas fa-plus-circle"></i>
           <span class="nav-text">Хүсэлт гаргах</span>
         </button>
 
-        <!-- admin only -->
         <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn">
           <i class="fas fa-box-open"></i>
           <span class="nav-text">Барааны мэдээлэл</span>
@@ -146,16 +143,16 @@
 
       <!-- Items (admin) -->
       <div id="tab-items" class="tab-content hidden">
-        <div class="card">
-          <div class="flex items-center justify-between gap-3 mb-4">
-            <h3 class="font-black uppercase text-[12px] text-slate-800">Барааны мэдээлэл</h3>
-            <span class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></span>
+        <!-- Top: Add item (compact) -->
+        <div class="card card-compact">
+          <div class="flex items-center justify-between mb-3">
+            <div class="font-black uppercase text-[11px] text-slate-800">Бараа нэмэх</div>
+            <div class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></div>
           </div>
 
-          <!-- Add item -->
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label class="filter-label">Барааны нэр</label>
+              <label class="filter-label">Нэр</label>
               <input type="text" id="new-item-name" placeholder="Ж: Гутал">
             </div>
             <div>
@@ -163,22 +160,25 @@
               <input type="text" id="new-item-sizes" placeholder="Ж: 38,39,40">
             </div>
             <div class="flex items-end">
-              <button onclick="window.addItem()" class="btn-primary bg-orange-600">Бараа нэмэх</button>
-            </div>
-          </div>
-
-          <!-- Filter -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-4">
-            <div>
-              <label class="filter-label">Шүүх (нэр/размер)</label>
-              <input type="text" id="items-filter" placeholder="Ж: гутал / 40" oninput="window.renderItemsList()">
-            </div>
-            <div class="flex items-end">
-              <button onclick="window.renderItemsList(true)" class="btn-primary bg-slate-800">Дахин ачаалах</button>
+              <button onclick="window.addItem()" class="btn-primary bg-orange-600">Нэмэх</button>
             </div>
           </div>
         </div>
 
+        <!-- Filter like Orders -->
+        <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-3 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="filter-label">Шүүх (нэр / размер)</label>
+              <input type="text" id="items-filter" placeholder="Ж: гутал / 40" oninput="window.renderItemsList()">
+            </div>
+            <div class="text-[9px] font-bold text-slate-500 flex items-end">
+              Нэр эсвэл размер бичээд автоматаар шүүнэ
+            </div>
+          </div>
+        </div>
+
+        <!-- List -->
         <div id="items-list-container" class="space-y-3 pb-24"></div>
       </div>
 
@@ -221,7 +221,6 @@
     </div>
   </div>
 
-  <!-- cache-bust -->
-  <script src="./app.js?v=20260301"></script>
+  <script src="./app.js?v=20260302"></script>
 </body>
 </html>
