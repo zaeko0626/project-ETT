@@ -17,16 +17,20 @@
 
   <!-- Modal -->
   <div id="modal-overlay" class="hidden" onclick="closeModal()">
-    <div class="card" style="max-width:680px;width:92%;margin:10vh auto" onclick="event.stopPropagation()">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-        <div id="modal-title" style="font-weight:900;font-size:14px;color:#0f172a">Modal</div>
-        <button class="btn-mini del" onclick="closeModal()">Хаах</button>
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div id="modal-title" class="modal-title">Modal</div>
+
+        <!-- ✅ X close -->
+        <button class="modal-x" aria-label="Close" onclick="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
-      <div style="height:10px"></div>
-      <div id="modal-body"></div>
+
+      <div class="modal-body" id="modal-body"></div>
     </div>
   </div>
-
+  
   <!-- MAIN -->
   <div id="main-page" class="hidden">
     <!-- Header -->
