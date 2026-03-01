@@ -34,11 +34,23 @@
   <!-- MAIN -->
   <div id="main-page" class="hidden">
     <!-- Header -->
-    <div class="app-header">
-      <button class="btn-mini edit" onclick="toggleSidebar()">☰</button>
-      <div style="font-weight:900;letter-spacing:.04em">ETT PPE SYSTEM</div>
-      <div id="user-display-name" class="hidden" style="font-weight:900;color:#93c5fd"></div>
-    </div>
+ <div class="app-header">
+  <!-- Left: menu -->
+  <button class="header-btn" onclick="toggleSidebar()">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
+  <!-- Center: title (same for admin & user) -->
+  <div class="app-title">
+    ETT PPE SYSTEM
+  </div>
+
+  <!-- Right: refresh -->
+  <button class="header-btn refresh-btn" onclick="refreshData()">
+    <i class="fa-solid fa-rotate-right"></i>
+    <span class="refresh-text">Сэргээх</span>
+  </button>
+</div>
 
     <!-- Sidebar overlay -->
     <div id="sidebar-overlay" onclick="closeSidebar()"></div>
