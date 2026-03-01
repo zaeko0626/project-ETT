@@ -1,14 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Manrope:wght@400;600;800&family=Noto+Sans:wght@400;600;800&display=swap');
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 :root{--vh:1vh;--sat:env(safe-area-inset-top,0px)}
 .hidden{display:none !important}
 
 body{
-  font-family:'Manrope',sans-serif;
+  font-family:'Manrope','Inter','Noto Sans','Roboto',Arial,sans-serif;
   background:#f1f5f9;
   height:calc(var(--vh)*100);
   overflow:hidden;
+  text-rendering:optimizeLegibility;
 }
 
 /* Header */
@@ -154,6 +155,9 @@ input:focus,select:focus{
   border:1px solid #e2e8f0;
   margin-bottom:12px;
   box-shadow:0 2px 4px rgba(0,0,0,.02);
+}
+.card-compact{
+  padding:12px 14px;
 }
 .btn-primary{
   background:#2563eb;
