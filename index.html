@@ -15,7 +15,7 @@
     <div style="margin-top:10px;font-weight:800;color:#64748b">Өгөгдөл татаж байна</div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal (items edit гэх мэт жижиг зүйлд хэвээр үлдээв) -->
   <div id="modal-overlay" class="hidden" onclick="closeModal()">
     <div class="card" style="max-width:680px;width:92%;margin:10vh auto" onclick="event.stopPropagation()">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -41,53 +41,54 @@
 
     <!-- Sidebar -->
     <div id="sidebar">
-      <div class="scroll-area">
-        <div class="sb-card">
-          <div class="sb-name" id="sb-name"></div>
-          <div class="sb-id" id="sb-id"></div>
-          <div class="sb-role" id="sb-role"></div>
-          <div class="sb-extra" id="sb-extra"></div>
+      <div class="sidebar-inner">
+        <div class="scroll-area sidebar-scroll">
+          <div class="sb-card">
+            <div class="sb-name" id="sb-name"></div>
+            <div class="sb-id" id="sb-id"></div>
+            <div class="sb-role" id="sb-role"></div>
+            <div class="sb-extra" id="sb-extra"></div>
+          </div>
+
+          <div style="height:14px"></div>
+          <div style="font-size:10px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em">
+            Үндсэн цэс
+          </div>
+          <div style="height:10px"></div>
+
+          <button class="nav-btn active" onclick="showTab('orders', this)">
+            <i class="fa-solid fa-list"></i>
+            <span class="nav-text">Жагсаалт</span>
+          </button>
+
+          <button class="nav-btn" id="nav-request" onclick="showTab('request', this)">
+            <i class="fa-solid fa-paper-plane"></i>
+            <span class="nav-text">Хүсэлт гаргах</span>
+          </button>
+
+          <button class="nav-btn" id="nav-items" onclick="showTab('items', this)">
+            <i class="fa-solid fa-box"></i>
+            <span class="nav-text">Барааны мэдээлэл</span>
+          </button>
+
+          <button class="nav-btn" id="nav-employees" onclick="showTab('employees', this)">
+            <i class="fa-solid fa-id-card"></i>
+            <span class="nav-text">Ажилтны мэдээлэл</span>
+          </button>
+
+          <button class="nav-btn" id="nav-profile" onclick="showTab('profile', this)">
+            <i class="fa-solid fa-key"></i>
+            <span class="nav-text">Нууц үг</span>
+          </button>
         </div>
 
-        <div style="height:14px"></div>
-        <div style="font-size:10px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em">
-          Үндсэн цэс
+        <!-- Logout fixed bottom (улаан box) -->
+        <div class="sidebar-footer">
+          <button class="logout-btn" onclick="logout()">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Гарах</span>
+          </button>
         </div>
-        <div style="height:10px"></div>
-
-        <button class="nav-btn active" onclick="showTab('orders', this)">
-          <i class="fa-solid fa-list"></i>
-          <span class="nav-text">Жагсаалт</span>
-        </button>
-
-        <button class="nav-btn" id="nav-request" onclick="showTab('request', this)">
-          <i class="fa-solid fa-paper-plane"></i>
-          <span class="nav-text">Хүсэлт гаргах</span>
-        </button>
-
-        <button class="nav-btn" id="nav-items" onclick="showTab('items', this)">
-          <i class="fa-solid fa-box"></i>
-          <span class="nav-text">Барааны мэдээлэл</span>
-        </button>
-
-        <button class="nav-btn" id="nav-profile" onclick="showTab('profile', this)">
-          <i class="fa-solid fa-key"></i>
-          <span class="nav-text">Нууц үг</span>
-        </button>
-
-        <div style="height:12px"></div>
-
-        <button class="nav-btn" onclick="logout()">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span class="nav-text">Гарах</span>
-        </button>
-
-        <div style="height:12px"></div>
-
-        <button class="nav-btn" onclick="refreshData()">
-          <i class="fa-solid fa-rotate"></i>
-          <span class="nav-text">Дахин ачаалах</span>
-        </button>
       </div>
     </div>
 
@@ -97,68 +98,97 @@
       <!-- TAB: ORDERS -->
       <div id="tab-orders" class="tab-content">
 
+        <!-- ✅ Дээд талд шинэчлэх товч -->
+        <div class="tab-top">
+          <div class="tab-title">Захиалгууд</div>
+          <button class="btn-mini edit" onclick="refreshData()">
+            <i class="fa-solid fa-rotate"></i> Шинэчлэх
+          </button>
+        </div>
+
         <div class="card">
-          <div style="font-weight:900;color:#0f172a">Бараа</div>
+          <div style="font-weight:900;color:#0f172a">Шүүлтүүр</div>
           <div style="height:10px"></div>
 
-          <div class="filter-label">Төлөв</div>
-          <select id="filter-status" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-            <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-            <option value="Зөвшөөрсөн">Олгосон</option>
-            <option value="Татгалзсан">Татгалзсан</option>
-          </select>
+          <!-- ✅ 3 мөр layout -->
+          <div class="filters-grid">
+            <!-- Row 1 -->
+            <div class="filter-group">
+              <div class="filter-label">Төлөв</div>
+              <select id="filter-status" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+                <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
+                <option value="Зөвшөөрсөн">Олгосон</option>
+                <option value="Татгалзсан">Татгалзсан</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Он</div>
-          <select id="filter-year" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-          </select>
+            <div class="filter-group">
+              <div class="filter-label">Бараа</div>
+              <select id="filter-item" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Сар</div>
-          <select id="filter-month" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-          </select>
+            <div class="filter-group">
+              <div class="filter-label">Он</div>
+              <select id="filter-year" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Газар</div>
-          <select id="filter-place" onchange="onPlaceChange()">
-            <option value="">Бүгд</option>
-          </select>
+            <div class="filter-group">
+              <div class="filter-label">Сар</div>
+              <select id="filter-month" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Хэлтэс</div>
-          <select id="filter-dept" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-          </select>
+            <!-- Row 2 -->
+            <div class="filter-group">
+              <div class="filter-label">Газар</div>
+              <select id="filter-place" onchange="onPlaceChange()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Ээлж</div>
-          <select id="filter-shift" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-          </select>
+            <div class="filter-group">
+              <div class="filter-label">Хэлтэс</div>
+              <select id="filter-dept" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
-          <div class="filter-label">Бараа</div>
-          <select id="filter-item" onchange="applyFilters()">
-            <option value="">Бүгд</option>
-          </select>
+            <div class="filter-group">
+              <div class="filter-label">Ээлж</div>
+              <select id="filter-shift" onchange="applyFilters()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
 
-          <div style="height:10px"></div>
+            <div class="filter-group">
+              <div class="filter-label"> </div>
+              <button class="btn-mini edit" onclick="clearOrderFilters()">
+                <i class="fa-solid fa-broom"></i> Цэвэрлэх
+              </button>
+            </div>
 
-          <div class="filter-label">Нэрээр хайх</div>
-          <input id="search-name" placeholder="Нэр/Овог" oninput="applyFilters()" />
+            <!-- Row 3 -->
+            <div class="filter-group">
+              <div class="filter-label">Нэрээр хайх</div>
+              <input id="search-name" placeholder="Нэр/Овог" oninput="applyFilters()" />
+            </div>
 
-          <div style="height:10px"></div>
+            <div class="filter-group">
+              <div class="filter-label">Кодоор хайх</div>
+              <input id="search-code" placeholder="Код" oninput="applyFilters()" />
+            </div>
 
-          <div class="filter-label">Кодоор хайх</div>
-          <input id="search-code" placeholder="Код" oninput="applyFilters()" />
-
-          <div style="height:10px"></div>
-
-          <div class="filter-label">Албан тушаал</div>
-          <input id="search-role" placeholder="Role" oninput="applyFilters()" />
+            <div class="filter-group" style="grid-column: span 2;">
+              <div class="filter-label">Албан тушаалаар хайх</div>
+              <input id="search-role" placeholder="Role" oninput="applyFilters()" />
+            </div>
+          </div>
         </div>
 
         <div id="orders-list-container"></div>
@@ -166,6 +196,13 @@
 
       <!-- TAB: REQUEST -->
       <div id="tab-request" class="tab-content hidden">
+        <div class="tab-top">
+          <div class="tab-title">PPE хүсэлт</div>
+          <button class="btn-mini edit" onclick="refreshData()">
+            <i class="fa-solid fa-rotate"></i> Шинэчлэх
+          </button>
+        </div>
+
         <div class="card">
           <div style="font-weight:900;color:#0f172a">### Шинэ хүсэлт</div>
           <div style="height:10px"></div>
@@ -195,9 +232,17 @@
 
       <!-- TAB: ITEMS (ADMIN) -->
       <div id="tab-items" class="tab-content hidden">
+        <div class="tab-top">
+          <div class="tab-title">Барааны мэдээлэл</div>
+          <button class="btn-mini edit" onclick="refreshData()">
+            <i class="fa-solid fa-rotate"></i> Шинэчлэх
+          </button>
+        </div>
+
         <div class="card card-add-item">
           <div style="display:flex;align-items:center;gap:12px">
-            <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
+            <!-- ✅ + icon өөр болгосон -->
+            <div class="add-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div style="min-width:0">
               <div style="font-weight:900;color:#0f172a">Бараа нэмэх</div>
               <div id="items-count" style="font-weight:800;color:#64748b;font-size:12px;margin-top:4px">0 бараа</div>
@@ -230,8 +275,102 @@
         <div id="items-list-container"></div>
       </div>
 
+      <!-- TAB: EMPLOYEES (ADMIN) -->
+      <div id="tab-employees" class="tab-content hidden">
+        <div class="tab-top">
+          <div class="tab-title">Ажилтны мэдээлэл</div>
+          <button class="btn-mini edit" onclick="refreshData()">
+            <i class="fa-solid fa-rotate"></i> Шинэчлэх
+          </button>
+        </div>
+
+        <div class="card card-add-item">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="add-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <div style="min-width:0">
+              <div style="font-weight:900;color:#0f172a">Ажилтан нэмэх</div>
+              <div id="emp-count" style="font-weight:800;color:#64748b;font-size:12px;margin-top:4px">0 ажилтан</div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="form-grid">
+            <div>
+              <div class="filter-label">Код (ID)</div>
+              <input id="emp-code" placeholder="Ж: 12345" />
+            </div>
+            <div>
+              <div class="filter-label">Нууц үг</div>
+              <input id="emp-pass" placeholder="Ж: 12345" />
+            </div>
+            <div>
+              <div class="filter-label">Овог</div>
+              <input id="emp-ovog" placeholder="Овог" />
+            </div>
+            <div>
+              <div class="filter-label">Нэр</div>
+              <input id="emp-ner" placeholder="Нэр" />
+            </div>
+            <div>
+              <div class="filter-label">Албан тушаал</div>
+              <input id="emp-role" placeholder="Role" />
+            </div>
+            <div>
+              <div class="filter-label">Газар</div>
+              <input id="emp-place" placeholder="Place" />
+            </div>
+            <div>
+              <div class="filter-label">Хэлтэс</div>
+              <input id="emp-dept" placeholder="Department" />
+            </div>
+            <div>
+              <div class="filter-label">Ээлж</div>
+              <input id="emp-shift" placeholder="Shift" />
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <button class="btn-primary" onclick="addEmployee()">Нэмэх</button>
+        </div>
+
+        <div class="card">
+          <div style="font-weight:900;color:#0f172a">Ажилтан шүүх</div>
+          <div style="height:10px"></div>
+
+          <div class="form-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+            <div>
+              <div class="filter-label">Нэрээр</div>
+              <input id="emp-search-name" placeholder="Нэр/Овог" oninput="renderEmployeesList()" />
+            </div>
+            <div>
+              <div class="filter-label">Кодоор</div>
+              <input id="emp-search-code" placeholder="Код" oninput="renderEmployeesList()" />
+            </div>
+            <div>
+              <div class="filter-label">Хэлтэс</div>
+              <input id="emp-search-dept" placeholder="Department" oninput="renderEmployeesList()" />
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px">
+              <button class="btn-mini edit" onclick="clearEmployeeFilter()">
+                <i class="fa-solid fa-broom"></i> Цэвэрлэх
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="employees-list-container"></div>
+      </div>
+
       <!-- TAB: PROFILE -->
       <div id="tab-profile" class="tab-content hidden">
+        <div class="tab-top">
+          <div class="tab-title">Нууц үг</div>
+          <button class="btn-mini edit" onclick="refreshData()">
+            <i class="fa-solid fa-rotate"></i> Шинэчлэх
+          </button>
+        </div>
+
         <div class="card">
           <div style="font-weight:900;color:#0f172a">### Нууц үг солих</div>
 
@@ -286,6 +425,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260306"></script>
+  <script src="./app.js?v=20260307"></script>
 </body>
 </html>
