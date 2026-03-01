@@ -1,468 +1,351 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Manrope:wght@400;600;800&family=Noto+Sans:wght@400;600;800&display=swap');
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>ETT PPE System</title>
 
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-:root{--vh:1vh;--sat:env(safe-area-inset-top,0px)}
-.hidden{display:none !important}
+  <link rel="stylesheet" href="./styles.css?v=20260304" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
 
-body{
-  font-family:'Noto Sans','Inter','Roboto','Manrope',Arial,sans-serif;
-  font-kerning: normal;
-  font-feature-settings: "kern" 1, "liga" 0;
-  text-rendering: geometricPrecision;
-  background:#f1f5f9;
-  height:calc(var(--vh)*100);
-  overflow:hidden;
-}
+<body>
+  <!-- Loading -->
+  <div id="loading-overlay" class="hidden">
+    <div class="loader-card">
+      <div class="loader-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
+      <div class="loader-excavator">
+        <div class="track"></div>
+        <div class="excavator">⛏️</div>
+      </div>
+    </div>
+  </div>
 
-/* Header */
-.app-header{
-  height:calc(60px + var(--sat));
-  padding-top:var(--sat);
-  background:#0f172a;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding-left:15px;
-  padding-right:15px;
-  color:#fff;
-  box-shadow:0 4px 12px rgba(0,0,0,.1);
-}
+  <!-- Modal -->
+  <div id="modal-overlay" class="hidden" onclick="closeModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div id="modal-title" class="modal-title">Modal</div>
+        <button class="modal-x" aria-label="Close" onclick="closeModal()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
 
-.app-title{
-  font-weight:900;
-  font-size:14px;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-}
+  <!-- Sidebar overlay -->
+  <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
-/* Header buttons */
-.header-btn{
-  border:none;
-  background:rgba(255,255,255,.08);
-  color:#fff;
-  height:38px;
-  min-width:38px;
-  padding:0 12px;
-  border-radius:14px;
-  display:flex;
-  align-items:center;
-  gap:8px;
-  cursor:pointer;
-  font-weight:900;
-  font-size:11px;
-  text-transform:uppercase;
-}
-.header-btn:hover{background:rgba(255,255,255,.18)}
-.refresh-btn{background:#2563eb}
-.refresh-btn:hover{background:#1d4ed8}
-.refresh-text{display:none}
-@media(min-width:1024px){ .refresh-text{display:inline} }
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-inner">
+      <div class="sidebar-scroll">
+        <div class="sb-card">
+          <div class="sb-name" id="sb-name">ETT PPE SYSTEM</div>
+          <div class="sb-id" id="sb-id"></div>
+          <div class="sb-role" id="sb-role"></div>
+          <div class="sb-extra" id="sb-extra"></div>
+        </div>
 
-/* Sidebar */
-#sidebar{
-  position:fixed;left:0;top:0;bottom:0;
-  width:280px;background:#0f172a;color:#fff;
-  z-index:2000;
-  transform:translateX(-100%);
-  transition:all .25s ease;
-  padding-top:var(--sat);
-}
-#sidebar.open{transform:translateX(0)}
-#sidebar-overlay{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.6);
-  backdrop-filter:blur(4px);
-  z-index:1500;
-}
-#sidebar-overlay.show{display:block}
+        <div style="margin-top:10px;font-weight:900;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd">
+          Үндсэн цэс
+        </div>
 
-.sidebar-inner{
-  height:calc((var(--vh)*100) - var(--sat));
-  display:flex;
-  flex-direction:column;
-}
-.sidebar-scroll{
-  flex:1;
-  padding:12px;
-}
-.sidebar-footer{
-  padding:12px;
-  border-top:1px solid rgba(148,163,184,.18);
-}
-.logout-btn{
-  width:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  border:none;
-  cursor:pointer;
-  padding:14px 14px;
-  border-radius:16px;
-  background:#ef4444;
-  color:#fff;
-  font-weight:900;
-  text-transform:uppercase;
-  font-size:11px;
-  box-shadow:0 10px 24px rgba(239,68,68,.22);
-}
+        <button class="nav-btn active" data-tab="orders" onclick="showTab('orders')">
+          <i class="fa-solid fa-list-check"></i>
+          <div class="nav-text">Жагсаалт</div>
+        </button>
 
-/* Scroll content */
-.scroll-area{
-  height:calc((var(--vh)*100) - (60px + var(--sat)));
-  overflow-y:auto;
-  padding:12px;
-  -webkit-overflow-scrolling:touch;
-}
+        <button class="nav-btn" data-tab="request" onclick="showTab('request')">
+          <i class="fa-solid fa-file-circle-plus"></i>
+          <div class="nav-text">Хүсэлт гаргах</div>
+        </button>
 
-/* Sidebar user card */
-.sb-card{
-  background:rgba(2,6,23,.45);
-  border:1px solid rgba(148,163,184,.25);
-  border-radius:18px;
-  padding:14px;
-  text-align:left;
-}
-.sb-name{font-size:12px;font-weight:900;text-transform:uppercase;color:#fff;line-height:1.15}
-.sb-id{margin-top:8px;font-size:10px;font-weight:900;color:#93c5fd;letter-spacing:.06em;text-transform:uppercase}
-.sb-role{margin-top:6px;font-size:10px;font-weight:800;color:#cbd5e1}
-.sb-extra{margin-top:8px;font-size:10px;font-weight:700;color:#94a3b8;line-height:1.35}
+        <button class="nav-btn" data-tab="items" onclick="showTab('items')">
+          <i class="fa-solid fa-boxes-stacked"></i>
+          <div class="nav-text">Барааны мэдээлэл</div>
+        </button>
 
-/* Nav */
-.nav-btn{
-  width:100%;
-  padding:14px 16px;
-  border-radius:12px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  font-weight:900;
-  font-size:11px;
-  text-transform:uppercase;
-  margin-bottom:6px;
-  color:#94a3b8;
-  border:none;
-  background:transparent;
-  cursor:pointer;
-  transition:.2s;
-}
-.nav-btn i{font-size:16px;width:22px;flex:0 0 22px}
-.nav-text{flex:1;min-width:0;white-space:normal;word-break:break-word;line-height:1.2;text-align:left}
-.nav-btn.active{background:#2563eb;color:#fff;box-shadow:0 4px 12px rgba(37,99,235,.3)}
+        <!-- ✅ Employees menu (admin only - app.js hide/show) -->
+        <button class="nav-btn" id="nav-employees" data-tab="employees" onclick="showTab('employees')">
+          <i class="fa-solid fa-users"></i>
+          <div class="nav-text">Ажилтны мэдээлэл</div>
+        </button>
 
-/* Inputs */
-input,select{
-  border:1px solid #e2e8f0;
-  outline:none;
-  font-weight:800;
-  width:100%;
-  border-radius:12px;
-  background:#fff;
-  font-size:11px;
-  padding:12px;
-  transition:all .2s;
-}
-input:focus,select:focus{
-  border-color:#2563eb;
-  box-shadow:0 0 0 3px rgba(37,99,235,.1);
-}
+        <button class="nav-btn" data-tab="password" onclick="showTab('password')">
+          <i class="fa-solid fa-key"></i>
+          <div class="nav-text">Нууц үг</div>
+        </button>
+      </div>
 
-/* ✅ Fix Mongolian letters in selects/options (БүГД issue) */
-select, option {
-  text-transform: none !important;
-  letter-spacing: normal !important;
-}
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="logout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          ГАРАХ
+        </button>
+      </div>
+    </div>
+  </aside>
 
-.filter-label{
-  font-size:8px;
-  font-weight:800;
-  color:#64748b;
-  text-transform:uppercase;
-  margin-bottom:4px;
-  margin-left:4px;
-  display:block;
-}
+  <!-- Header -->
+  <header class="app-header">
+    <button class="header-btn" onclick="toggleSidebar()">
+      <i class="fa-solid fa-bars"></i>
+    </button>
 
-/* Card */
-.card{
-  background:#fff;
-  border-radius:24px;
-  padding:16px;
-  border:1px solid #e2e8f0;
-  margin-bottom:12px;
-  box-shadow:0 2px 4px rgba(0,0,0,.02);
-}
-.card-compact{padding:12px 14px}
+    <div class="app-title">ETT PPE SYSTEM</div>
 
-.btn-primary{
-  background:#2563eb;
-  color:#fff;
-  padding:14px;
-  border-radius:14px;
-  font-size:11px;
-  font-weight:900;
-  text-transform:uppercase;
-  width:100%;
-  border:none;
-  cursor:pointer;
-}
-.badge{
-  font-size:8px;
-  font-weight:900;
-  padding:4px 10px;
-  border-radius:100px;
-  text-transform:uppercase;
-}
+    <button class="header-btn refresh-btn" onclick="refreshData()">
+      <i class="fa-solid fa-rotate"></i>
+      <span class="refresh-text">СЭРГЭЭХ</span>
+    </button>
+  </header>
 
-.tab-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:4px 2px;
-  margin-bottom:10px;
-}
-.tab-title{font-weight:900;color:#0f172a;letter-spacing:.02em}
+  <!-- Main -->
+  <main class="scroll-area">
+    <!-- ORDERS -->
+    <section id="tab-orders" class="tab">
+      <div class="tab-top">
+        <div class="tab-title">ЖАГСААЛТ</div>
+      </div>
 
-/* Filters grid (3 rows layout support) */
-.filters-grid{
-  display:grid;
-  grid-template-columns: repeat(4, minmax(0,1fr));
-  gap:10px;
-}
-.filter-group{min-width:0}
+      <!-- ✅ Filters (3 rows layout): 1) status,item,year,month 2) place,dept,shift 3) name,code,role -->
+      <div class="card card-compact">
+        <div class="filters-grid">
+          <div class="filter-group">
+            <span class="filter-label">Төлөв</span>
+            <select id="f-status"></select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Бараа</span>
+            <select id="f-item"></select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Он</span>
+            <select id="f-year"></select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Сар</span>
+            <select id="f-month"></select>
+          </div>
 
-/* Clear button alignment */
-.filters-grid button.btn-mini,
-.form-grid button.btn-mini{
-  height:42px;
-  border-radius:12px;
-}
+          <div class="filter-group">
+            <span class="filter-label">Газар</span>
+            <select id="f-place"></select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Хэлтэс</span>
+            <select id="f-dept"></select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Ээлж</span>
+            <select id="f-shift"></select>
+          </div>
 
-/* Add item card */
-.card-add-item{
-  background:linear-gradient(135deg, rgba(37,99,235,.12), rgba(249,115,22,.10));
-  border:1px solid rgba(37,99,235,.20);
-}
-.add-icon{
-  width:42px;height:42px;border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  background:#2563eb;color:#fff;
-  box-shadow:0 8px 18px rgba(37,99,235,.25);
-}
+          <div class="filter-group">
+            <span class="filter-label">Нэрээр хайх</span>
+            <input id="f-name" placeholder="Жишээ нь: Бат" />
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Кодоор хайх</span>
+            <input id="f-code" placeholder="Жишээ нь: 12345" />
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Албан тушаал</span>
+            <input id="f-role" placeholder="Жишээ нь: Машинист" />
+          </div>
 
-/* Items / Employees list */
-.items-head,.items-row{
-  display:grid;
-  grid-template-columns:56px minmax(240px,1fr) minmax(180px,240px) 280px;
-  gap:10px;
-  align-items:center;
-}
-.items-head{
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:18px;
-  padding:10px 12px;
-  font-size:10px;
-  font-weight:900;
-  text-transform:uppercase;
-  color:#64748b;
-}
-.items-row{
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:22px;
-  padding:14px 12px;
-}
-.items-no{font-size:11px;font-weight:900;color:#94a3b8}
-.items-name{
-  font-size:14px;
-  font-weight:900;
-  text-transform:uppercase;
-  color:#0f172a;
-  line-height:1.15;
-}
-.items-sizes{font-size:11px;font-weight:900;color:#0f172a;line-height:1.15}
-.items-sizes .sz{display:block;padding:2px 0}
-.items-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center}
+          <div class="filter-group">
+            <span class="filter-label">&nbsp;</span>
+            <button class="btn-mini edit" onclick="clearOrderFilters()">ЦЭВЭРЛЭХ</button>
+          </div>
+        </div>
+      </div>
 
-.btn-mini{
-  border:none;cursor:pointer;border-radius:12px;
-  padding:10px 12px;font-size:10px;font-weight:900;
-  text-transform:uppercase;white-space:nowrap;
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-}
-.btn-mini.edit{background:#0f172a;color:#fff}
-.btn-mini.hist{background:#2563eb;color:#fff}
-.btn-mini.del{background:#ef4444;color:#fff}
-.btn-mini.disabled{opacity:.45;cursor:not-allowed}
+      <div id="orders-list"></div>
+    </section>
 
-/* Form grid */
-.form-grid{
-  display:grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap:10px;
-}
+    <!-- REQUEST -->
+    <section id="tab-request" class="tab hidden">
+      <div class="tab-top">
+        <div class="tab-title">ШИНЭ ХҮСЭЛТ</div>
+      </div>
 
-/* Loading */
-#loading-overlay{
-  position:fixed !important;
-  inset:0;
-  background:rgba(255,255,255,.92);
-  z-index:999999;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-#loading-overlay.hidden{display:none !important}
+      <div class="card">
+        <div class="form-grid">
+          <div>
+            <span class="filter-label">Бараа</span>
+            <select id="req-item"></select>
+          </div>
+          <div>
+            <span class="filter-label">Хэмжээ</span>
+            <select id="req-size"></select>
+          </div>
+          <div>
+            <span class="filter-label">Тоо</span>
+            <input id="req-qty" type="number" min="1" value="1" />
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn-primary" onclick="submitOrder()">ИЛГЭЭХ</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-/* Animation */
-.animate-fade-in{animation:fadeIn .3s ease-in-out}
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(10px)}
-  to{opacity:1;transform:translateY(0)}
-}
+    <!-- ITEMS -->
+    <section id="tab-items" class="tab hidden">
+      <div class="tab-top">
+        <div class="tab-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
+      </div>
 
-/* Mobile */
-@media(max-width:900px){
-  .items-head{display:none}
-  .items-row{grid-template-columns:1fr;gap:12px}
-  .items-actions{justify-content:flex-start;flex-wrap:wrap}
-  .filters-grid{grid-template-columns:1fr 1fr}
-  .form-grid{grid-template-columns:1fr 1fr}
-}
+      <div class="card card-add-item" id="items-add-card">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
+          <div style="flex:1">
+            <div class="filter-label" style="font-size:10px;color:#0f172a;margin:0 0 6px 0">Бараа нэмэх</div>
+            <div class="form-grid" style="grid-template-columns:1fr 1fr 160px">
+              <input id="new-item-name" placeholder="Жишээ нь: Гутал" />
+              <input id="new-item-sizes" placeholder="Жишээ нь: 38,39,40" />
+              <button class="btn-mini edit" onclick="addItem()">НЭМЭХ</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-/* PC */
-@media(min-width:1024px){
-  #sidebar{width:320px}
-  .scroll-area{padding:32px}
-  .sb-card{padding:18px;border-radius:20px}
-  .sb-name{font-size:16px}
-  .sb-id{font-size:12px}
-  .sb-role{font-size:12px}
-  .sb-extra{font-size:12px}
-  .nav-btn{font-size:12px;padding:16px 18px}
-  .nav-btn i{font-size:18px;width:24px;flex-basis:24px}
-  .filters-grid{gap:12px}
-}
+      <div class="card card-compact">
+        <div class="form-grid" style="grid-template-columns:1fr 160px">
+          <div>
+            <span class="filter-label">Бараа шүүх</span>
+            <select id="items-filter"></select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn-mini edit" onclick="clearItemsFilter()">ЦЭВЭРЛЭХ</button>
+          </div>
+        </div>
+      </div>
 
-/* ---------- Modal (in-page popup) ---------- */
-#modal-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(2,6,23,.55);
-  backdrop-filter: blur(6px);
-  z-index:999999;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
-}
-#modal-overlay.hidden{display:none !important;}
+      <div class="items-head">
+        <div>#</div>
+        <div>БАРАА</div>
+        <div>РАЗМЕР</div>
+        <div style="text-align:right">ҮЙЛДЭЛ</div>
+      </div>
 
-.modal-card{
-  width:min(860px, 96vw);
-  max-height:min(80vh, 760px);
-  background:#fff;
-  border:1px solid #e2e8f0;
-  border-radius:22px;
-  box-shadow:0 20px 60px rgba(0,0,0,.20);
-  overflow:hidden;
-}
+      <div id="items-list"></div>
+    </section>
 
-.modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  padding:14px 16px;
-  background:#0f172a;
-  color:#fff;
-}
+    <!-- EMPLOYEES (admin) -->
+    <section id="tab-employees" class="tab hidden">
+      <div class="tab-top">
+        <div class="tab-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
+      </div>
 
-.modal-title{
-  font-weight:900;
-  font-size:13px;
-  letter-spacing:.04em;
-  text-transform:uppercase;
-}
+      <div class="card card-add-item" id="emp-add-card">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="add-icon"><i class="fa-solid fa-user-plus"></i></div>
+          <div style="flex:1">
+            <div class="filter-label" style="font-size:10px;color:#0f172a;margin:0 0 6px 0">Ажилтан нэмэх</div>
 
-.modal-x{
-  width:38px;height:38px;
-  border:none;
-  border-radius:14px;
-  background:rgba(255,255,255,.12);
-  color:#fff;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.modal-x:hover{background:rgba(255,255,255,.20);}
+            <div class="form-grid">
+              <input id="emp-code" placeholder="Код (Жишээ нь: 12345)" />
+              <input id="emp-pass" placeholder="Нууц үг (Жишээ нь: 12345)" />
+              <input id="emp-ovog" placeholder="Овог (Жишээ нь: Бат)" />
+              <input id="emp-ner" placeholder="Нэр (Жишээ нь: Дорж)" />
 
-.modal-body{
-  padding:16px;
-  max-height:calc(min(80vh, 760px) - 68px);
-  overflow:auto;
-  -webkit-overflow-scrolling:touch;
-  background:#f1f5f9;
-}
+              <input id="emp-role" placeholder="Албан тушаал (Жишээ нь: Машинист)" />
+              <input id="emp-place" placeholder="Газар (Жишээ нь: Уурхай)" />
+              <input id="emp-dept" placeholder="Хэлтэс (Жишээ нь: Засвар)" />
 
-/* ---------- Loader (Mining style) ---------- */
-.loader-card{
-  background:#0f172a;
-  border:1px solid rgba(148,163,184,.25);
-  border-radius:22px;
-  padding:18px 18px 16px;
-  width:min(360px, 92vw);
-  box-shadow:0 24px 60px rgba(0,0,0,.25);
-  text-align:center;
-}
-.loader-title{
-  color:#fff;
-  font-weight:900;
-  letter-spacing:.08em;
-  text-transform:uppercase;
-  font-size:12px;
-}
-.loader-excavator{
-  margin-top:14px;
-  position:relative;
-  height:42px;
-  border-radius:16px;
-  background:rgba(255,255,255,.06);
-  overflow:hidden;
-}
-.loader-excavator .track{
-  position:absolute;
-  left:-40%;
-  top:50%;
-  transform:translateY(-50%);
-  width:180%;
-  height:10px;
-  background:repeating-linear-gradient(
-    90deg,
-    rgba(255,255,255,.35) 0 10px,
-    rgba(255,255,255,.10) 10px 18px
-  );
-  animation:trackMove 1.1s linear infinite;
-  opacity:.55;
-}
-.loader-excavator .excavator{
-  position:absolute;
-  right:16px;
-  top:50%;
-  transform:translateY(-50%);
-  font-size:22px;
-  animation:excBack 1.1s ease-in-out infinite;
-}
-@keyframes trackMove{
-  from{transform:translate(-0%, -50%);}
-  to{transform:translate(-30%, -50%);}
-}
-@keyframes excBack{
-  0%{transform:translate(0,-50%);}
-  50%{transform:translate(-14px,-50%);}
-  100%{transform:translate(0,-50%);}
-}
+              <select id="emp-shift">
+                <option value="">Ээлж (сонгох)</option>
+                <option>А</option>
+                <option>Б</option>
+                <option>Өдөр</option>
+                <option>Шөнө</option>
+              </select>
+
+              <button class="btn-mini edit" onclick="addEmployee()">НЭМЭХ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card card-compact" id="emp-filters-card">
+        <div class="filters-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+          <div class="filter-group">
+            <span class="filter-label">Албан тушаал</span>
+            <input id="ef-role" placeholder="Жишээ нь: Машинист" />
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Газар</span>
+            <input id="ef-place" placeholder="Жишээ нь: Уурхай" />
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Хэлтэс</span>
+            <input id="ef-dept" placeholder="Жишээ нь: Засвар" />
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">Ээлж</span>
+            <select id="ef-shift">
+              <option value="">Бүгд</option>
+              <option>А</option>
+              <option>Б</option>
+              <option>Өдөр</option>
+              <option>Шөнө</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">&nbsp;</span>
+            <button class="btn-mini edit" onclick="clearEmployeeFilters()">ЦЭВЭРЛЭХ</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="employees-list"></div>
+    </section>
+
+    <!-- PASSWORD -->
+    <section id="tab-password" class="tab hidden">
+      <div class="tab-top">
+        <div class="tab-title">НУУЦ ҮГ СОЛИХ</div>
+      </div>
+
+      <div class="card">
+        <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 180px">
+          <div>
+            <span class="filter-label">Хуучин нууц үг</span>
+            <input id="old-pass" type="password" />
+          </div>
+          <div>
+            <span class="filter-label">Шинэ нууц үг</span>
+            <input id="new-pass" type="password" />
+          </div>
+          <div>
+            <span class="filter-label">Шинэ нууц үг давтах</span>
+            <input id="new-pass2" type="password" />
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn-primary" onclick="changePassword()">ХАДГАЛАХ</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOGIN -->
+    <section id="tab-login" class="tab hidden">
+      <div class="card" style="max-width:420px;margin:40px auto">
+        <div style="font-weight:900;font-size:18px;margin-bottom:10px;color:#0f172a">PPE LOGIN</div>
+        <div style="display:grid;gap:10px">
+          <input id="login-code" placeholder="Код" />
+          <input id="login-pass" type="password" placeholder="Нууц үг" />
+          <button class="btn-primary" onclick="login()">НЭВТРЭХ</button>
+          <div style="font-size:11px;color:#64748b;font-weight:700">Admin demo: admin / 12345</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="./app.js?v=20260304"></script>
+</body>
+</html>
