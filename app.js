@@ -1,21 +1,12 @@
-// =========================
-// ETT PPE System - app.js
-// Changes:
-// 1) Sidebar-аас "дахин ачаалах" устгасан -> Tab бүрийн дээд талд Refresh товч
-// 2) Logout button sidebar bottom (red box) -> index+css дээр
-// 3) Items add icon өөрчилсөн; Item history -> тусдаа popup window (window.open)
-// 4) Orders filter layout 3 rows -> index+css дээр
-// 5) Employees tab (Admin) -> Users CRUD (Apps Script backend хэрэгтэй)
-// =========================
-
-const API_URL = "https://script.google.com/macros/s/AKfycbxBHHml8zicq4mX7GcNqsTjMXYaD-kOAZ4WZWjgdA60sdsus6LrsGonzubMKahhCPTm/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbw3NGQayHJsX6fDlhm8Arh-EVzOwQAowRJpokEMoArkhElY08xl-wre1mCuYvow01hF/exec";
 
 let allOrders = [];
 let allItems = [];
-let allEmployees = []; // admin only
+let allEmployees = [];
 let currentUser = null;
 
-// ---- VH fix ----
+const SHIFT_OPTIONS = ["А ээлж","Б ээлж","В ээлж","Г ээлж","Төв оффис","Бусад"];
+
 function setVH() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -23,7 +14,6 @@ function setVH() {
 window.addEventListener("resize", setVH);
 window.addEventListener("orientationchange", () => setTimeout(setVH, 200));
 
-// ---- Helpers ----
 function safeJsonParse(str) {
   try { return JSON.parse(str); } catch { return null; }
 }
@@ -54,47 +44,27 @@ function fmtDateTime(v) {
   } catch { return ""; }
 }
 
-// -------------------------
-// ✅ API POST (CORS-safe, no preflight)
-// -------------------------
+// ✅ CORS-safe POST (no preflight)
 async function apiPost(payload) {
   const body = new URLSearchParams();
   Object.entries(payload || {}).forEach(([k, v]) => body.append(k, v == null ? "" : String(v)));
 
   let res;
   try {
-    res = await fetch(API_URL, {
-      method: "POST",
-      body,
-      redirect: "follow",
-      cache: "no-store",
-    });
+    res = await fetch(API_URL, { method: "POST", body, redirect: "follow", cache: "no-store" });
   } catch (err) {
     throw new Error("FETCH_ERROR: " + (err?.message || String(err)));
   }
 
-  let text = "";
-  try {
-    text = await res.text();
-  } catch (err) {
-    throw new Error("READ_ERROR: " + (err?.message || String(err)));
-  }
-
-  if (!res.ok) {
-    throw new Error(`HTTP_${res.status}: ${text.slice(0, 250)}`);
-  }
+  const text = await res.text();
+  if (!res.ok) throw new Error(`HTTP_${res.status}: ${text.slice(0, 250)}`);
 
   const json = safeJsonParse(text);
-  if (!json) {
-    console.error("API non-JSON:", text);
-    throw new Error("JSON_PARSE_ERROR: " + text.slice(0, 250));
-  }
+  if (!json) throw new Error("JSON_PARSE_ERROR: " + text.slice(0, 250));
   return json;
 }
 
-// -------------------------
 // Sidebar
-// -------------------------
 window.openSidebar = () => {
   document.getElementById("sidebar")?.classList.add("open");
   document.getElementById("sidebar-overlay")?.classList.add("show");
@@ -123,9 +93,7 @@ window.showTab = (tabName, btn) => {
   if (tabName === "employees") renderEmployeesList();
 };
 
-// -------------------------
 // Modal
-// -------------------------
 window.openModal = (title, html) => {
   document.getElementById("modal-title").innerText = title || "";
   document.getElementById("modal-body").innerHTML = html || "";
@@ -136,9 +104,6 @@ window.closeModal = () => {
   document.getElementById("modal-body").innerHTML = "";
 };
 
-// -------------------------
-// User card
-// -------------------------
 function updateHeaderSubtitle() {
   const el = document.getElementById("user-display-name");
   if (!el) return;
@@ -150,7 +115,6 @@ function updateHeaderSubtitle() {
     el.innerText = "";
   }
 }
-
 function updateSidebarUserCard() {
   const nameEl = document.getElementById("sb-name");
   const idEl = document.getElementById("sb-id");
@@ -158,13 +122,7 @@ function updateSidebarUserCard() {
   const extraEl = document.getElementById("sb-extra");
   if (!nameEl || !idEl || !roleEl || !extraEl) return;
 
-  if (!currentUser) {
-    nameEl.innerText = "";
-    idEl.innerText = "";
-    roleEl.innerText = "";
-    extraEl.innerText = "";
-    return;
-  }
+  if (!currentUser) return;
 
   if (currentUser.type === "admin") {
     nameEl.innerText = "АДМИНИСТРАТОР";
@@ -174,11 +132,9 @@ function updateSidebarUserCard() {
     return;
   }
 
-  const fullName = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim();
-  nameEl.innerText = fullName;
+  nameEl.innerText = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim();
   idEl.innerText = `ID# ${currentUser.code || ""}`;
   roleEl.innerText = currentUser.role || "";
-
   const parts = [];
   if (currentUser.place) parts.push(`Газар: ${currentUser.place}`);
   if (currentUser.department) parts.push(`Хэлтэс: ${currentUser.department}`);
@@ -186,9 +142,7 @@ function updateSidebarUserCard() {
   extraEl.innerText = parts.join(" • ");
 }
 
-// -------------------------
 // Login
-// -------------------------
 window.handleLogin = async () => {
   const code = document.getElementById("login-user")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
@@ -212,12 +166,38 @@ window.handleLogin = async () => {
   }
 };
 
+function setSelectOptions(el, html) {
+  if (!el) return;
+  el.innerHTML = html;
+}
+
+function initShiftSelects() {
+  // employee add shift select
+  const addSel = document.getElementById("emp-shift");
+  if (addSel) {
+    setSelectOptions(addSel,
+      `<option value="">Сонгох...</option>` +
+      SHIFT_OPTIONS.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
+    );
+  }
+
+  // employee filter shift select
+  const fSel = document.getElementById("emp-search-shift");
+  if (fSel) {
+    setSelectOptions(fSel,
+      `<option value="">Бүгд</option>` +
+      SHIFT_OPTIONS.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
+    );
+  }
+}
+
 function initApp() {
   document.getElementById("login-page")?.classList.add("hidden");
   document.getElementById("main-page")?.classList.remove("hidden");
 
   updateHeaderSubtitle();
   updateSidebarUserCard();
+  initShiftSelects();
 
   const isAdmin = currentUser?.type === "admin";
   document.getElementById("nav-request")?.classList.toggle("hidden", isAdmin);
@@ -234,52 +214,33 @@ window.logout = () => {
   location.reload();
 };
 
-// -------------------------
-// Populate selects (correct <option>)
-// -------------------------
-function setOptions(selectEl, optionsHtml) {
-  if (!selectEl) return;
-  selectEl.innerHTML = optionsHtml;
-}
-
+// Populate selects
 function populateOrderItemFilter() {
-  const el = document.getElementById("filter-item");
-  setOptions(
-    el,
+  setSelectOptions(
+    document.getElementById("filter-item"),
     `<option value="">Бүгд</option>` +
       allItems.map(it => `<option value="${esc(it.name)}">${esc(it.name)}</option>`).join("")
   );
 }
-
 function populateRequestItemSelect() {
-  const el = document.getElementById("req-item");
-  setOptions(
-    el,
+  setSelectOptions(
+    document.getElementById("req-item"),
     `<option value="">Сонгох...</option>` +
       allItems.map(it => `<option value="${esc(it.name)}">${esc(it.name)}</option>`).join("")
   );
 }
-
 function setupItemsNameFilter() {
   const sel = document.getElementById("items-filter-name");
   if (!sel) return;
   const names = allItems.map(i => i.name).filter(Boolean).sort((a,b)=>a.localeCompare(b));
-  setOptions(
-    sel,
-    `<option value="">Бүгд</option>` +
-      names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("")
-  );
+  setSelectOptions(sel, `<option value="">Бүгд</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join(""));
 }
-
 window.clearItemsFilter = () => {
   const sel = document.getElementById("items-filter-name");
   if (sel) sel.value = "";
   renderItemsList();
 };
 
-// -------------------------
-// Order date filters
-// -------------------------
 function setupOrderFilters() {
   const yearSel = document.getElementById("filter-year");
   const monthSel = document.getElementById("filter-month");
@@ -292,14 +253,14 @@ function setupOrderFilters() {
   });
   const sortedYears = [...years].sort((a,b)=>a-b);
 
-  setOptions(
+  setSelectOptions(
     yearSel,
     `<option value="">Бүгд</option>` +
       (sortedYears.length ? sortedYears : [new Date().getFullYear()])
         .map(y => `<option value="${y}">${y}</option>`).join("")
   );
 
-  setOptions(
+  setSelectOptions(
     monthSel,
     `<option value="">Бүгд</option>` +
       Array.from({length:12}, (_,i)=>i+1).map(m=>{
@@ -309,12 +270,7 @@ function setupOrderFilters() {
   );
 }
 
-// -------------------------
-// Employee filters (from orders data)
-// -------------------------
-const SHIFT_OPTIONS = ["А ээлж","Б ээлж","В ээлж","Г ээлж","Төв оффис","Бусад"];
-
-function setupEmployeeFilters() {
+function setupEmployeeFiltersFromOrders() {
   const placeSel = document.getElementById("filter-place");
   const deptSel = document.getElementById("filter-dept");
   const shiftSel = document.getElementById("filter-shift");
@@ -327,20 +283,9 @@ function setupEmployeeFilters() {
     if (o.department) depts.add(o.department);
   });
 
-  setOptions(
-    placeSel,
-    `<option value="">Бүгд</option>` + [...places].sort((a,b)=>a.localeCompare(b))
-      .map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join("")
-  );
-  setOptions(
-    deptSel,
-    `<option value="">Бүгд</option>` + [...depts].sort((a,b)=>a.localeCompare(b))
-      .map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")
-  );
-  setOptions(
-    shiftSel,
-    `<option value="">Бүгд</option>` + SHIFT_OPTIONS.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")
-  );
+  setSelectOptions(placeSel, `<option value="">Бүгд</option>` + [...places].sort((a,b)=>a.localeCompare(b)).map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join(""));
+  setSelectOptions(deptSel, `<option value="">Бүгд</option>` + [...depts].sort((a,b)=>a.localeCompare(b)).map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join(""));
+  setSelectOptions(shiftSel, `<option value="">Бүгд</option>` + SHIFT_OPTIONS.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join(""));
 }
 
 window.onPlaceChange = () => {
@@ -355,66 +300,44 @@ window.onPlaceChange = () => {
     if (!place || (o.place || "") === place) depts.add(o.department);
   });
 
-  setOptions(
-    deptSel,
-    `<option value="">Бүгд</option>` + [...depts].sort((a,b)=>a.localeCompare(b))
-      .map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")
-  );
+  setSelectOptions(deptSel, `<option value="">Бүгд</option>` + [...depts].sort((a,b)=>a.localeCompare(b)).map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join(""));
   applyFilters();
 };
 
-// -------------------------
 // Request size options
-// -------------------------
 window.updateSizeOptions = () => {
   const name = document.getElementById("req-item")?.value || "";
   const select = document.getElementById("req-size");
   if (!select) return;
 
-  if (!name) {
-    setOptions(select, `<option value="">Сонгох...</option>`);
-    return;
-  }
+  if (!name) return setSelectOptions(select, `<option value="">Сонгох...</option>`);
 
   const item = allItems.find(i => i.name === name);
   const sizes = (item?.sizes || "").split(",").map(s=>s.trim()).filter(Boolean);
-
-  setOptions(
-    select,
-    sizes.length
-      ? sizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("")
-      : `<option value="Стандарт">Стандарт</option>`
-  );
+  setSelectOptions(select, sizes.length ? sizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("") : `<option value="Стандарт">Стандарт</option>`);
 };
 
-// -------------------------
-// Data refresh
-// -------------------------
+// Refresh
 window.refreshData = async () => {
   showLoading(true);
   try {
-    // orders + items
     const data = await apiPost({ action: "get_all_data" });
-    if (data.success === false) {
-      popupError("Өгөгдөл татахад алдаа гарлаа.", data.msg || "Unknown");
-      return;
-    }
+    if (data.success === false) return popupError("Өгөгдөл татахад алдаа", data.msg || "Unknown");
 
     allOrders = data.orders || [];
     allItems = data.items || [];
 
     populateOrderItemFilter();
     populateRequestItemSelect();
-    window.updateSizeOptions();
+    updateSizeOptions();
 
     setupOrderFilters();
-    setupEmployeeFilters();
+    setupEmployeeFiltersFromOrders();
     setupItemsNameFilter();
 
     const cnt = document.getElementById("items-count");
     if (cnt) cnt.innerText = `${allItems.length} бараа`;
 
-    // employees (admin only)
     if (currentUser?.type === "admin") {
       const u = await apiPost({ action: "get_users" });
       if (u.success) {
@@ -427,35 +350,26 @@ window.refreshData = async () => {
     }
 
     applyFilters();
-
     if (!document.getElementById("tab-items")?.classList.contains("hidden")) renderItemsList();
     if (!document.getElementById("tab-employees")?.classList.contains("hidden")) renderEmployeesList();
 
   } catch (e) {
     console.error(e);
-    popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
+    popupError("Өгөгдөл татахад алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
-// -------------------------
-// Orders filter + render
-// -------------------------
+// Orders filters
 window.clearOrderFilters = () => {
-  const ids = [
-    "filter-status","filter-item","filter-year","filter-month",
-    "filter-place","filter-dept","filter-shift",
-    "search-name","search-code","search-role"
-  ];
+  const ids = ["filter-status","filter-item","filter-year","filter-month","filter-place","filter-dept","filter-shift","search-name","search-code","search-role"];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    if (el.tagName === "SELECT") el.value = "";
-    else el.value = "";
+    el.value = "";
   });
-  // place change -> dept reset
-  setupEmployeeFilters();
+  setupEmployeeFiltersFromOrders();
   applyFilters();
 };
 
@@ -501,7 +415,7 @@ function renderOrders(orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = `<div class="card muted animate-fade-in">Мэдээлэл олдсонгүй</div>`;
+    container.innerHTML = `<div class="card animate-fade-in">Мэдээлэл олдсонгүй</div>`;
     return;
   }
 
@@ -539,15 +453,12 @@ function renderOrders(orders) {
   }).join("");
 }
 
-// -------------------------
-// Admin status update
-// -------------------------
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
     const r = await apiPost({ action: "update_status", id, status });
     if (!r.success) popupError("Алдаа", r.msg || "Status update error");
-    await window.refreshData();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("update_status error", e.message || String(e));
@@ -556,14 +467,10 @@ window.updateStatus = async (id, status) => {
   }
 };
 
-// -------------------------
-// Submit request
-// -------------------------
 window.submitRequest = async () => {
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
   const qty = document.getElementById("req-qty")?.value || 1;
-
   if (!item || !size) return popupError("Алдаа", "Бараа/Размер сонгоно уу!");
 
   showLoading(true);
@@ -571,10 +478,8 @@ window.submitRequest = async () => {
     const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
     if (r.success) {
       alert("Хүсэлт илгээгдлээ!");
-      await window.refreshData();
-    } else {
-      popupError("Алдаа", r.msg || "Request error");
-    }
+      await refreshData();
+    } else popupError("Алдаа", r.msg || "Request error");
   } catch (e) {
     console.error(e);
     popupError("add_order error", e.message || String(e));
@@ -583,48 +488,32 @@ window.submitRequest = async () => {
   }
 };
 
-// -------------------------
-// Items (Admin) CRUD + History (popup window)
-// -------------------------
-window.renderItemsList = renderItemsList;
-function renderItemsList() {
+// Items list (товчлоод өмнөх логик хэвээр)
+window.renderItemsList = function renderItemsList() {
   const container = document.getElementById("items-list-container");
   if (!container) return;
 
   const selName = document.getElementById("items-filter-name")?.value || "";
   const list = allItems.filter(it => !selName || it.name === selName);
 
-  if (!list.length) {
-    container.innerHTML = `<div class="card animate-fade-in">Бараа олдсонгүй</div>`;
-    return;
-  }
+  if (!list.length) return (container.innerHTML = `<div class="card animate-fade-in">Бараа олдсонгүй</div>`);
 
   const head = `
     <div class="items-head animate-fade-in">
-      <div>#</div>
-      <div>Бараа</div>
-      <div>Размер</div>
-      <div style="text-align:right">Үйлдэл</div>
-    </div>
-  `;
-
+      <div>#</div><div>Бараа</div><div>Размер</div><div style="text-align:right">Үйлдэл</div>
+    </div>`;
   const rows = list.map((it, idx) => {
     const sizes = (it.sizes || "").split(",").map(s=>s.trim()).filter(Boolean);
-    const sizeHtml = sizes.length
-      ? sizes.map(s => `<span class="sz">${esc(s)}</span>`).join("")
-      : `<span class="sz">ST</span>`;
-
+    const sizeHtml = sizes.length ? sizes.map(s => `<span class="sz">${esc(s)}</span>`).join("") : `<span class="sz">ST</span>`;
     const locked = !!it.locked;
     const lockTitle = "Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул засах/устгах боломжгүй.";
 
     const editBtn = locked
       ? `<button class="btn-mini edit disabled" disabled title="${esc(lockTitle)}">Засах</button>`
       : `<button class="btn-mini edit" onclick="openEditItem('${esc(it.name)}','${esc(it.sizes || "")}')">Засах</button>`;
-
     const delBtn = locked
       ? `<button class="btn-mini del disabled" disabled title="${esc(lockTitle)}">Устгах</button>`
       : `<button class="btn-mini del" onclick="deleteItem('${esc(it.name)}')">Устгах</button>`;
-
     const histBtn = `<button class="btn-mini hist" onclick="openItemHistoryPopup('${esc(it.name)}')">Түүх</button>`;
 
     return `
@@ -633,12 +522,11 @@ function renderItemsList() {
         <div class="items-name">${esc(it.name)}</div>
         <div class="items-sizes">${sizeHtml}</div>
         <div class="items-actions">${editBtn}${histBtn}${delBtn}</div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 
   container.innerHTML = head + rows;
-}
+};
 
 window.addItem = async () => {
   const name = document.getElementById("new-item-name")?.value?.trim() || "";
@@ -649,10 +537,9 @@ window.addItem = async () => {
   try {
     const r = await apiPost({ action: "add_item", name, sizes });
     if (!r.success) return popupError("Алдаа", r.msg || "Бараа нэмэхэд алдаа");
-
     document.getElementById("new-item-name").value = "";
     document.getElementById("new-item-sizes").value = "";
-    await window.refreshData();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("add_item error", e.message || String(e));
@@ -671,9 +558,8 @@ window.openEditItem = (oldName, sizes) => {
       <input id="edit-item-sizes" value="${esc(sizes || "")}" />
       <div style="height:12px"></div>
       <button class="btn-primary" onclick="saveEditItem('${esc(oldName)}')">Хадгалах</button>
-    </div>
-  `;
-  window.openModal("Бараа засах", html);
+    </div>`;
+  openModal("Бараа засах", html);
 };
 
 window.saveEditItem = async (oldName) => {
@@ -685,9 +571,8 @@ window.saveEditItem = async (oldName) => {
   try {
     const r = await apiPost({ action: "update_item", oldName, newName, sizes });
     if (!r.success) return popupError("Алдаа", r.msg || "Бараа засахад алдаа");
-
-    window.closeModal();
-    await window.refreshData();
+    closeModal();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("update_item error", e.message || String(e));
@@ -698,13 +583,11 @@ window.saveEditItem = async (oldName) => {
 
 window.deleteItem = async (name) => {
   if (!confirm(`"${name}" барааг устгах уу?`)) return;
-
   showLoading(true);
   try {
     const r = await apiPost({ action: "delete_item", name });
     if (!r.success) return popupError("Алдаа", r.msg || "Устгахад алдаа");
-
-    await window.refreshData();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("delete_item error", e.message || String(e));
@@ -713,7 +596,7 @@ window.deleteItem = async (name) => {
   }
 };
 
-// ✅ History -> тусдаа popup window
+// Item history popup
 window.openItemHistoryPopup = async (itemName) => {
   showLoading(true);
   try {
@@ -721,21 +604,18 @@ window.openItemHistoryPopup = async (itemName) => {
     if (!r.success) return popupError("Алдаа", r.msg || "Түүх татахад алдаа");
 
     const rows = (r.history || []).slice().reverse();
-
     const w = window.open("", "_blank", "width=900,height=650,scrollbars=yes");
-    if (!w) return popupError("Popup хаагдсан байна", "Browser popup blocker-оо allow хийнэ үү.");
+    if (!w) return popupError("Popup хаагдсан байна", "Popup blocker-оо allow хийнэ үү.");
 
     const table = rows.length ? `
-      <table style="width:100%;border-collapse:collapse;font-family:Manrope,Arial,sans-serif;font-size:12px">
-        <thead>
-          <tr>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Огноо</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Код</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Нэр</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Хэмжээ</th>
-            <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Тоо</th>
-          </tr>
-        </thead>
+      <table style="width:100%;border-collapse:collapse;font-family:Manrope,Inter,Noto Sans,Arial,sans-serif;font-size:12px">
+        <thead><tr>
+          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Огноо</th>
+          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Код</th>
+          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Нэр</th>
+          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Хэмжээ</th>
+          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Тоо</th>
+        </tr></thead>
         <tbody>
           ${rows.map(h => `
             <tr>
@@ -744,23 +624,17 @@ window.openItemHistoryPopup = async (itemName) => {
               <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.ovog)} ${esc(h.ner)}</td>
               <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.size || "ST")}</td>
               <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.qty)}</td>
-            </tr>
-          `).join("")}
+            </tr>`).join("")}
         </tbody>
-      </table>
-    ` : `<div style="font-weight:800;color:#64748b">Олголтын түүх байхгүй</div>`;
+      </table>` : `<div style="font-weight:800;color:#64748b">Олголтын түүх байхгүй</div>`;
 
     w.document.open();
     w.document.write(`
-      <!doctype html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Олголтын түүх • ${esc(itemName)}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-      </head>
+      <!doctype html><html><head><meta charset="utf-8">
+      <title>Олголтын түүх • ${esc(itemName)}</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1"></head>
       <body style="margin:0;background:#f1f5f9">
-        <div style="padding:18px;background:#0f172a;color:#fff;font-family:Manrope,Arial,sans-serif">
+        <div style="padding:18px;background:#0f172a;color:#fff;font-family:Manrope,Inter,Noto Sans,Arial,sans-serif">
           <div style="font-weight:900;letter-spacing:.04em">Олголтын түүх</div>
           <div style="opacity:.85;margin-top:6px">${esc(itemName)}</div>
         </div>
@@ -769,11 +643,8 @@ window.openItemHistoryPopup = async (itemName) => {
             ${table}
           </div>
         </div>
-      </body>
-      </html>
-    `);
+      </body></html>`);
     w.document.close();
-
   } catch (e) {
     console.error(e);
     popupError("History error", e.message || String(e));
@@ -782,19 +653,18 @@ window.openItemHistoryPopup = async (itemName) => {
   }
 };
 
-// -------------------------
-// Employees (Admin) CRUD
-// -------------------------
+// Employees
 window.clearEmployeeFilter = () => {
-  ["emp-search-name","emp-search-code","emp-search-dept"].forEach(id => {
+  ["emp-search-name","emp-search-code","emp-search-role","emp-search-place","emp-search-dept"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+  const sh = document.getElementById("emp-search-shift");
+  if (sh) sh.value = "";
   renderEmployeesList();
 };
 
-window.renderEmployeesList = renderEmployeesList;
-function renderEmployeesList() {
+window.renderEmployeesList = function renderEmployeesList() {
   const container = document.getElementById("employees-list-container");
   if (!container) return;
 
@@ -805,14 +675,20 @@ function renderEmployeesList() {
 
   const nS = (document.getElementById("emp-search-name")?.value || "").toLowerCase();
   const cS = (document.getElementById("emp-search-code")?.value || "").trim();
+  const rS = (document.getElementById("emp-search-role")?.value || "").toLowerCase();
+  const pS = (document.getElementById("emp-search-place")?.value || "").toLowerCase();
   const dS = (document.getElementById("emp-search-dept")?.value || "").toLowerCase();
+  const shS = (document.getElementById("emp-search-shift")?.value || "");
 
   const list = (allEmployees || []).filter(u => {
     const full = `${u.ovog || ""} ${u.ner || ""}`.toLowerCase();
     const mN = !nS || full.includes(nS);
     const mC = !cS || String(u.code || "").includes(cS);
+    const mR = !rS || String(u.role || "").toLowerCase().includes(rS);
+    const mP = !pS || String(u.place || "").toLowerCase().includes(pS);
     const mD = !dS || String(u.department || "").toLowerCase().includes(dS);
-    return mN && mC && mD;
+    const mSh = !shS || String(u.shift || "") === shS;
+    return mN && mC && mR && mP && mD && mSh;
   });
 
   if (!list.length) {
@@ -822,20 +698,15 @@ function renderEmployeesList() {
 
   const head = `
     <div class="items-head animate-fade-in" style="grid-template-columns:56px minmax(220px,1fr) minmax(260px,360px) 280px">
-      <div>#</div>
-      <div>Ажилтан</div>
-      <div>Дэлгэрэнгүй</div>
-      <div style="text-align:right">Үйлдэл</div>
-    </div>
-  `;
+      <div>#</div><div>Ажилтан</div><div>Дэлгэрэнгүй</div><div style="text-align:right">Үйлдэл</div>
+    </div>`;
 
   const rows = list.map((u, idx) => {
     const locked = !!u.locked;
     const lockTitle = "Энэ ажилтан дээр захиалга/олголт бүртгэгдсэн тул устгах боломжгүй.";
-
     const info = [
       `Код: ${esc(u.code)}`,
-      u.role ? `Role: ${esc(u.role)}` : "",
+      u.role ? `Албан тушаал: ${esc(u.role)}` : "",
       u.place ? `Газар: ${esc(u.place)}` : "",
       u.department ? `Хэлтэс: ${esc(u.department)}` : "",
       u.shift ? `Ээлж: ${esc(u.shift)}` : ""
@@ -853,16 +724,13 @@ function renderEmployeesList() {
           <div class="items-name" style="font-size:13px">${esc(u.ovog || "")} ${esc(u.ner || "")}</div>
           <div style="margin-top:6px;font-size:11px;font-weight:800;color:#64748b">${esc(info)}</div>
         </div>
-        <div style="font-size:11px;font-weight:800;color:#0f172a">
-          ${esc(u.date || "")}
-        </div>
+        <div style="font-size:11px;font-weight:800;color:#0f172a">${esc(u.date || "")}</div>
         <div class="items-actions">${editBtn}${delBtn}</div>
-      </div>
-    `;
+      </div>`;
   }).join("");
 
   container.innerHTML = head + rows;
-}
+};
 
 window.addEmployee = async () => {
   if (currentUser?.type !== "admin") return;
@@ -874,7 +742,7 @@ window.addEmployee = async () => {
   const role = document.getElementById("emp-role")?.value?.trim() || "";
   const place = document.getElementById("emp-place")?.value?.trim() || "";
   const department = document.getElementById("emp-dept")?.value?.trim() || "";
-  const shift = document.getElementById("emp-shift")?.value?.trim() || "";
+  const shift = document.getElementById("emp-shift")?.value || "";
 
   if (!code || !ner) return popupError("Алдаа", "Код (ID) болон Нэр заавал!");
 
@@ -883,12 +751,14 @@ window.addEmployee = async () => {
     const r = await apiPost({ action: "add_user", code, pass, ovog, ner, role, place, department, shift });
     if (!r.success) return popupError("Алдаа", r.msg || "Ажилтан нэмэхэд алдаа");
 
-    ["emp-code","emp-pass","emp-ovog","emp-ner","emp-role","emp-place","emp-dept","emp-shift"].forEach(id=>{
+    ["emp-code","emp-pass","emp-ovog","emp-ner","emp-role","emp-place","emp-dept"].forEach(id=>{
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
+    const sh = document.getElementById("emp-shift");
+    if (sh) sh.value = "";
 
-    await window.refreshData();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("add_user error", e.message || String(e));
@@ -900,6 +770,10 @@ window.addEmployee = async () => {
 window.openEditEmployee = (code) => {
   const u = (allEmployees || []).find(x => String(x.code) === String(code));
   if (!u) return popupError("Алдаа", "Ажилтан олдсонгүй");
+
+  const shiftOptions =
+    `<option value="">Сонгох...</option>` +
+    SHIFT_OPTIONS.map(s => `<option value="${esc(s)}" ${String(u.shift||"")===String(s) ? "selected" : ""}>${esc(s)}</option>`).join("");
 
   const html = `
     <div class="card" style="border:none;box-shadow:none;padding:0">
@@ -921,7 +795,7 @@ window.openEditEmployee = (code) => {
           <input id="edit-emp-ner" value="${esc(u.ner || "")}" />
         </div>
         <div>
-          <div class="filter-label">Role</div>
+          <div class="filter-label">Албан тушаал</div>
           <input id="edit-emp-role" value="${esc(u.role || "")}" />
         </div>
         <div>
@@ -934,15 +808,14 @@ window.openEditEmployee = (code) => {
         </div>
         <div>
           <div class="filter-label">Ээлж</div>
-          <input id="edit-emp-shift" value="${esc(u.shift || "")}" />
+          <select id="edit-emp-shift">${shiftOptions}</select>
         </div>
       </div>
 
       <div style="height:12px"></div>
       <button class="btn-primary" onclick="saveEditEmployee('${esc(u.code)}')">Хадгалах</button>
-    </div>
-  `;
-  window.openModal("Ажилтан засах", html);
+    </div>`;
+  openModal("Ажилтан засах", html);
 };
 
 window.saveEditEmployee = async (code) => {
@@ -952,7 +825,7 @@ window.saveEditEmployee = async (code) => {
   const role = document.getElementById("edit-emp-role")?.value?.trim() || "";
   const place = document.getElementById("edit-emp-place")?.value?.trim() || "";
   const department = document.getElementById("edit-emp-dept")?.value?.trim() || "";
-  const shift = document.getElementById("edit-emp-shift")?.value?.trim() || "";
+  const shift = document.getElementById("edit-emp-shift")?.value || "";
 
   if (!ner) return popupError("Алдаа", "Нэр хоосон байж болохгүй");
 
@@ -961,8 +834,8 @@ window.saveEditEmployee = async (code) => {
     const r = await apiPost({ action: "update_user", code, pass, ovog, ner, role, place, department, shift });
     if (!r.success) return popupError("Алдаа", r.msg || "Ажилтан засахад алдаа");
 
-    window.closeModal();
-    await window.refreshData();
+    closeModal();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("update_user error", e.message || String(e));
@@ -973,13 +846,11 @@ window.saveEditEmployee = async (code) => {
 
 window.deleteEmployee = async (code) => {
   if (!confirm(`"${code}" ажилтныг устгах уу?`)) return;
-
   showLoading(true);
   try {
     const r = await apiPost({ action: "delete_user", code });
     if (!r.success) return popupError("Алдаа", r.msg || "Устгахад алдаа");
-
-    await window.refreshData();
+    await refreshData();
   } catch (e) {
     console.error(e);
     popupError("delete_user error", e.message || String(e));
@@ -988,9 +859,7 @@ window.deleteEmployee = async (code) => {
   }
 };
 
-// -------------------------
 // Password
-// -------------------------
 window.changePassword = async () => {
   const code = currentUser?.code || "";
   const oldP = document.getElementById("old-pass")?.value?.trim() || "";
@@ -1015,12 +884,8 @@ window.changePassword = async () => {
   }
 };
 
-// -------------------------
-// Bootstrap
-// -------------------------
 window.onload = () => {
   setVH();
   currentUser = safeJsonParse(localStorage.getItem("ett_user"));
   if (currentUser) initApp();
-  else document.getElementById("login-page")?.classList.remove("hidden");
 };
