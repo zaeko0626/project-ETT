@@ -16,8 +16,7 @@ body {
   overflow: hidden;
 }
 
-/* ---------------- HEADER ---------------- */
-
+/* HEADER */
 .app-header {
   height: calc(60px + var(--sat));
   padding-top: var(--sat);
@@ -31,8 +30,7 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-/* ---------------- SIDEBAR ---------------- */
-
+/* SIDEBAR */
 #sidebar {
   position: fixed;
   left: 0;
@@ -54,31 +52,121 @@ body {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
   z-index: 1500;
 }
-
 #sidebar-overlay.show { display: block; }
 
-/* ---------------- SCROLL AREA ---------------- */
-
+/* SCROLL AREA */
 .scroll-area {
   height: calc((var(--vh) * 100) - (60px + var(--sat)));
   overflow-y: auto;
   padding: 12px;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* ---------------- CARD ---------------- */
+/* ✅ Sidebar profile card styles */
+.sb-card{
+  background: rgba(2, 6, 23, 0.45);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 18px;
+  padding: 14px;
+  text-align: left;
+}
+.sb-name{
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #ffffff;
+  line-height: 1.15;
+}
+.sb-id{
+  margin-top: 8px;
+  font-size: 10px;
+  font-weight: 900;
+  color: #93c5fd;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sb-role{
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
 
+/* ✅ NAV BUTTONS (зөв эвдрэлгүй) */
+.nav-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 900;
+  font-size: 11px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  color: #94a3b8;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.nav-btn i { font-size: 16px; width: 22px; flex: 0 0 22px; }
+
+.nav-text{
+  flex: 1;
+  min-width: 0;
+  white-space: normal;      /* ✅ үргэлжилж эвдрэхгүй, мөрөөр бууна */
+  word-break: break-word;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.nav-btn.active {
+  background: #2563eb;
+  color: white;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* INPUTS */
+input, select {
+  border: 1px solid #e2e8f0;
+  outline: none;
+  font-weight: 800;
+  width: 100%;
+  border-radius: 12px;
+  background: white;
+  font-size: 11px;
+  padding: 12px;
+  transition: all 0.2s;
+}
+input:focus, select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.filter-label {
+  font-size: 8px;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  margin-left: 4px;
+  display: block;
+}
+
+/* CARD + BUTTON */
 .card {
   background: white;
   border-radius: 24px;
   padding: 16px;
   border: 1px solid #e2e8f0;
   margin-bottom: 12px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
-
-/* ---------------- BUTTON ---------------- */
 
 .btn-primary {
   background: #2563eb;
@@ -93,65 +181,43 @@ body {
   cursor: pointer;
 }
 
-/* ---------------- INPUT ---------------- */
-
-input, select {
-  border: 1px solid #e2e8f0;
-  outline: none;
-  font-weight: 800;
-  width: 100%;
-  border-radius: 12px;
-  background: white;
-  font-size: 11px;
-  padding: 12px;
-}
-
-.filter-label {
+.badge {
   font-size: 8px;
-  font-weight: 800;
-  color: #64748b;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 100px;
   text-transform: uppercase;
-  margin-bottom: 4px;
 }
 
-/* ---------------- DESKTOP RESPONSIVE ---------------- */
+/* LOADING */
+#loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.9);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#loading-overlay.hidden { display: none !important; }
 
-/* PC дээр томруулна */
-@media (min-width: 1024px) {
+.animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  .app-header {
-    height: 80px;
-  }
+/* ✅ PC дээр sidebar card-ийг арай том болгож өгнө */
+@media (min-width: 1024px){
+  #sidebar{ width: 320px; }
+  .scroll-area{ padding: 32px; }
 
-  .app-header .text-\[14px\] {
-    font-size: 22px !important;
-  }
+  .sb-card{ padding: 18px; border-radius: 20px; }
+  .sb-name{ font-size: 16px; }
+  .sb-id{ font-size: 12px; }
+  .sb-role{ font-size: 12px; }
 
-  .app-header .text-\[7px\] {
-    font-size: 12px !important;
-  }
-
-  .scroll-area {
-    padding: 40px;
-  }
-
-  .card {
-    padding: 28px;
-    border-radius: 28px;
-  }
-
-  .btn-primary {
-    font-size: 14px;
-    padding: 18px;
-  }
-
-  input, select {
-    font-size: 14px;
-    padding: 16px;
-  }
-
-  .filter-label {
-    font-size: 12px;
-  }
-
+  .nav-btn{ font-size: 12px; padding: 16px 18px; }
+  .nav-btn i{ font-size: 18px; width: 24px; flex-basis: 24px; }
 }
