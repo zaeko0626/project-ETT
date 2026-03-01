@@ -1,6 +1,7 @@
 // =========================
-// ETT PPE System - app.js (FULL)
-// CORS-safe: NO custom headers, URLSearchParams body => no preflight
+// ETT PPE System - app.js (FULL, stable)
+// - Fixes: setupOrderFilters is not defined
+// - CORS-safe: URLSearchParams body, NO custom headers
 // =========================
 
 const API_URL =
@@ -67,8 +68,6 @@ function formatDate(dt) {
 
 // -------------------------
 // ✅ CORS-safe API POST (NO preflight)
-// - IMPORTANT: do NOT set custom headers
-// - IMPORTANT: body is URLSearchParams (simple request)
 // -------------------------
 async function apiPost(payload) {
   const body = new URLSearchParams();
@@ -259,12 +258,12 @@ window.refreshData = async () => {
     populateOrderItemFilter();
     populateRequestItemSelect();
 
-    window.updateSizeOptions();
+    updateSizeOptions();
     setupOrderFilters();
     setupEmployeeFilters();
     setupItemsNameFilter();
 
-    window.applyFilters();
+    applyFilters();
 
     const cnt = document.getElementById("items-count");
     if (cnt) cnt.innerText = `${allItems.length} бараа`;
@@ -282,7 +281,7 @@ window.refreshData = async () => {
 };
 
 // -------------------------
-// Select population
+// Populate selects
 // -------------------------
 function populateOrderItemFilter() {
   const filterItem = document.getElementById("filter-item");
@@ -307,30 +306,7 @@ function populateRequestItemSelect() {
 }
 
 // -------------------------
-// Items name dropdown filter
-// -------------------------
-function setupItemsNameFilter() {
-  const sel = document.getElementById("items-filter-name");
-  if (!sel) return;
-
-  const names = allItems
-    .map((i) => i.name)
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-
-  sel.innerHTML =
-    `<option value="">БҮХ БАРАА</option>` +
-    names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
-}
-
-window.clearItemsFilter = () => {
-  const sel = document.getElementById("items-filter-name");
-  if (sel) sel.value = "";
-  window.renderItemsList();
-};
-
-// -------------------------
-// Order filters
+// Filters setup
 // -------------------------
 function setupOrderFilters() {
   const yearSel = document.getElementById("filter-year");
@@ -360,7 +336,6 @@ function setupOrderFilters() {
       .join("");
 }
 
-// Employee filters
 const SHIFT_OPTIONS = ["А ээлж", "Б ээлж", "В ээлж", "Г ээлж", "Төв оффис", "Бусад"];
 
 function setupEmployeeFilters() {
@@ -412,11 +387,33 @@ window.onPlaceChange = () => {
     `<option value="">БҮХ ХЭЛТЭС</option>` +
     sortedDepts.map((d) => `<option value="${esc(d)}">${esc(d)}</option>`).join("");
 
-  window.applyFilters();
+  applyFilters();
 };
 
+function setupItemsNameFilter() {
+  const sel = document.getElementById("items-filter-name");
+  if (!sel) return;
+
+  const names = allItems
+    .map((i) => i.name)
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+
+  sel.innerHTML =
+    `<option value="">БҮХ БАРАА</option>` +
+    names.map((n) => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+}
+
+window.clearItemsFilter = () => {
+  const sel = document.getElementById("items-filter-name");
+  if (sel) sel.value = "";
+  window.renderItemsList();
+};
+
+// -------------------------
 // Request size options
-window.updateSizeOptions = () => {
+// -------------------------
+function updateSizeOptions() {
   const name = document.getElementById("req-item")?.value || "";
   const select = document.getElementById("req-size");
   if (!select) return;
@@ -438,10 +435,13 @@ window.updateSizeOptions = () => {
   } else {
     select.innerHTML = `<option value="Стандарт">Стандарт</option>`;
   }
-};
+}
+window.updateSizeOptions = updateSizeOptions;
 
-// Orders filter apply
-window.applyFilters = () => {
+// -------------------------
+// Orders: apply filters + render
+// -------------------------
+function applyFilters() {
   const nS = (document.getElementById("search-name")?.value || "").toLowerCase();
   const cS = (document.getElementById("search-code")?.value || "").trim();
   const rS = (document.getElementById("search-role")?.value || "").toLowerCase();
@@ -479,7 +479,8 @@ window.applyFilters = () => {
   });
 
   renderOrders(filtered);
-};
+}
+window.applyFilters = applyFilters;
 
 function renderOrders(orders) {
   const container = document.getElementById("orders-list-container");
@@ -528,6 +529,9 @@ function renderOrders(orders) {
     .join("");
 }
 
+// -------------------------
+// Admin status update
+// -------------------------
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
@@ -542,7 +546,9 @@ window.updateStatus = async (id, status) => {
   }
 };
 
-// Request submit
+// -------------------------
+// Submit request
+// -------------------------
 window.submitRequest = async () => {
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
@@ -559,6 +565,7 @@ window.submitRequest = async () => {
       size,
       qty,
     });
+
     if (r.success) {
       alert("Хүсэлт илгээгдлээ!");
       await window.refreshData();
@@ -576,7 +583,7 @@ window.submitRequest = async () => {
 };
 
 // -------------------------
-// Items list + CRUD + History
+// Items list + CRUD + history
 // -------------------------
 window.renderItemsList = () => {
   const container = document.getElementById("items-list-container");
@@ -774,6 +781,9 @@ window.openItemHistory = async (item) => {
   }
 };
 
+// -------------------------
+// Logout
+// -------------------------
 window.logout = () => {
   localStorage.clear();
   location.reload();
