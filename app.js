@@ -214,4 +214,132 @@ window.updateSizeOptions = () => {
   const select = document.getElementById('req-size');
   if (!select) return;
 
-  if (!name) { select.innerHTML = '<option value="">Сонгох...</option>'; return
+  if (!name) { select.innerHTML = '<option value="">Сонгох...</option>'; return; }
+
+  const item = allItems.find(i => i.name === name);
+  if (item && item.sizes) {
+    select.innerHTML = item.sizes.split(',').map(s => s.trim()).filter(Boolean)
+      .map(s => `<option value="${s}">${s}</option>`).join('');
+  } else select.innerHTML = '<option value="ST">Стандарт</option>';
+};
+
+window.applyFilters = () => {
+  const nS = (document.getElementById('search-name')?.value || "").toLowerCase();
+  const cS = (document.getElementById('search-code')?.value || "").trim();
+  const rS = (document.getElementById('search-role')?.value || "").toLowerCase();
+  const iF = document.getElementById('filter-item')?.value || "";
+  const sF = document.getElementById('filter-status')?.value || "";
+  const yF = document.getElementById('filter-year')?.value || "";
+  const mF = document.getElementById('filter-month')?.value || "";
+
+  const filtered = allOrders.filter(o => {
+    const d = new Date(o.requestedDate);
+    const mN = !nS || (o.ner && o.ner.toLowerCase().includes(nS)) || (o.ovog && o.ovog.toLowerCase().includes(nS));
+    const mC = !cS || (o.code && o.code.toString().includes(cS));
+    const mR = !rS || (o.role && o.role.toLowerCase().includes(rS));
+    const mI = !iF || o.item === iF;
+    const mS = !sF || o.status === sF;
+    const mY = !yF || (!isNaN(d) && d.getFullYear().toString() === yF);
+    const mM = !mF || (!isNaN(d) && (d.getMonth()+1).toString().padStart(2,'0') === mF);
+    return mN && mC && mR && mI && mS && mY && mM;
+  });
+
+  renderOrders(filtered);
+};
+
+function renderOrders(orders) {
+  const container = document.getElementById('orders-list-container');
+  if (!container) return;
+
+  container.innerHTML = orders.length
+    ? orders.slice().reverse().map(o => {
+      let sC = "bg-amber-100 text-amber-700";
+      if (o.status === 'Зөвшөөрсөн') sC = "bg-green-100 text-green-700";
+      if (o.status === 'Татгалзсан') sC = "bg-red-100 text-red-700";
+
+      const shouldShowActions = (currentUser && currentUser.type === 'admin' && o.status === 'Хүлээгдэж буй');
+      const adminActions = shouldShowActions ? `
+        <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
+          <button onclick="window.updateStatus('${o.id}', 'Зөвшөөрсөн')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Олгох</button>
+          <button onclick="window.updateStatus('${o.id}', 'Татгалзсан')" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Татгалзах</button>
+        </div>
+      ` : '';
+
+      return `
+        <div class="card animate-fade-in">
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <div class="text-[10px] font-black uppercase text-slate-800">${o.ovog || ""} ${o.ner || ""}</div>
+              <div class="text-[7px] font-bold text-blue-600 uppercase">${o.code || ""} • ${o.role || ""}</div>
+            </div>
+            <span class="badge ${sC}">${uiStatus(o.status || "")}</span>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-[9px] font-black">
+            <div>${o.item || ""}</div>
+            <div>${o.size || "ST"} / ${(o.quantity ?? 1)}ш</div>
+          </div>
+          ${adminActions}
+        </div>
+      `;
+    }).join('')
+    : '<div class="text-center p-10 text-[9px] font-black text-slate-400 uppercase italic">Мэдээлэл олдсонгүй</div>';
+}
+
+window.updateStatus = async (id, status) => {
+  showLoading(true);
+
+  try {
+    const idx = allOrders.findIndex(x => String(x.id) === String(id));
+    if (idx >= 0) allOrders[idx].status = status;
+    window.applyFilters();
+  } catch {}
+
+  try {
+    const r = await postJson({ action: "update_status", id, status });
+    if (r.success) await window.refreshData();
+    else { alert(r.msg || "Status update error"); await window.refreshData(); }
+  } catch(e) {
+    console.error(e);
+    alert("Алдаа! (update_status)");
+    await window.refreshData();
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.changePassword = async () => {
+  const oldP = document.getElementById('old-pass').value;
+  const newP = document.getElementById('new-pass').value;
+  const confP = document.getElementById('confirm-pass').value;
+  if (newP !== confP) return alert("Шинэ нууц үг зөрүүтэй байна!");
+
+  showLoading(true);
+  try {
+    const r = await postJson({ action: "change_pass", code: currentUser.code, oldP, newP });
+    alert(r.success ? "Амжилттай!" : (r.msg || "Алдаа"));
+  } catch(e) {
+    console.error(e);
+    alert("Алдаа! (change_pass)");
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.logout = () => {
+  localStorage.removeItem('ett_user');
+  location.reload();
+};
+
+window.onload = () => {
+  setVH();
+  showLoading(false);
+
+  const stored = localStorage.getItem('ett_user');
+  if (!stored) { document.getElementById('login-page').classList.remove('hidden'); return; }
+
+  const parsed = safeJsonParse(stored);
+  if (!parsed || !parsed.code) { forceToLogin(); return; }
+
+  currentUser = parsed;
+  initApp();
+};
