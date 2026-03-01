@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>ETT PPE System</title>
-  <link rel="stylesheet" href="./styles.css?v=20260306" />
+  <link rel="stylesheet" href="./styles.css?v=20260306_2" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 </head>
 <body>
@@ -15,7 +15,7 @@
     <div style="margin-top:10px;font-weight:800;color:#64748b">Өгөгдөл татаж байна</div>
   </div>
 
-  <!-- Modal (items edit гэх мэт жижиг зүйлд хэвээр үлдээв) -->
+  <!-- Modal -->
   <div id="modal-overlay" class="hidden" onclick="closeModal()">
     <div class="card" style="max-width:680px;width:92%;margin:10vh auto" onclick="event.stopPropagation()">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -82,7 +82,7 @@
           </button>
         </div>
 
-        <!-- Logout fixed bottom (улаан box) -->
+        <!-- Logout fixed bottom -->
         <div class="sidebar-footer">
           <button class="logout-btn" onclick="logout()">
             <i class="fa-solid fa-right-from-bracket"></i>
@@ -97,20 +97,15 @@
 
       <!-- TAB: ORDERS -->
       <div id="tab-orders" class="tab-content">
-
-        <!-- ✅ Дээд талд шинэчлэх товч -->
         <div class="tab-top">
           <div class="tab-title">Захиалгууд</div>
-          <button class="btn-mini edit" onclick="refreshData()">
-            <i class="fa-solid fa-rotate"></i> Шинэчлэх
-          </button>
+          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
           <div style="font-weight:900;color:#0f172a">Шүүлтүүр</div>
           <div style="height:10px"></div>
 
-          <!-- ✅ 3 мөр layout -->
           <div class="filters-grid">
             <!-- Row 1 -->
             <div class="filter-group">
@@ -168,9 +163,7 @@
 
             <div class="filter-group">
               <div class="filter-label"> </div>
-              <button class="btn-mini edit" onclick="clearOrderFilters()">
-                <i class="fa-solid fa-broom"></i> Цэвэрлэх
-              </button>
+              <button class="btn-mini edit" onclick="clearOrderFilters()"><i class="fa-solid fa-broom"></i> Цэвэрлэх</button>
             </div>
 
             <!-- Row 3 -->
@@ -186,7 +179,7 @@
 
             <div class="filter-group" style="grid-column: span 2;">
               <div class="filter-label">Албан тушаалаар хайх</div>
-              <input id="search-role" placeholder="Role" oninput="applyFilters()" />
+              <input id="search-role" placeholder="Албан тушаал" oninput="applyFilters()" />
             </div>
           </div>
         </div>
@@ -198,9 +191,7 @@
       <div id="tab-request" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">PPE хүсэлт</div>
-          <button class="btn-mini edit" onclick="refreshData()">
-            <i class="fa-solid fa-rotate"></i> Шинэчлэх
-          </button>
+          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
@@ -234,14 +225,11 @@
       <div id="tab-items" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Барааны мэдээлэл</div>
-          <button class="btn-mini edit" onclick="refreshData()">
-            <i class="fa-solid fa-rotate"></i> Шинэчлэх
-          </button>
+          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card card-add-item">
           <div style="display:flex;align-items:center;gap:12px">
-            <!-- ✅ + icon өөр болгосон -->
             <div class="add-icon"><i class="fa-solid fa-boxes-stacked"></i></div>
             <div style="min-width:0">
               <div style="font-weight:900;color:#0f172a">Бараа нэмэх</div>
@@ -260,16 +248,20 @@
           <button class="btn-primary" onclick="addItem()">Нэмэх</button>
         </div>
 
-        <div class="card">
-          <div style="font-weight:900;color:#0f172a">Бараа шүүх</div>
-          <div style="height:10px"></div>
-
-          <select id="items-filter-name" onchange="renderItemsList()">
-            <option value="">Бүгд</option>
-          </select>
-
-          <div style="height:10px"></div>
-          <button class="btn-mini edit" onclick="clearItemsFilter()">Цэвэрлэх</button>
+        <!-- ✅ жижигрүүлсэн бараа шүүх -->
+        <div class="card card-compact">
+          <div style="display:flex;align-items:end;justify-content:space-between;gap:10px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="font-weight:900;color:#0f172a">Бараа шүүх</div>
+              <div style="height:8px"></div>
+              <select id="items-filter-name" onchange="renderItemsList()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:8px;align-items:end">
+              <button class="btn-mini edit" onclick="clearItemsFilter()"><i class="fa-solid fa-broom"></i> Цэвэрлэх</button>
+            </div>
+          </div>
         </div>
 
         <div id="items-list-container"></div>
@@ -279,14 +271,13 @@
       <div id="tab-employees" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Ажилтны мэдээлэл</div>
-          <button class="btn-mini edit" onclick="refreshData()">
-            <i class="fa-solid fa-rotate"></i> Шинэчлэх
-          </button>
+          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card card-add-item">
           <div style="display:flex;align-items:center;gap:12px">
-            <div class="add-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <!-- ✅ icon өөрчилсөн -->
+            <div class="add-icon"><i class="fa-solid fa-users-gear"></i></div>
             <div style="min-width:0">
               <div style="font-weight:900;color:#0f172a">Ажилтан нэмэх</div>
               <div id="emp-count" style="font-weight:800;color:#64748b;font-size:12px;margin-top:4px">0 ажилтан</div>
@@ -314,19 +305,22 @@
             </div>
             <div>
               <div class="filter-label">Албан тушаал</div>
-              <input id="emp-role" placeholder="Role" />
+              <input id="emp-role" placeholder="Албан тушаал" />
             </div>
             <div>
               <div class="filter-label">Газар</div>
-              <input id="emp-place" placeholder="Place" />
+              <input id="emp-place" placeholder="Газар" />
             </div>
             <div>
               <div class="filter-label">Хэлтэс</div>
-              <input id="emp-dept" placeholder="Department" />
+              <input id="emp-dept" placeholder="Хэлтэс" />
             </div>
             <div>
               <div class="filter-label">Ээлж</div>
-              <input id="emp-shift" placeholder="Shift" />
+              <!-- ✅ сонголт -->
+              <select id="emp-shift">
+                <option value="">Сонгох...</option>
+              </select>
             </div>
           </div>
 
@@ -334,6 +328,7 @@
           <button class="btn-primary" onclick="addEmployee()">Нэмэх</button>
         </div>
 
+        <!-- ✅ шүүлтүүр: Албан тушаал/Газар/Хэлтэс/Ээлж + Ээлж select -->
         <div class="card">
           <div style="font-weight:900;color:#0f172a">Ажилтан шүүх</div>
           <div style="height:10px"></div>
@@ -348,14 +343,28 @@
               <input id="emp-search-code" placeholder="Код" oninput="renderEmployeesList()" />
             </div>
             <div>
-              <div class="filter-label">Хэлтэс</div>
-              <input id="emp-search-dept" placeholder="Department" oninput="renderEmployeesList()" />
+              <div class="filter-label">Албан тушаал</div>
+              <input id="emp-search-role" placeholder="Албан тушаал" oninput="renderEmployeesList()" />
             </div>
             <div style="display:flex;align-items:flex-end;gap:8px">
-              <button class="btn-mini edit" onclick="clearEmployeeFilter()">
-                <i class="fa-solid fa-broom"></i> Цэвэрлэх
-              </button>
+              <button class="btn-mini edit" onclick="clearEmployeeFilter()"><i class="fa-solid fa-broom"></i> Цэвэрлэх</button>
             </div>
+
+            <div>
+              <div class="filter-label">Газар</div>
+              <input id="emp-search-place" placeholder="Газар" oninput="renderEmployeesList()" />
+            </div>
+            <div>
+              <div class="filter-label">Хэлтэс</div>
+              <input id="emp-search-dept" placeholder="Хэлтэс" oninput="renderEmployeesList()" />
+            </div>
+            <div>
+              <div class="filter-label">Ээлж</div>
+              <select id="emp-search-shift" onchange="renderEmployeesList()">
+                <option value="">Бүгд</option>
+              </select>
+            </div>
+            <div></div>
           </div>
         </div>
 
@@ -366,9 +375,7 @@
       <div id="tab-profile" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">Нууц үг</div>
-          <button class="btn-mini edit" onclick="refreshData()">
-            <i class="fa-solid fa-rotate"></i> Шинэчлэх
-          </button>
+          <button class="btn-mini edit" onclick="refreshData()"><i class="fa-solid fa-rotate"></i> Шинэчлэх</button>
         </div>
 
         <div class="card">
@@ -425,6 +432,6 @@
     </div>
   </div>
 
-  <script src="./app.js?v=20260306"></script>
+  <script src="./app.js?v=20260306_2"></script>
 </body>
 </html>
