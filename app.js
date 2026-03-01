@@ -1,10 +1,9 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbx1PPKNOHqOH6epWVK06G7no2d36A7LGQAhf-DigmIm-Zexun7FhnCXIQNu6RlAiIZc/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbx-1-XLyhLiBwgq5WtRREBtt8t7GbWsoISV89b31N58SNZNJpFs7EMI90hf1ftqUFhA/exec";
 
 let allOrders = [];
 let allItems = [];
 let currentUser = null;
 
-/* ---------- Utilities ---------- */
 function setVH() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -28,15 +27,6 @@ function showLoading(show) {
   el.classList.toggle("hidden", !show);
 }
 
-function forceToLogin() {
-  currentUser = null;
-  localStorage.removeItem("ett_user");
-  document.getElementById("main-page")?.classList.add("hidden");
-  document.getElementById("login-page")?.classList.remove("hidden");
-  showLoading(false);
-}
-
-/* ---------- Sidebar ---------- */
 window.openSidebar = () => {
   document.getElementById("sidebar")?.classList.add("open");
   document.getElementById("sidebar-overlay")?.classList.add("show");
@@ -64,13 +54,11 @@ window.showTab = (tabName, btn) => {
   if (tabName === "items") window.renderItemsList();
 };
 
-/* ---------- Labels ---------- */
 function uiStatus(status) {
   if (status === "Зөвшөөрсөн") return "Олгосон";
   return status || "";
 }
 
-/* ---------- Header + Sidebar profile card ---------- */
 function updateHeaderSubtitle() {
   const el = document.getElementById("user-display-name");
   if (!el) return;
@@ -117,7 +105,18 @@ function updateSidebarUserCard() {
   roleEl.innerText = currentUser.role || "";
 }
 
-/* ---------- Modal ---------- */
+function esc(s){
+  return String(s || "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+function escapeQuotes(s){
+  return String(s).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+
+/* -------- Modal (index.html дээр modal байвал) -------- */
 window.openModal = (title, html) => {
   document.getElementById("modal-title").innerText = title;
   document.getElementById("modal-body").innerHTML = html;
@@ -128,7 +127,7 @@ window.closeModal = () => {
   document.getElementById("modal-body").innerHTML = "";
 };
 
-/* ---------- Login ---------- */
+/* -------- Login -------- */
 window.handleLogin = async () => {
   const code = document.getElementById("login-user")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
@@ -165,32 +164,7 @@ function initApp() {
   setTimeout(setVH, 0);
 }
 
-/* ---------- Filters for orders ---------- */
-function setupOrderFilters() {
-  const yearSel = document.getElementById("filter-year");
-  const monthSel = document.getElementById("filter-month");
-  if (!yearSel || !monthSel) return;
-
-  const years = new Set();
-  allOrders.forEach(o => {
-    const d = new Date(o.requestedDate);
-    if (!isNaN(d)) years.add(d.getFullYear());
-  });
-  const sortedYears = [...years].sort((a, b) => a - b);
-
-  let yH = `<option value="">БҮХ ОН</option>`;
-  (sortedYears.length ? sortedYears : [new Date().getFullYear()]).forEach(y => {
-    yH += `<option value="${y}">${y}</option>`;
-  });
-
-  let mH = `<option value="">БҮХ САР</option>`;
-  for (let m = 1; m <= 12; m++) mH += `<option value="${String(m).padStart(2, "0")}">${m} сар</option>`;
-
-  yearSel.innerHTML = yH;
-  monthSel.innerHTML = mH;
-}
-
-/* ---------- Data ---------- */
+/* -------- Data -------- */
 window.refreshData = async () => {
   showLoading(true);
   try {
@@ -223,16 +197,38 @@ window.refreshData = async () => {
     if (cnt) cnt.innerText = `${allItems.length} бараа`;
 
     if (!document.getElementById("tab-items")?.classList.contains("hidden")) window.renderItemsList();
-
     setTimeout(setVH, 0);
   } catch (e) {
     console.error(e);
     alert("Өгөгдөл татахад алдаа гарлаа.");
-    forceToLogin();
   } finally {
     showLoading(false);
   }
 };
+
+function setupOrderFilters() {
+  const yearSel = document.getElementById("filter-year");
+  const monthSel = document.getElementById("filter-month");
+  if (!yearSel || !monthSel) return;
+
+  const years = new Set();
+  allOrders.forEach(o => {
+    const d = new Date(o.requestedDate);
+    if (!isNaN(d)) years.add(d.getFullYear());
+  });
+  const sortedYears = [...years].sort((a, b) => a - b);
+
+  let yH = `<option value="">БҮХ ОН</option>`;
+  (sortedYears.length ? sortedYears : [new Date().getFullYear()]).forEach(y => {
+    yH += `<option value="${y}">${y}</option>`;
+  });
+
+  let mH = `<option value="">БҮХ САР</option>`;
+  for (let m = 1; m <= 12; m++) mH += `<option value="${String(m).padStart(2, "0")}">${m} сар</option>`;
+
+  yearSel.innerHTML = yH;
+  monthSel.innerHTML = mH;
+}
 
 window.updateSizeOptions = () => {
   const name = document.getElementById("req-item")?.value || "";
@@ -248,7 +244,7 @@ window.updateSizeOptions = () => {
   } else select.innerHTML = `<option value="ST">Стандарт</option>`;
 };
 
-/* ---------- Orders ---------- */
+/* -------- Orders -------- */
 window.applyFilters = () => {
   const nS = (document.getElementById("search-name")?.value || "").toLowerCase();
   const cS = (document.getElementById("search-code")?.value || "").trim();
@@ -324,25 +320,18 @@ function renderOrders(orders) {
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
-    const idx = allOrders.findIndex(x => String(x.id) === String(id));
-    if (idx >= 0) allOrders[idx].status = status;
-    window.applyFilters();
-  } catch {}
-
-  try {
     const r = await postJson({ action: "update_status", id, status });
     if (!r.success) alert(r.msg || "Status update error");
     await window.refreshData();
   } catch (e) {
     console.error(e);
     alert("Алдаа! (update_status)");
-    await window.refreshData();
   } finally {
     showLoading(false);
   }
 };
 
-/* ---------- Request ---------- */
+/* -------- Request -------- */
 window.submitRequest = async () => {
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
@@ -366,14 +355,7 @@ window.submitRequest = async () => {
   }
 };
 
-/* ---------- Items (admin) ---------- */
-function esc(s){
-  return String(s || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-}
-function escapeQuotes(s){
-  return String(s).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-}
-
+/* -------- Items (admin) -------- */
 window.renderItemsList = () => {
   const container = document.getElementById("items-list-container");
   if (!container) return;
@@ -398,7 +380,7 @@ window.renderItemsList = () => {
     <div class="items-head">
       <div>#</div>
       <div>Бараа</div>
-      <div class="hidden sm:block">Размер</div>
+      <div>Размер</div>
       <div>Үйлдэл</div>
     </div>
   `;
@@ -409,6 +391,17 @@ window.renderItemsList = () => {
       ? sizes.map(s => `<span class="sz">${esc(s)}</span>`).join("")
       : `<span class="sz">ST</span>`;
 
+    const locked = !!it.locked;
+    const lockMsg = "Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул засах/устгах боломжгүй.";
+
+    const editBtn = locked
+      ? `<button class="btn-mini edit disabled" onclick="alert('${lockMsg}')" title="${lockMsg}">Засах</button>`
+      : `<button class="btn-mini edit" onclick="window.openItemEdit('${escapeQuotes(it.name || "")}')">Засах</button>`;
+
+    const delBtn = locked
+      ? `<button class="btn-mini del disabled" onclick="alert('${lockMsg}')" title="${lockMsg}">Устгах</button>`
+      : `<button class="btn-mini del" onclick="window.confirmDeleteItem('${escapeQuotes(it.name || "")}')">Устгах</button>`;
+
     return `
       <div class="items-row animate-fade-in">
         <div class="items-no">${idx + 1}</div>
@@ -417,13 +410,14 @@ window.renderItemsList = () => {
           <div class="items-name">${esc(it.name)}</div>
         </div>
 
-        <div class="items-sizes hidden sm:block">
+        <div class="items-sizes">
           ${sizeList}
         </div>
 
         <div class="items-actions">
-          <button class="btn-mini edit" onclick="window.openItemEdit('${escapeQuotes(it.name || "")}')">Засах</button>
+          ${editBtn}
           <button class="btn-mini hist" onclick="window.openItemHistory('${escapeQuotes(it.name || "")}')">Түүх</button>
+          ${delBtn}
         </div>
       </div>
     `;
@@ -456,6 +450,12 @@ window.addItem = async () => {
 
 window.openItemEdit = (oldName) => {
   const item = allItems.find(x => x.name === oldName);
+  if (!item) return;
+
+  if (item.locked) {
+    return alert("Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул засах боломжгүй.");
+  }
+
   const html = `
     <div class="space-y-4">
       <div>
@@ -493,6 +493,26 @@ window.saveItemEdit = async (oldName) => {
   }
 };
 
+window.confirmDeleteItem = async (name) => {
+  if (!confirm(`"${name}" барааг устгах уу?`)) return;
+
+  showLoading(true);
+  try {
+    const r = await postJson({ action: "delete_item", name });
+    if (r.success) {
+      await window.refreshData();
+      alert("Устгалаа");
+    } else {
+      alert(r.msg || "Устгах үед алдаа");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Алдаа! (delete_item)");
+  } finally {
+    showLoading(false);
+  }
+};
+
 window.openItemHistory = async (itemName) => {
   showLoading(true);
   try {
@@ -525,7 +545,7 @@ window.openItemHistory = async (itemName) => {
   }
 };
 
-/* ---------- Profile ---------- */
+/* -------- Profile -------- */
 window.changePassword = async () => {
   const oldP = document.getElementById("old-pass")?.value || "";
   const newP = document.getElementById("new-pass")?.value || "";
@@ -544,12 +564,9 @@ window.changePassword = async () => {
   }
 };
 
-window.logout = () => {
-  localStorage.removeItem("ett_user");
-  location.reload();
-};
+window.logout = () => { localStorage.removeItem("ett_user"); location.reload(); };
 
-/* ---------- Boot ---------- */
+/* -------- Boot -------- */
 window.onload = () => {
   setVH();
   showLoading(false);
@@ -562,7 +579,8 @@ window.onload = () => {
 
   const parsed = safeJsonParse(stored);
   if (!parsed || !parsed.code) {
-    forceToLogin();
+    localStorage.removeItem("ett_user");
+    document.getElementById("login-page")?.classList.remove("hidden");
     return;
   }
 
