@@ -2,7 +2,7 @@
 // Copy/paste this whole file.
 //
 // IMPORTANT: Apps Script Deploy -> Execute as: Me, Who has access: Anyone
-const API_URL = "https://script.google.com/macros/s/AKfycbwKtUSt5NLStZ0OCkwspBehi8PoUbV_NRKYrBE48Ehu3MmxzrGsq-kMGhORI_bX-i5O/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxBHHml8zicq4mX7GcNqsTjMXYaD-kOAZ4WZWjgdA60sdsus6LrsGonzubMKahhCPTm/exec";
 
 let allOrders = [];
 let allItems = [];
