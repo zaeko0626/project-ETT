@@ -596,7 +596,7 @@ window.deleteItem = async (name) => {
   }
 };
 
-// Item history popup
+// ✅ Item history popup (in-page modal, NOT new window)
 window.openItemHistoryPopup = async (itemName) => {
   showLoading(true);
   try {
@@ -604,47 +604,50 @@ window.openItemHistoryPopup = async (itemName) => {
     if (!r.success) return popupError("Алдаа", r.msg || "Түүх татахад алдаа");
 
     const rows = (r.history || []).slice().reverse();
-    const w = window.open("", "_blank", "width=900,height=650,scrollbars=yes");
-    if (!w) return popupError("Popup хаагдсан байна", "Popup blocker-оо allow хийнэ үү.");
 
-    const table = rows.length ? `
-      <table style="width:100%;border-collapse:collapse;font-family:Manrope,Inter,Noto Sans,Arial,sans-serif;font-size:12px">
-        <thead><tr>
-          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Огноо</th>
-          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Код</th>
-          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Нэр</th>
-          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Хэмжээ</th>
-          <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Тоо</th>
-        </tr></thead>
-        <tbody>
-          ${rows.map(h => `
-            <tr>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(fmtDateTime(h.date))}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.code)}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.ovog)} ${esc(h.ner)}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.size || "ST")}</td>
-              <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.qty)}</td>
-            </tr>`).join("")}
-        </tbody>
-      </table>` : `<div style="font-weight:800;color:#64748b">Олголтын түүх байхгүй</div>`;
-
-    w.document.open();
-    w.document.write(`
-      <!doctype html><html><head><meta charset="utf-8">
-      <title>Олголтын түүх • ${esc(itemName)}</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1"></head>
-      <body style="margin:0;background:#f1f5f9">
-        <div style="padding:18px;background:#0f172a;color:#fff;font-family:Manrope,Inter,Noto Sans,Arial,sans-serif">
-          <div style="font-weight:900;letter-spacing:.04em">Олголтын түүх</div>
-          <div style="opacity:.85;margin-top:6px">${esc(itemName)}</div>
-        </div>
-        <div style="padding:18px">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:14px">
-            ${table}
+    const tableHtml = rows.length
+      ? `
+        <div class="card" style="margin:0;background:#fff">
+          <div style="overflow:auto;border-radius:16px">
+            <table style="width:100%;border-collapse:collapse;font-size:12px">
+              <thead>
+                <tr style="background:#f8fafc">
+                  <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Огноо</th>
+                  <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Код</th>
+                  <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Нэр</th>
+                  <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Хэмжээ</th>
+                  <th style="text-align:left;padding:10px;border-bottom:1px solid #e2e8f0">Тоо</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rows
+                  .map(
+                    (h) => `
+                  <tr>
+                    <td style="padding:10px;border-bottom:1px solid #f1f5f9;white-space:nowrap">${esc(fmtDateTime(h.date))}</td>
+                    <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.code)}</td>
+                    <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.ovog)} ${esc(h.ner)}</td>
+                    <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.size || "ST")}</td>
+                    <td style="padding:10px;border-bottom:1px solid #f1f5f9">${esc(h.qty)}</td>
+                  </tr>
+                `
+                  )
+                  .join("")}
+              </tbody>
+            </table>
           </div>
         </div>
-      </body></html>`);
-    w.document.close();
+      `
+      : `
+        <div class="card" style="margin:0;background:#fff">
+          <div style="font-weight:900;color:#0f172a">Олголтын түүх байхгүй</div>
+          <div style="margin-top:6px;font-weight:800;color:#64748b;font-size:12px">
+            Энэ бараа “Олгосон/Зөвшөөрсөн” төлөвтэй бүртгэлгүй байна.
+          </div>
+        </div>
+      `;
+
+    openModal(`Олголтын түүх • ${itemName}`, tableHtml);
   } catch (e) {
     console.error(e);
     popupError("History error", e.message || String(e));
