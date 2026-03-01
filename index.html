@@ -173,36 +173,55 @@
       <div id="tab-items" class="tab-content hidden">
         <div class="max-w-6xl mx-auto space-y-4">
 
+          <!-- Add item card -->
           <div class="card card-add-item">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
-              <div class="flex-1">
-                <div class="font-black uppercase text-[11px] text-slate-800">Бараа нэмэх</div>
-                <div class="text-[9px] font-bold text-slate-500">Нэр + размерууд (таслалаар)</div>
+            <div class="items-topline">
+              <!-- ✅ icon changed (not plus) -->
+              <div class="items-top-icon" title="Бараа удирдах">
+                <i class="fa-solid fa-box-open"></i>
               </div>
-              <div class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></div>
+
+              <div class="items-top-text">
+                <!-- ✅ bigger text -->
+                <div class="items-top-title">БАРАА НЭМЭХ</div>
+                <div class="items-top-sub">Нэр + размерууд (таслалаар)</div>
+              </div>
+
+              <div class="items-top-right">
+                <div class="items-count" id="items-count"></div>
+
+                <!-- ✅ Add button = + only -->
+                <button class="btn-plus" onclick="window.addItem()" title="Нэмэх">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input type="text" id="new-item-name" placeholder="Барааны нэр" />
-              <input type="text" id="new-item-sizes" placeholder="Ж: 38,39,40" />
-              <button onclick="window.addItem()" class="btn-primary">Нэмэх</button>
+              <input type="text" id="new-item-sizes" placeholder="Жишээ нь: 38,39,40" />
             </div>
           </div>
 
-          <!-- ✅ Dropdown filter -->
+          <!-- Filter row -->
           <div class="card">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div class="md:col-span-2">
-                <label class="filter-label">Бараа шүүх</label>
-                <select id="items-filter-name" onchange="window.renderItemsList()"></select>
+            <div class="items-filter-row">
+              <div class="items-filter-left">
+                <!-- ✅ bigger label -->
+                <label class="items-filter-label">БАРАА ШҮҮХ</label>
+                <!-- ✅ select not too “full” -->
+                <select id="items-filter-name" class="items-filter-select" onchange="window.renderItemsList()"></select>
               </div>
-              <div class="flex items-end">
-                <button onclick="window.clearItemsFilter()" class="btn-primary bg-slate-800">Цэвэрлэх</button>
-              </div>
+
+              <!-- ✅ rename “clear” button -->
+              <button onclick="window.clearItemsFilter()" class="btn-reset" title="Шүүлтүүр арилгах">
+                <i class="fa-solid fa-filter-circle-xmark"></i>
+                <span>Шүүлтүүр арилгах</span>
+              </button>
             </div>
           </div>
 
+          <!-- List -->
           <div id="items-list-container" class="space-y-3 pb-24"></div>
         </div>
       </div>
