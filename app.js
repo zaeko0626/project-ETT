@@ -61,7 +61,6 @@ window.showTab = (tabName, btn) => {
   setTimeout(setVH, 0);
   if (window.innerWidth < 1024) window.closeSidebar();
 
-  // items tab render
   if (tabName === "items") window.renderItemsList();
 };
 
@@ -76,7 +75,6 @@ function updateHeaderSubtitle() {
   const el = document.getElementById("user-display-name");
   if (!el) return;
 
-  // ажилтан дээр бүрэн нуух
   if (currentUser && currentUser.type !== "admin") {
     el.innerText = "";
     el.classList.add("hidden");
@@ -159,7 +157,6 @@ function initApp() {
   updateHeaderSubtitle();
   updateSidebarUserCard();
 
-  // nav: admin/user
   const isAdmin = currentUser?.type === "admin";
   document.getElementById("nav-request")?.classList.toggle("hidden", isAdmin);
   document.getElementById("nav-items")?.classList.toggle("hidden", !isAdmin);
@@ -203,7 +200,6 @@ window.refreshData = async () => {
     allOrders = data.orders || [];
     allItems = data.items || [];
 
-    // Orders tab dropdowns
     const filterItem = document.getElementById("filter-item");
     const reqItem = document.getElementById("req-item");
 
@@ -223,11 +219,9 @@ window.refreshData = async () => {
     setupOrderFilters();
     window.applyFilters();
 
-    // Items tab counter
     const cnt = document.getElementById("items-count");
     if (cnt) cnt.innerText = `${allItems.length} бараа`;
 
-    // if items tab visible currently -> rerender
     if (!document.getElementById("tab-items")?.classList.contains("hidden")) window.renderItemsList();
 
     setTimeout(setVH, 0);
@@ -329,8 +323,6 @@ function renderOrders(orders) {
 
 window.updateStatus = async (id, status) => {
   showLoading(true);
-
-  // optimistic
   try {
     const idx = allOrders.findIndex(x => String(x.id) === String(id));
     if (idx >= 0) allOrders[idx].status = status;
@@ -375,9 +367,14 @@ window.submitRequest = async () => {
 };
 
 /* ---------- Items (admin) ---------- */
-window.renderItemsList = (forceReload = false) => {
-  if (forceReload) window.refreshData();
+function esc(s){
+  return String(s || "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+}
+function escapeQuotes(s){
+  return String(s).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
 
+window.renderItemsList = () => {
   const container = document.getElementById("items-list-container");
   if (!container) return;
 
@@ -397,33 +394,43 @@ window.renderItemsList = (forceReload = false) => {
     return;
   }
 
-  container.innerHTML = filtered.map(it => {
+  const head = `
+    <div class="items-head">
+      <div>#</div>
+      <div>Бараа</div>
+      <div class="hidden sm:block">Размер</div>
+      <div>Үйлдэл</div>
+    </div>
+  `;
+
+  const rows = filtered.map((it, idx) => {
     const sizes = (it.sizes || "").split(",").map(s => s.trim()).filter(Boolean);
-    const sizeBadges = sizes.length
-      ? sizes.map(s => `<span class="badge bg-slate-100 text-slate-700 mr-2 mb-2 inline-block">${s}</span>`).join("")
-      : `<span class="badge bg-slate-100 text-slate-700">ST</span>`;
+    const sizeList = sizes.length
+      ? sizes.map(s => `<span class="sz">${esc(s)}</span>`).join("")
+      : `<span class="sz">ST</span>`;
 
     return `
-      <div class="card">
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <div class="text-[12px] font-black uppercase text-slate-800 truncate">${it.name || ""}</div>
-            <div class="mt-3">${sizeBadges}</div>
-          </div>
+      <div class="items-row animate-fade-in">
+        <div class="items-no">${idx + 1}</div>
 
-          <div class="flex flex-col gap-2 w-[140px]">
-            <button class="btn-primary bg-slate-800" onclick="window.openItemEdit('${escapeQuotes(it.name || "")}')">Засах</button>
-            <button class="btn-primary bg-blue-600" onclick="window.openItemHistory('${escapeQuotes(it.name || "")}')">Түүх харах</button>
-          </div>
+        <div class="min-w-0">
+          <div class="items-name">${esc(it.name)}</div>
+        </div>
+
+        <div class="items-sizes hidden sm:block">
+          ${sizeList}
+        </div>
+
+        <div class="items-actions">
+          <button class="btn-mini edit" onclick="window.openItemEdit('${escapeQuotes(it.name || "")}')">Засах</button>
+          <button class="btn-mini hist" onclick="window.openItemHistory('${escapeQuotes(it.name || "")}')">Түүх</button>
         </div>
       </div>
     `;
   }).join("");
-};
 
-function escapeQuotes(s){
-  return String(s).replaceAll("\\", "\\\\").replaceAll("'", "\\'");
-}
+  container.innerHTML = head + rows;
+};
 
 window.addItem = async () => {
   const name = (document.getElementById("new-item-name")?.value || "").trim();
@@ -453,11 +460,11 @@ window.openItemEdit = (oldName) => {
     <div class="space-y-4">
       <div>
         <label class="filter-label">Барааны нэр</label>
-        <input id="edit-item-name" value="${(item?.name || "").replaceAll('"','&quot;')}">
+        <input id="edit-item-name" value="${esc(item?.name || "")}">
       </div>
       <div>
         <label class="filter-label">Размерууд</label>
-        <input id="edit-item-sizes" value="${(item?.sizes || "").replaceAll('"','&quot;')}" placeholder="Ж: S,M,L">
+        <input id="edit-item-sizes" value="${esc(item?.sizes || "")}" placeholder="Ж: 38,39,40">
       </div>
       <button class="btn-primary bg-slate-800" onclick="window.saveItemEdit('${escapeQuotes(oldName)}')">Хадгалах</button>
     </div>
@@ -494,16 +501,16 @@ window.openItemHistory = async (itemName) => {
 
     const rows = r.history || [];
     const body = rows.length ? `
-      <div class="text-[11px] font-black uppercase text-slate-800 mb-4">${itemName}</div>
+      <div class="text-[11px] font-black uppercase text-slate-800 mb-4">${esc(itemName)}</div>
       <div class="space-y-2">
         ${rows.map(h => `
           <div class="p-3 rounded-xl border border-slate-200 bg-slate-50">
             <div class="flex justify-between items-center">
-              <div class="font-black text-[10px] uppercase text-slate-800">${h.lastname || ""} ${h.name || ""}</div>
+              <div class="font-black text-[10px] uppercase text-slate-800">${esc(h.lastname || "")} ${esc(h.name || "")}</div>
               <div class="text-[9px] font-black text-slate-500">${new Date(h.date).toLocaleDateString()}</div>
             </div>
-            <div class="text-[9px] font-bold text-blue-600 uppercase mt-1">${h.code || ""} • ${h.role || ""}</div>
-            <div class="text-[10px] font-black text-slate-800 mt-2">${h.size || "ST"} / ${h.qty ?? 1}ш</div>
+            <div class="text-[9px] font-bold text-blue-600 uppercase mt-1">${esc(h.code || "")} • ${esc(h.role || "")}</div>
+            <div class="text-[10px] font-black text-slate-800 mt-2">${esc(h.size || "ST")} / ${h.qty ?? 1}ш</div>
           </div>
         `).join("")}
       </div>
