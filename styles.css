@@ -113,7 +113,6 @@ body {
   transition: 0.2s;
 }
 .nav-btn i { font-size: 16px; width: 22px; flex: 0 0 22px; }
-
 .nav-text{
   flex: 1;
   min-width: 0;
@@ -164,6 +163,10 @@ input:focus, select:focus {
   margin-bottom: 12px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.02);
 }
+.card-compact{
+  padding: 14px;
+  border-radius: 20px;
+}
 .btn-primary {
   background: #2563eb;
   color: white;
@@ -184,6 +187,71 @@ input:focus, select:focus {
   border-radius: 100px;
   text-transform: uppercase;
 }
+
+/* Items list table-ish */
+.items-head{
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 48px 1fr 140px 180px;
+  gap: 10px;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #64748b;
+}
+.items-row{
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  padding: 14px 12px;
+  display: grid;
+  grid-template-columns: 48px 1fr 140px 180px;
+  gap: 10px;
+  align-items: center;
+}
+.items-no{
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+}
+.items-name{
+  font-size: 14px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #0f172a;
+  line-height: 1.15;
+}
+.items-sizes{
+  font-size: 11px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.15;
+}
+.items-sizes .sz{
+  display: block; /* нэг мөрөнд доошоо list */
+  padding: 2px 0;
+}
+.items-actions{
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn-mini{
+  border: none;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  width: 100%;
+}
+.btn-mini.edit{ background:#0f172a; color:#fff; }
+.btn-mini.hist{ background:#2563eb; color:#fff; }
 
 /* LOADING OVERLAY (FULL SCREEN) */
 #loading-overlay{
@@ -254,6 +322,15 @@ input:focus, select:focus {
   padding: 16px;
   max-height: 72vh;
   overflow-y: auto;
+}
+
+/* Mobile: actions stack */
+@media (max-width: 640px){
+  .items-head{ grid-template-columns: 38px 1fr 92px; }
+  .items-row{ grid-template-columns: 38px 1fr 92px; }
+  .items-sizes{ display:none; } /* mobile дээр sizes багана нуух */
+  .items-actions{ flex-direction: column; }
+  .btn-mini{ padding: 9px 10px; }
 }
 
 /* PC tweak */
