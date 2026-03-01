@@ -1,75 +1,227 @@
-<div id="tab-admin-panel" class="tab-content hidden">
-  <div class="space-y-6">
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>ETT PPE System</title>
 
-    <!-- 🔵 Ажилтны олголтын түүх -->
-    <div class="card bg-blue-50/50 border-blue-200">
-      <h3 class="font-black uppercase text-[10px] mb-4 text-blue-700">
-        Ажилтны олголтын түүх
-      </h3>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-      <div class="flex gap-2">
-        <input type="text" id="hist-search-code" placeholder="Ажилтны ID...">
-        <button onclick="window.fetchEmpHistory()" 
-                class="bg-blue-600 text-white px-4 rounded-xl font-black text-[10px] uppercase">
-          Хайх
+  <!-- cache-bust: тоог update бүрт өөрчил -->
+  <link rel="stylesheet" href="./styles.css?v=20260301" />
+</head>
+
+<body>
+
+  <!-- Loading -->
+  <div id="loading-overlay" class="hidden">
+    <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+    <p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Түр хүлээнэ үү...</p>
+  </div>
+
+  <!-- Main -->
+  <div id="main-page" class="h-screen flex flex-col overflow-hidden hidden">
+    <header class="app-header">
+      <button onclick="window.toggleSidebar()" class="text-xl p-2 rounded-lg">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <div class="flex flex-col items-center text-center">
+        <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE System</div>
+        <!-- ажилтан дээр app.js энэ мөрийг нуух -->
+        <div id="user-display-name" class="text-[7px] font-black uppercase text-slate-400"></div>
+      </div>
+
+      <button onclick="window.refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase flex items-center">
+        <i class="fas fa-sync-alt mr-2"></i>
+      </button>
+    </header>
+
+    <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
+
+    <aside id="sidebar">
+      <div class="p-6 border-b border-slate-800">
+        <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
+
+        <!-- User/Admin card -->
+        <div id="sidebar-user-card" class="mt-4 sb-card">
+          <div id="sb-name" class="sb-name">...</div>
+          <div id="sb-id" class="sb-id">...</div>
+          <div id="sb-role" class="sb-role">...</div>
+        </div>
+      </div>
+
+      <nav class="p-4">
+        <button onclick="window.showTab('orders', this)" class="nav-btn active">
+          <i class="fas fa-list-ul"></i>
+          <span class="nav-text">Жагсаалт</span>
+        </button>
+
+        <!-- user only -->
+        <button id="nav-request" onclick="window.showTab('request', this)" class="nav-btn">
+          <i class="fas fa-plus-circle"></i>
+          <span class="nav-text">Хүсэлт гаргах</span>
+        </button>
+
+        <!-- admin only -->
+        <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn">
+          <i class="fas fa-box-open"></i>
+          <span class="nav-text">Барааны мэдээлэл</span>
+        </button>
+
+        <button onclick="window.showTab('profile', this)" class="nav-btn">
+          <i class="fas fa-key"></i>
+          <span class="nav-text">Нууц үг</span>
+        </button>
+      </nav>
+
+      <div class="p-4 absolute bottom-0 w-full border-t border-slate-800">
+        <button onclick="window.logout()" class="w-full text-red-500 p-4 rounded-2xl text-[10px] font-black uppercase">
+          Гарах
         </button>
       </div>
+    </aside>
 
-      <div id="emp-details-card" 
-           class="hidden mt-4 p-4 bg-white rounded-2xl border border-blue-100 animate-fade-in">
+    <main class="scroll-area">
 
-        <div id="hist-full-name" 
-             class="font-black text-[11px] uppercase text-slate-800"></div>
+      <!-- Orders -->
+      <div id="tab-orders" class="tab-content block">
+        <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <label class="filter-label">Бараа</label>
+              <select id="filter-item" onchange="window.applyFilters()"></select>
+            </div>
+            <div>
+              <label class="filter-label">Төлөв</label>
+              <select id="filter-status" onchange="window.applyFilters()">
+                <option value="">Бүгд</option>
+                <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
+                <option value="Зөвшөөрсөн">Зөвшөөрсөн</option>
+                <option value="Татгалзсан">Татгалзсан</option>
+              </select>
+            </div>
+            <div>
+              <label class="filter-label">Он</label>
+              <select id="filter-year" onchange="window.applyFilters()"></select>
+            </div>
+            <div>
+              <label class="filter-label">Сар</label>
+              <select id="filter-month" onchange="window.applyFilters()"></select>
+            </div>
+          </div>
 
-        <div id="hist-role" 
-             class="text-[8px] font-bold text-blue-600 mb-4"></div>
+          <div class="grid grid-cols-3 gap-2 border-t pt-4">
+            <input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр...">
+            <input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код...">
+            <input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Талбар...">
+          </div>
+        </div>
 
-        <div id="hist-items-container" 
-             class="space-y-2 border-t pt-4"></div>
-
+        <div id="orders-list-container" class="space-y-3 pb-24"></div>
       </div>
-    </div>
 
-    <!-- 🟢 Ажилтан нэмэх + 🟠 Бараа нэмэх -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-      <!-- 🟢 Ажилтан нэмэх -->
-      <div class="card">
-        <h3 class="font-black uppercase text-[10px] mb-4 text-green-600">
-          Ажилтан нэмэх
-        </h3>
-
-        <div class="space-y-3">
-          <input type="text" id="new-emp-code" placeholder="Код">
-          <input type="text" id="new-emp-lastname" placeholder="Овог">
-          <input type="text" id="new-emp-name" placeholder="Нэр">
-          <input type="text" id="new-emp-role" placeholder="Албан тушаал">
-
-          <button onclick="window.addEmployee()" 
-                  class="btn-primary bg-green-600">
-            Бүртгэх
-          </button>
+      <!-- Request (user) -->
+      <div id="tab-request" class="tab-content hidden">
+        <div class="max-w-md mx-auto card">
+          <h3 class="font-black uppercase text-xs mb-6 text-blue-600">Шинэ хүсэлт</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="filter-label">Бараа</label>
+              <select id="req-item" onchange="window.updateSizeOptions()"></select>
+            </div>
+            <div>
+              <label class="filter-label">Хэмжээ</label>
+              <select id="req-size"></select>
+            </div>
+            <div>
+              <label class="filter-label">Тоо</label>
+              <input type="number" id="req-qty" value="1">
+            </div>
+            <button onclick="window.submitRequest()" class="btn-primary">Илгээх</button>
+          </div>
         </div>
       </div>
 
-      <!-- 🟠 Бараа нэмэх -->
-      <div class="card">
-        <h3 class="font-black uppercase text-[10px] mb-4 text-orange-600">
-          Бараа нэмэх
-        </h3>
+      <!-- Items (admin) -->
+      <div id="tab-items" class="tab-content hidden">
+        <div class="card">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h3 class="font-black uppercase text-[12px] text-slate-800">Барааны мэдээлэл</h3>
+            <span class="text-[10px] font-black text-slate-400 uppercase" id="items-count"></span>
+          </div>
 
-        <div class="space-y-3">
-          <input type="text" id="new-item-name" placeholder="Барааны нэр">
-          <input type="text" id="new-item-sizes" placeholder="Размер (S,M,L)">
+          <!-- Add item -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+            <div>
+              <label class="filter-label">Барааны нэр</label>
+              <input type="text" id="new-item-name" placeholder="Ж: Гутал">
+            </div>
+            <div>
+              <label class="filter-label">Размерууд</label>
+              <input type="text" id="new-item-sizes" placeholder="Ж: 38,39,40">
+            </div>
+            <div class="flex items-end">
+              <button onclick="window.addItem()" class="btn-primary bg-orange-600">Бараа нэмэх</button>
+            </div>
+          </div>
 
-          <button onclick="window.addItem()" 
-                  class="btn-primary bg-orange-600">
-            Нэмэх
-          </button>
+          <!-- Filter -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 border-t pt-4">
+            <div>
+              <label class="filter-label">Шүүх (нэр/размер)</label>
+              <input type="text" id="items-filter" placeholder="Ж: гутал / 40" oninput="window.renderItemsList()">
+            </div>
+            <div class="flex items-end">
+              <button onclick="window.renderItemsList(true)" class="btn-primary bg-slate-800">Дахин ачаалах</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="items-list-container" class="space-y-3 pb-24"></div>
+      </div>
+
+      <!-- Profile -->
+      <div id="tab-profile" class="tab-content hidden">
+        <div class="max-w-md mx-auto card text-center">
+          <h3 class="font-black uppercase text-xs mb-6">Нууц үг солих</h3>
+          <div class="space-y-4">
+            <input type="password" id="old-pass" placeholder="Хуучин">
+            <input type="password" id="new-pass" placeholder="Шинэ">
+            <input type="password" id="confirm-pass" placeholder="Давтах">
+            <button onclick="window.changePassword()" class="btn-primary bg-slate-800">Хадгалах</button>
+          </div>
         </div>
       </div>
 
-    </div>
-
+    </main>
   </div>
-</div>
+
+  <!-- Login -->
+  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6 hidden">
+    <div class="w-full max-w-sm bg-white p-10 rounded-[3rem] text-center">
+      <h2 class="text-xl font-black text-slate-800 uppercase mb-8">PPE LOGIN</h2>
+      <div class="space-y-4">
+        <input type="text" id="login-user" placeholder="Код" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
+        <input type="password" id="login-pass" placeholder="Нууц үг" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black">
+        <button onclick="window.handleLogin()" class="btn-primary py-5">Нэвтрэх</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="window.closeModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div class="modal-title" id="modal-title">...</div>
+        <button class="modal-x" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- cache-bust -->
+  <script src="./app.js?v=20260301"></script>
+</body>
+</html>
