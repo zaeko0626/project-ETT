@@ -104,17 +104,6 @@ window.closeModal = () => {
   document.getElementById("modal-body").innerHTML = "";
 };
 
-function updateHeaderSubtitle() {
-  const el = document.getElementById("user-display-name");
-  if (!el) return;
-  if (currentUser && currentUser.type === "admin") {
-    el.classList.remove("hidden");
-    el.innerText = "АДМИНИСТРАТОР";
-  } else {
-    el.classList.add("hidden");
-    el.innerText = "";
-  }
-}
 function updateSidebarUserCard() {
   const nameEl = document.getElementById("sb-name");
   const idEl = document.getElementById("sb-id");
