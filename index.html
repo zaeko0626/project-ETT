@@ -7,7 +7,6 @@
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-
   <link rel="stylesheet" href="./styles.css" />
 </head>
 
@@ -37,8 +36,15 @@
     <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
 
     <aside id="sidebar">
-      <div class="p-8 border-b border-slate-800">
-        <span class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</span>
+      <div class="p-6 border-b border-slate-800">
+        <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
+
+        <!-- ✅ NEW: Sidebar user/admin info card -->
+        <div id="sidebar-user-card" class="mt-4 bg-slate-950/40 border border-slate-700 rounded-2xl p-4 text-left">
+          <div id="sb-name" class="text-[12px] font-black uppercase text-white leading-tight">...</div>
+          <div id="sb-code" class="text-[9px] font-extrabold uppercase text-blue-300 mt-2">...</div>
+          <div id="sb-role" class="text-[9px] font-bold text-slate-300 mt-1">...</div>
+        </div>
       </div>
 
       <nav class="p-4">
