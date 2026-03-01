@@ -184,7 +184,6 @@ function initApp() {
   document.getElementById("login-page")?.classList.add("hidden");
   document.getElementById("main-page")?.classList.remove("hidden");
 
-  updateHeaderSubtitle();
   updateSidebarUserCard();
   initShiftSelects();
 
