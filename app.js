@@ -59,32 +59,54 @@ function forceToLogin() {
   showLoading(false);
 }
 
-/* ✅ Sidebar profile card updater */
+/* ✅ Sidebar employee/admin card */
 function updateSidebarUserCard() {
   const nameEl = document.getElementById('sb-name');
-  const codeEl = document.getElementById('sb-code');
+  const idEl = document.getElementById('sb-id');
   const roleEl = document.getElementById('sb-role');
-
-  if (!nameEl || !codeEl || !roleEl) return;
+  if (!nameEl || !idEl || !roleEl) return;
 
   if (!currentUser) {
     nameEl.innerText = "";
-    codeEl.innerText = "";
+    idEl.innerText = "";
     roleEl.innerText = "";
     return;
   }
 
   if (currentUser.type === "admin") {
     nameEl.innerText = "АДМИНИСТРАТОР";
-    codeEl.innerText = "";
+    idEl.innerText = "";
     roleEl.innerText = "";
     return;
   }
 
-  const fullName = (currentUser.ovog ? `${currentUser.ovog} ` : "") + (currentUser.ner || "");
-  nameEl.innerText = fullName.toUpperCase();
-  codeEl.innerText = String(currentUser.code || "").toUpperCase();
-  roleEl.innerText = String(currentUser.role || "");
+  const fullName = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim();
+  nameEl.innerText = fullName;
+  idEl.innerText = `ID# ${currentUser.code || ""}`;
+  roleEl.innerText = currentUser.role || "";
+}
+
+/* ✅ Header subtitle (ETT PPE System доорх нэр) */
+function updateHeaderSubtitle() {
+  const el = document.getElementById('user-display-name');
+  if (!el) return;
+
+  // ажилтан дээр бүр алга болгоно
+  if (currentUser && currentUser.type !== "admin") {
+    el.innerText = "";
+    el.classList.add('hidden');
+    return;
+  }
+
+  // admin дээр хүсвэл харагдуулна (эсвэл хоосон байлгаж болно)
+  if (currentUser && currentUser.type === "admin") {
+    el.classList.remove('hidden');
+    el.innerText = "АДМИНИСТРАТОР";
+    return;
+  }
+
+  el.innerText = "";
+  el.classList.add('hidden');
 }
 
 window.handleLogin = async () => {
@@ -111,24 +133,22 @@ function initApp() {
   document.getElementById('login-page').classList.add('hidden');
   document.getElementById('main-page').classList.remove('hidden');
 
-  document.getElementById('user-display-name').innerText =
-    (currentUser && currentUser.ovog) ? `${currentUser.ovog} ${currentUser.ner}` : (currentUser?.ner || "");
-
-  // ✅ Update sidebar card
+  updateHeaderSubtitle();
   updateSidebarUserCard();
 
   if (currentUser && currentUser.type === 'admin') {
-    document.getElementById('nav-request').classList.add('hidden');
-    document.getElementById('nav-admin').classList.remove('hidden');
+    document.getElementById('nav-request')?.classList.add('hidden');
+    document.getElementById('nav-admin')?.classList.remove('hidden');
   } else {
-    document.getElementById('nav-request').classList.remove('hidden');
-    document.getElementById('nav-admin').classList.add('hidden');
+    document.getElementById('nav-request')?.classList.remove('hidden');
+    document.getElementById('nav-admin')?.classList.add('hidden');
   }
 
   window.refreshData();
   setTimeout(setVH, 0);
 }
 
+/* (Доорх хэсгүүд чинь өмнөхтэй адил ажиллана) */
 function setupFilters() {
   const years = new Set();
   allOrders.forEach(o => {
@@ -194,183 +214,4 @@ window.updateSizeOptions = () => {
   const select = document.getElementById('req-size');
   if (!select) return;
 
-  if (!name) { select.innerHTML = '<option value="">Сонгох...</option>'; return; }
-
-  const item = allItems.find(i => i.name === name);
-  if (item && item.sizes) {
-    select.innerHTML = item.sizes.split(',').map(s => s.trim()).filter(Boolean)
-      .map(s => `<option value="${s}">${s}</option>`).join('');
-  } else select.innerHTML = '<option value="ST">Стандарт</option>';
-};
-
-window.applyFilters = () => {
-  const nS = (document.getElementById('search-name')?.value || "").toLowerCase();
-  const cS = (document.getElementById('search-code')?.value || "").trim();
-  const rS = (document.getElementById('search-role')?.value || "").toLowerCase();
-  const iF = document.getElementById('filter-item')?.value || "";
-  const sF = document.getElementById('filter-status')?.value || "";
-  const yF = document.getElementById('filter-year')?.value || "";
-  const mF = document.getElementById('filter-month')?.value || "";
-
-  const filtered = allOrders.filter(o => {
-    const d = new Date(o.requestedDate);
-    const mN = !nS || (o.ner && o.ner.toLowerCase().includes(nS)) || (o.ovog && o.ovog.toLowerCase().includes(nS));
-    const mC = !cS || (o.code && o.code.toString().includes(cS));
-    const mR = !rS || (o.role && o.role.toLowerCase().includes(rS));
-    const mI = !iF || o.item === iF;
-    const mS = !sF || o.status === sF;
-    const mY = !yF || (!isNaN(d) && d.getFullYear().toString() === yF);
-    const mM = !mF || (!isNaN(d) && (d.getMonth()+1).toString().padStart(2,'0') === mF);
-    return mN && mC && mR && mI && mS && mY && mM;
-  });
-
-  renderOrders(filtered);
-};
-
-function renderOrders(orders) {
-  const container = document.getElementById('orders-list-container');
-  if (!container) return;
-
-  container.innerHTML = orders.length
-    ? orders.slice().reverse().map(o => {
-
-      let sC = "bg-amber-100 text-amber-700";
-      if (o.status === 'Зөвшөөрсөн') sC = "bg-green-100 text-green-700";
-      if (o.status === 'Татгалзсан') sC = "bg-red-100 text-red-700";
-
-      const shouldShowActions = (currentUser && currentUser.type === 'admin' && o.status === 'Хүлээгдэж буй');
-      const adminActions = shouldShowActions ? `
-        <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
-          <button onclick="window.updateStatus('${o.id}', 'Зөвшөөрсөн')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Олгох</button>
-          <button onclick="window.updateStatus('${o.id}', 'Татгалзсан')" class="flex-1 bg-red-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Татгалзах</button>
-        </div>
-      ` : '';
-
-      return `
-        <div class="card animate-fade-in">
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <div class="text-[10px] font-black uppercase text-slate-800">${o.ovog || ""} ${o.ner || ""}</div>
-              <div class="text-[7px] font-bold text-blue-600 uppercase">${o.code || ""} • ${o.role || ""}</div>
-            </div>
-            <span class="badge ${sC}">${uiStatus(o.status || "")}</span>
-          </div>
-          <div class="bg-slate-50 p-3 rounded-xl flex justify-between items-center text-[9px] font-black">
-            <div>${o.item || ""}</div>
-            <div>${o.size || "ST"} / ${(o.quantity ?? 1)}ш</div>
-          </div>
-          ${adminActions}
-        </div>
-      `;
-    }).join('')
-    : '<div class="text-center p-10 text-[9px] font-black text-slate-400 uppercase italic">Мэдээлэл олдсонгүй</div>';
-}
-
-window.updateStatus = async (id, status) => {
-  showLoading(true);
-
-  try {
-    const idx = allOrders.findIndex(x => String(x.id) === String(id));
-    if (idx >= 0) allOrders[idx].status = status;
-    window.applyFilters();
-  } catch {}
-
-  try {
-    const r = await postJson({ action: "update_status", id, status });
-    if (r.success) await window.refreshData();
-    else { alert(r.msg || "Status update error"); await window.refreshData(); }
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (update_status)");
-    await window.refreshData();
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.fetchEmpHistory = async () => {
-  const code = (document.getElementById('hist-search-code')?.value || "").trim();
-  if (!code) return alert("Код оруулна уу!");
-
-  showLoading(true);
-  try {
-    const r = await postJson({ action: "get_employee_history", empCode: code });
-    if (r.success) {
-      document.getElementById('emp-details-card').classList.remove('hidden');
-      document.getElementById('hist-full-name').innerText = `${r.user.ovog} ${r.user.ner}`;
-      document.getElementById('hist-role').innerText = `${r.user.code} | ${r.user.role}`;
-      document.getElementById('hist-items-container').innerHTML =
-        r.history.length ? r.history.map(h => `
-          <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg text-[9px] font-bold">
-            <div>${h.item} <span class="text-slate-400 ml-2">${new Date(h.date).toLocaleDateString()}</span></div>
-            <div class="text-blue-600">${h.size} / ${h.qty}ш</div>
-          </div>`).join('')
-        : '<div class="text-center text-[8px] text-slate-400 italic">Түүх байхгүй</div>';
-    } else alert(r.msg || "Түүх татахад алдаа");
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (get_employee_history)");
-  } finally {
-    showLoading(false);
-    setTimeout(setVH, 0);
-  }
-};
-
-window.submitRequest = async () => {
-  const item = document.getElementById('req-item').value;
-  const size = document.getElementById('req-size').value;
-  const qty = document.getElementById('req-qty').value;
-  if (!item || !size) return alert("Бүрэн бөглөнө үү!");
-
-  showLoading(true);
-  try {
-    const r = await postJson({ action: "add_order", code: currentUser.code, item, size, qty });
-    if (r.success) {
-      alert("Хүсэлт илгээгдлээ!");
-      window.refreshData();
-      window.showTab('orders', document.querySelector('.nav-btn'));
-    } else alert(r.msg || "Хүсэлт илгээхэд алдаа");
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (add_order)");
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.changePassword = async () => {
-  const oldP = document.getElementById('old-pass').value;
-  const newP = document.getElementById('new-pass').value;
-  const confP = document.getElementById('confirm-pass').value;
-  if (newP !== confP) return alert("Шинэ нууц үг зөрүүтэй байна!");
-
-  showLoading(true);
-  try {
-    const r = await postJson({ action: "change_pass", code: currentUser.code, oldP, newP });
-    alert(r.success ? "Амжилттай!" : (r.msg || "Алдаа"));
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (change_pass)");
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.logout = () => {
-  localStorage.removeItem('ett_user');
-  location.reload();
-};
-
-window.onload = () => {
-  setVH();
-  showLoading(false);
-
-  const stored = localStorage.getItem('ett_user');
-  if (!stored) { document.getElementById('login-page').classList.remove('hidden'); return; }
-
-  const parsed = safeJsonParse(stored);
-  if (!parsed || !parsed.code) { forceToLogin(); return; }
-
-  currentUser = parsed;
-  initApp();
-};
+  if (!name) { select.innerHTML = '<option value="">Сонгох...</option>'; return
