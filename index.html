@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>ETT PPE SYSTEM</title>
 
-  <!-- Main CSS -->
   <link rel="stylesheet" href="./styles.css?v=20260304" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 </head>
@@ -35,14 +34,12 @@
     </div>
   </div>
 
-  <!-- Sidebar overlay -->
   <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <!-- Sidebar -->
   <aside id="sidebar">
     <div class="sidebar-inner">
       <div class="sidebar-scroll">
-        <!-- User Card -->
         <div class="sb-card">
           <div class="sb-name" id="sb-name">ETT PPE SYSTEM</div>
           <div class="sb-id" id="sb-id"></div>
@@ -51,41 +48,39 @@
         </div>
 
         <div style="margin-top:12px;font-weight:900;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd">
-          Цэс
+          Үндсэн цэс
         </div>
 
-        <!-- Orders -->
         <button class="nav-btn active" id="nav-orders" onclick="showTab('orders', this)">
           <i class="fa-solid fa-list-check"></i>
           <div class="nav-text">Жагсаалт</div>
         </button>
 
-        <!-- Request (USER only) -->
+        <!-- USER only -->
         <button class="nav-btn" id="nav-request" onclick="showTab('request', this)">
           <i class="fa-solid fa-file-circle-plus"></i>
           <div class="nav-text">Хүсэлт гаргах</div>
         </button>
 
-        <!-- Items (ADMIN only) -->
+        <!-- ADMIN only -->
         <button class="nav-btn" id="nav-items" onclick="showTab('items', this)">
           <i class="fa-solid fa-boxes-stacked"></i>
           <div class="nav-text">Барааны мэдээлэл</div>
         </button>
 
-        <!-- Employees (ADMIN only) -->
+        <!-- ADMIN only -->
         <button class="nav-btn" id="nav-employees" onclick="showTab('employees', this)">
           <i class="fa-solid fa-users"></i>
           <div class="nav-text">Ажилтны мэдээлэл</div>
         </button>
 
-        <!-- Profile/Password (USER only) -->
+        <!-- USER only -->
         <button class="nav-btn" id="nav-profile" onclick="showTab('profile', this)">
           <i class="fa-solid fa-key"></i>
           <div class="nav-text">Нууц үг</div>
         </button>
       </div>
 
-      <!-- Logout at bottom -->
       <div class="sidebar-footer">
         <button class="logout-btn" onclick="logout()">
           <i class="fa-solid fa-right-from-bracket"></i>
@@ -99,7 +94,7 @@
   <section id="login-page">
     <div class="scroll-area" style="display:flex;align-items:center;justify-content:center">
       <div class="card" style="max-width:420px;width:100%">
-        <div style="font-weight:900;font-size:18px;color:#0f172a;margin-bottom:8px">ETT PPE SYSTEM</div>
+        <div style="font-weight:900;font-size:18px;color:#0f172a;margin-bottom:8px">PPE LOGIN</div>
         <div style="font-size:12px;font-weight:800;color:#64748b;margin-bottom:14px">
           Нэвтрэх код, нууц үгээ оруулна уу
         </div>
@@ -124,7 +119,6 @@
 
   <!-- Main Page -->
   <section id="main-page" class="hidden">
-    <!-- Header -->
     <header class="app-header">
       <button class="header-btn" onclick="toggleSidebar()">
         <i class="fa-solid fa-bars"></i>
@@ -138,35 +132,31 @@
       </button>
     </header>
 
-    <!-- Content -->
     <main class="scroll-area">
 
-      <!-- ===================== -->
-      <!-- TAB: ORDERS (Жагсаалт) -->
-      <!-- ===================== -->
+      <!-- TAB: ORDERS -->
       <section id="tab-orders" class="tab-content">
         <div class="tab-top">
           <div class="tab-title">ЖАГСААЛТ</div>
         </div>
 
-        <!-- Filters (3 мөр layout: 1) Төлөв,Бараа,Он,Сар 2) Газар,Хэлтэс,Ээлж 3) Нэр/Код/Албан тушаал + Цэвэрлэх) -->
         <div class="card card-compact">
           <div class="filters-grid">
             <div class="filter-group">
               <span class="filter-label">Төлөв</span>
-              <select id="filter-status"></select>
+              <select id="filter-status" onchange="applyFilters()"></select>
             </div>
             <div class="filter-group">
               <span class="filter-label">Бараа</span>
-              <select id="filter-item"></select>
+              <select id="filter-item" onchange="applyFilters()"></select>
             </div>
             <div class="filter-group">
               <span class="filter-label">Он</span>
-              <select id="filter-year"></select>
+              <select id="filter-year" onchange="applyFilters()"></select>
             </div>
             <div class="filter-group">
               <span class="filter-label">Сар</span>
-              <select id="filter-month"></select>
+              <select id="filter-month" onchange="applyFilters()"></select>
             </div>
 
             <div class="filter-group">
@@ -175,11 +165,11 @@
             </div>
             <div class="filter-group">
               <span class="filter-label">Хэлтэс</span>
-              <select id="filter-dept"></select>
+              <select id="filter-dept" onchange="applyFilters()"></select>
             </div>
             <div class="filter-group">
               <span class="filter-label">Ээлж</span>
-              <select id="filter-shift"></select>
+              <select id="filter-shift" onchange="applyFilters()"></select>
             </div>
 
             <div class="filter-group">
@@ -205,9 +195,7 @@
         <div id="orders-list-container"></div>
       </section>
 
-      <!-- ===================== -->
-      <!-- TAB: REQUEST (User only) -->
-      <!-- ===================== -->
+      <!-- TAB: REQUEST (USER only) -->
       <section id="tab-request" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">ШИНЭ ХҮСЭЛТ</div>
@@ -228,22 +216,19 @@
               <input id="req-qty" type="number" min="1" value="1" />
             </div>
             <div style="display:flex;align-items:flex-end">
-              <button class="btn-primary" onclick="submitOrder?.()">ИЛГЭЭХ</button>
+              <button class="btn-primary" onclick="submitOrder()">ИЛГЭЭХ</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ===================== -->
-      <!-- TAB: ITEMS (Admin only) -->
-      <!-- ===================== -->
+      <!-- TAB: ITEMS (ADMIN only) -->
       <section id="tab-items" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
           <div id="items-count" style="font-weight:900;color:#64748b"></div>
         </div>
 
-        <!-- Add item -->
         <div class="card card-add-item">
           <div style="display:flex;gap:12px;align-items:center">
             <div class="add-icon"><i class="fa-solid fa-plus"></i></div>
@@ -252,18 +237,17 @@
               <div class="form-grid" style="grid-template-columns:1fr 1fr 180px">
                 <input id="new-item-name" placeholder="Жишээ нь: Гутал" />
                 <input id="new-item-sizes" placeholder="Жишээ нь: 38,39,40" />
-                <button class="btn-mini edit" onclick="addItem?.()">НЭМЭХ</button>
+                <button class="btn-mini edit" onclick="addItem()">НЭМЭХ</button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Filter item -->
         <div class="card card-compact">
           <div class="form-grid" style="grid-template-columns:1fr 180px">
             <div>
               <span class="filter-label">Бараа шүүх</span>
-              <select id="items-filter-name" onchange="renderItemsList?.()"></select>
+              <select id="items-filter-name" onchange="renderItemsList()"></select>
             </div>
             <div style="display:flex;align-items:flex-end">
               <button class="btn-mini edit" onclick="clearItemsFilter()">ЦЭВЭРЛЭХ</button>
@@ -281,9 +265,7 @@
         <div id="items-list-container"></div>
       </section>
 
-      <!-- ===================== -->
-      <!-- TAB: EMPLOYEES (Admin only) -->
-      <!-- ===================== -->
+      <!-- TAB: EMPLOYEES (ADMIN only) -->
       <section id="tab-employees" class="tab-content hidden">
         <div class="tab-top">
           <div class="tab-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
@@ -292,19 +274,28 @@
 
         <div class="card card-add-item">
           <div style="display:flex;gap:12px;align-items:center">
-            <div class="add-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <!-- ✅ (2) НЭМЭХ button-гүй, icon нь button болсон -->
+            <button class="add-icon-btn" onclick="addEmployee()" title="Ажилтан нэмэх">
+              <i class="fa-solid fa-user-plus"></i>
+            </button>
+
             <div style="flex:1">
               <div class="filter-label" style="font-size:10px;color:#0f172a;margin:0 0 6px 0">Ажилтан нэмэх</div>
+
               <div class="form-grid">
                 <input id="emp-code" placeholder="Код (Жишээ нь: 12345)" />
                 <input id="emp-pass" placeholder="Нууц үг (default: 12345)" />
                 <input id="emp-ovog" placeholder="Овог (Жишээ нь: Бат)" />
                 <input id="emp-ner" placeholder="Нэр (Жишээ нь: Дорж)" />
+                <!-- ✅ (1) Албан тушаал box-гүй мэт харагдуулахын тулд style-ийг JS/CSS талд тааруулна -->
                 <input id="emp-role" placeholder="Албан тушаал" />
                 <input id="emp-place" placeholder="Газар" />
                 <input id="emp-dept" placeholder="Хэлтэс" />
                 <select id="emp-shift"></select>
-                <button class="btn-mini edit" onclick="addEmployee?.()">НЭМЭХ</button>
+              </div>
+
+              <div style="margin-top:8px;font-size:11px;font-weight:800;color:#64748b">
+                ※ Зөвхөн зүүн талын <b>icon</b> дээр дарж нэмнэ.
               </div>
             </div>
           </div>
@@ -314,19 +305,19 @@
           <div class="filters-grid" style="grid-template-columns:repeat(4,minmax(0,1fr))">
             <div class="filter-group">
               <span class="filter-label">Албан тушаал</span>
-              <input id="emp-search-role" placeholder="Жишээ нь: Машинист" oninput="renderEmployeesList?.()" />
+              <input id="emp-search-role" placeholder="Жишээ нь: Машинист" oninput="renderEmployeesList()" />
             </div>
             <div class="filter-group">
               <span class="filter-label">Газар</span>
-              <input id="emp-search-place" placeholder="Жишээ нь: Уурхай" oninput="renderEmployeesList?.()" />
+              <input id="emp-search-place" placeholder="Жишээ нь: Уурхай" oninput="renderEmployeesList()" />
             </div>
             <div class="filter-group">
               <span class="filter-label">Хэлтэс</span>
-              <input id="emp-search-dept" placeholder="Жишээ нь: Засвар" oninput="renderEmployeesList?.()" />
+              <input id="emp-search-dept" placeholder="Жишээ нь: Засвар" oninput="renderEmployeesList()" />
             </div>
             <div class="filter-group">
               <span class="filter-label">Ээлж</span>
-              <select id="emp-search-shift" onchange="renderEmployeesList?.()"></select>
+              <select id="emp-search-shift" onchange="renderEmployeesList()"></select>
             </div>
           </div>
         </div>
@@ -334,18 +325,29 @@
         <div id="employees-list-container"></div>
       </section>
 
-      <!-- ===================== -->
-      <!-- TAB: PROFILE/PASSWORD (User only) -->
-      <!-- ===================== -->
+      <!-- TAB: PROFILE (USER only) -->
       <section id="tab-profile" class="tab-content hidden">
         <div class="tab-top">
-          <div class="tab-title">НУУЦ ҮГ</div>
+          <div class="tab-title">НУУЦ ҮГ СОЛИХ</div>
         </div>
 
         <div class="card">
-          <div style="font-weight:900;color:#0f172a;margin-bottom:10px">Нууц үг солих</div>
-          <div style="font-size:12px;font-weight:800;color:#64748b">
-            Энэ хэсгийг user талд ашиглана. (Admin дээр цэс харагдахгүй)
+          <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 220px">
+            <div>
+              <span class="filter-label">Хуучин нууц үг</span>
+              <input id="old-pass" type="password" />
+            </div>
+            <div>
+              <span class="filter-label">Шинэ нууц үг</span>
+              <input id="new-pass" type="password" />
+            </div>
+            <div>
+              <span class="filter-label">Шинэ нууц үг давтах</span>
+              <input id="new-pass2" type="password" />
+            </div>
+            <div style="display:flex;align-items:flex-end">
+              <button class="btn-primary" onclick="changePassword()">ХАДГАЛАХ</button>
+            </div>
           </div>
         </div>
       </section>
@@ -353,7 +355,6 @@
     </main>
   </section>
 
-  <!-- JS -->
-  <script src="./app.js?v=20260304"></script>
+  <script src="./app.js?v=20260305"></script>
 </body>
 </html>
