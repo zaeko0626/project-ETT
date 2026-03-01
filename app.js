@@ -183,8 +183,11 @@ window.refreshData = async () => {
 
     window.updateSizeOptions();
     setupOrderFilters();
-    setupEmployeeFilters(); // ✅ Place/Dept/Shift
+    setupEmployeeFilters();
     window.applyFilters();
+
+    // ✅ Items dropdown filter population
+    setupItemsNameFilter();
 
     const cnt = document.getElementById("items-count");
     if (cnt) cnt.innerText = `${allItems.length} бараа`;
@@ -197,6 +200,20 @@ window.refreshData = async () => {
   } finally {
     showLoading(false);
   }
+};
+
+function setupItemsNameFilter() {
+  const sel = document.getElementById("items-filter-name");
+  if (!sel) return;
+
+  const names = allItems.map(i => i.name).filter(Boolean).sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = `<option value="">БҮХ БАРАА</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+}
+
+window.clearItemsFilter = () => {
+  const sel = document.getElementById("items-filter-name");
+  if (sel) sel.value = "";
+  window.renderItemsList();
 };
 
 function setupOrderFilters() {
@@ -224,7 +241,7 @@ function setupOrderFilters() {
   monthSel.innerHTML = mH;
 }
 
-/* ✅ Employee filters (Place -> Dept cascading) */
+/* Employee filters */
 const SHIFT_OPTIONS = ["А ээлж","Б ээлж","В ээлж","Г ээлж","Төв оффис","Бусад"];
 
 function setupEmployeeFilters() {
@@ -399,17 +416,13 @@ window.submitRequest = async () => {
   }
 };
 
-/* Items admin */
+/* ✅ Items list (dropdown name filter only) */
 window.renderItemsList = () => {
   const container = document.getElementById("items-list-container");
   if (!container) return;
 
-  const q = (document.getElementById("items-filter")?.value || "").trim().toLowerCase();
-  const filtered = allItems.filter(it => {
-    if (!q) return true;
-    const hay = `${it.name || ""} ${(it.sizes || "")}`.toLowerCase();
-    return hay.includes(q);
-  });
+  const selectedName = document.getElementById("items-filter-name")?.value || "";
+  const filtered = allItems.filter(it => !selectedName || it.name === selectedName);
 
   const cnt = document.getElementById("items-count");
   if (cnt) cnt.innerText = `${filtered.length} бараа`;
@@ -460,6 +473,7 @@ window.renderItemsList = () => {
   container.innerHTML = head + rows;
 };
 
+/* Item CRUD + history (unchanged from your working version) */
 window.addItem = async () => {
   const name = document.getElementById("new-item-name")?.value?.trim() || "";
   const sizes = document.getElementById("new-item-sizes")?.value?.trim() || "";
@@ -541,7 +555,6 @@ window.deleteItem = async (name) => {
   }
 };
 
-/* ✅ Item history: Size & Qty тусдаа багана */
 window.openItemHistory = async (item) => {
   showLoading(true);
   try {
