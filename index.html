@@ -1,259 +1,172 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="mn">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>ETT PPE System</title>
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="./styles.css?v=20260302" />
+  <!-- Optional icons/fonts -->
+  <link rel="stylesheet" href="styles.css?v=20260304_9" />
 </head>
-
 <body>
-  <!-- LOADING -->
-  <div id="loading-overlay" class="hidden">
-    <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-600 mb-4"></div>
-    <p class="text-[10px] font-black text-slate-800 uppercase tracking-widest">Түр хүлээнэ үү...</p>
-  </div>
 
-  <!-- MODAL -->
-  <div id="modal-overlay" class="hidden fixed inset-0 z-[999999]">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="window.closeModal()"></div>
-    <div class="relative w-full h-full flex items-center justify-center p-4">
-      <div class="w-full max-w-3xl bg-white rounded-[24px] border border-slate-200 shadow-xl overflow-hidden animate-fade-in">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-          <div id="modal-title" class="font-black uppercase text-[12px] text-slate-800">Modal</div>
-          <button class="text-slate-500 hover:text-slate-900" onclick="window.closeModal()">
-            <i class="fa-solid fa-xmark text-xl"></i>
-          </button>
-        </div>
-        <div id="modal-body" class="p-5 max-h-[70vh] overflow-y-auto"></div>
-      </div>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="overlay hidden">
+    <div class="loader-card">
+      <div class="spinner"></div>
+      <div class="loader-text">Түр хүлээнэ үү…</div>
     </div>
   </div>
 
-  <div id="main-page" class="h-screen flex flex-col overflow-hidden hidden">
-    <header class="app-header">
-      <button onclick="window.toggleSidebar()" class="text-xl p-2 rounded-lg">
-        <i class="fas fa-bars"></i>
-      </button>
-
-      <div class="flex flex-col items-center text-center">
-        <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE SYSTEM</div>
-        <div id="user-display-name" class="text-[7px] font-black uppercase text-slate-400"></div>
+  <!-- Modal -->
+  <div id="modal-overlay" class="overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <div id="modal-title" class="modal-title"></div>
+        <button class="icon-btn" onclick="closeModal()">✕</button>
       </div>
-
-      <button onclick="window.refreshData()" class="bg-blue-600 px-4 py-2 rounded-xl text-[9px] font-black uppercase flex items-center">
-        <i class="fas fa-sync-alt mr-2"></i>
-      </button>
-    </header>
-
-    <div id="sidebar-overlay" onclick="window.toggleSidebar()"></div>
-
-    <aside id="sidebar">
-      <div class="p-6 border-b border-slate-800 space-y-4">
-        <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
-
-        <div class="sb-card">
-          <div id="sb-name" class="sb-name"></div>
-          <div id="sb-id" class="sb-id"></div>
-          <div id="sb-role" class="sb-role"></div>
-          <div id="sb-extra" class="sb-extra"></div>
-        </div>
-      </div>
-
-      <nav class="p-4">
-        <button onclick="window.showTab('orders', this)" class="nav-btn active">
-          <i class="fas fa-list-ul"></i>
-          <span class="nav-text">Жагсаалт</span>
-        </button>
-
-        <button id="nav-request" onclick="window.showTab('request', this)" class="nav-btn">
-          <i class="fas fa-plus-circle"></i>
-          <span class="nav-text">Хүсэлт гаргах</span>
-        </button>
-
-        <button id="nav-items" onclick="window.showTab('items', this)" class="nav-btn hidden">
-          <i class="fa-solid fa-boxes-stacked"></i>
-          <span class="nav-text">Барааны мэдээлэл</span>
-        </button>
-
-        <button onclick="window.showTab('profile', this)" class="nav-btn">
-          <i class="fas fa-key"></i>
-          <span class="nav-text">Нууц үг</span>
-        </button>
-      </nav>
-
-      <div class="p-4 absolute bottom-0 w-full border-t border-slate-800">
-        <button onclick="window.logout()" class="w-full text-red-500 p-4 rounded-2xl text-[10px] font-black uppercase">
-          Гарах
-        </button>
-      </div>
-    </aside>
-
-    <main class="scroll-area">
-
-      <!-- ORDERS -->
-      <div id="tab-orders" class="tab-content block">
-        <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
-
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <label class="filter-label">Бараа</label>
-              <select id="filter-item" onchange="window.applyFilters()"></select>
-            </div>
-            <div>
-              <label class="filter-label">Төлөв</label>
-              <select id="filter-status" onchange="window.applyFilters()">
-                <option value="">Бүгд</option>
-                <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
-                <option value="Зөвшөөрсөн">Олгосон</option>
-                <option value="Татгалзсан">Татгалзсан</option>
-              </select>
-            </div>
-            <div>
-              <label class="filter-label">Он</label>
-              <select id="filter-year" onchange="window.applyFilters()"></select>
-            </div>
-            <div>
-              <label class="filter-label">Сар</label>
-              <select id="filter-month" onchange="window.applyFilters()"></select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-4">
-            <div>
-              <label class="filter-label">Газар</label>
-              <select id="filter-place" onchange="window.onPlaceChange()"></select>
-            </div>
-            <div>
-              <label class="filter-label">Хэлтэс</label>
-              <select id="filter-dept" onchange="window.applyFilters()"></select>
-            </div>
-            <div>
-              <label class="filter-label">Ээлж</label>
-              <select id="filter-shift" onchange="window.applyFilters()"></select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-2 border-t pt-4">
-            <input type="text" id="search-name" oninput="window.applyFilters()" placeholder="Нэр..." />
-            <input type="text" id="search-code" oninput="window.applyFilters()" placeholder="Код..." />
-            <input type="text" id="search-role" oninput="window.applyFilters()" placeholder="Талбар..." />
-          </div>
-        </div>
-
-        <div id="orders-list-container" class="space-y-3 pb-24"></div>
-      </div>
-
-      <!-- REQUEST -->
-      <div id="tab-request" class="tab-content hidden">
-        <div class="max-w-md mx-auto card">
-          <h3 class="font-black uppercase text-xs mb-6 text-blue-600">Шинэ хүсэлт</h3>
-          <div class="space-y-4">
-            <div>
-              <label class="filter-label">Бараа</label>
-              <select id="req-item" onchange="window.updateSizeOptions()"></select>
-            </div>
-            <div>
-              <label class="filter-label">Хэмжээ</label>
-              <select id="req-size"></select>
-            </div>
-            <div>
-              <label class="filter-label">Тоо</label>
-              <input type="number" id="req-qty" value="1" />
-            </div>
-            <button onclick="window.submitRequest()" class="btn-primary">Илгээх</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ITEMS -->
-      <div id="tab-items" class="tab-content hidden">
-        <div class="max-w-6xl mx-auto space-y-4">
-
-          <!-- Add item card -->
-          <div class="card card-add-item">
-            <div class="items-topline">
-              <!-- ✅ icon changed (not plus) -->
-              <div class="items-top-icon" title="Бараа удирдах">
-                <i class="fa-solid fa-box-open"></i>
-              </div>
-
-              <div class="items-top-text">
-                <!-- ✅ bigger text -->
-                <div class="items-top-title">БАРАА НЭМЭХ</div>
-                <div class="items-top-sub">Нэр + размерууд (таслалаар)</div>
-              </div>
-
-              <div class="items-top-right">
-                <div class="items-count" id="items-count"></div>
-
-                <!-- ✅ Add button = + only -->
-                <button class="btn-plus" onclick="window.addItem()" title="Нэмэх">
-                  <i class="fa-solid fa-plus"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input type="text" id="new-item-name" placeholder="Барааны нэр" />
-              <input type="text" id="new-item-sizes" placeholder="Жишээ нь: 38,39,40" />
-            </div>
-          </div>
-
-          <!-- Filter row -->
-          <div class="card">
-            <div class="items-filter-row">
-              <div class="items-filter-left">
-                <!-- ✅ bigger label -->
-                <label class="items-filter-label">БАРАА ШҮҮХ</label>
-                <!-- ✅ select not too “full” -->
-                <select id="items-filter-name" class="items-filter-select" onchange="window.renderItemsList()"></select>
-              </div>
-
-              <!-- ✅ rename “clear” button -->
-              <button onclick="window.clearItemsFilter()" class="btn-reset" title="Шүүлтүүр арилгах">
-                <i class="fa-solid fa-filter-circle-xmark"></i>
-                <span>Шүүлтүүр арилгах</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- List -->
-          <div id="items-list-container" class="space-y-3 pb-24"></div>
-        </div>
-      </div>
-
-      <!-- PROFILE -->
-      <div id="tab-profile" class="tab-content hidden">
-        <div class="max-w-md mx-auto card text-center">
-          <h3 class="font-black uppercase text-xs mb-6">Нууц үг солих</h3>
-          <div class="space-y-4">
-            <input type="password" id="old-pass" placeholder="Хуучин" />
-            <input type="password" id="new-pass" placeholder="Шинэ" />
-            <input type="password" id="confirm-pass" placeholder="Давтах" />
-            <button onclick="window.changePassword()" class="btn-primary bg-slate-800">Хадгалах</button>
-          </div>
-        </div>
-      </div>
-
-    </main>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
   </div>
 
   <!-- LOGIN -->
-  <div id="login-page" class="h-screen flex items-center justify-center bg-[#0f172a] p-6">
-    <div class="w-full max-w-sm bg-white p-10 rounded-[3rem] text-center">
-      <h2 class="text-xl font-black text-slate-800 uppercase mb-8">PPE LOGIN</h2>
-      <div class="space-y-4">
-        <input type="text" id="login-user" placeholder="Код" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black" />
-        <input type="password" id="login-pass" placeholder="Нууц үг" class="p-5 bg-slate-50 border-none rounded-2xl text-center font-black" />
-        <button onclick="window.handleLogin()" class="btn-primary py-5">Нэвтрэх</button>
+  <section id="login-page" class="page">
+    <div class="login-card">
+      <div class="brand">ETT PPE System</div>
+      <div class="muted">Код, нууц үгээ оруулна уу</div>
+
+      <label class="lbl">Код</label>
+      <input id="login-user" class="inp" placeholder="Ж: 10001" autocomplete="username" />
+
+      <label class="lbl">Нууц үг</label>
+      <input id="login-pass" class="inp" type="password" placeholder="•••••" autocomplete="current-password" />
+
+      <button class="btn primary" onclick="handleLogin()">Нэвтрэх</button>
+
+      <div class="hint">
+        Admin demo: <b>admin</b> / <b>12345</b>
       </div>
     </div>
-  </div>
+  </section>
 
- <script src="./app.js?v=20260304_2"></script>
+  <!-- MAIN -->
+  <section id="main-page" class="page hidden">
+    <header class="topbar">
+      <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+      <div class="top-title">
+        <div class="title">ETT PPE</div>
+        <div id="user-display-name" class="subtitle hidden"></div>
+      </div>
+      <button class="btn ghost" onclick="logout()">Гарах</button>
+    </header>
+
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar">
+        <div class="usercard">
+          <div id="sb-name" class="uc-name"></div>
+          <div id="sb-id" class="uc-id"></div>
+          <div id="sb-role" class="uc-role"></div>
+          <div id="sb-extra" class="uc-extra"></div>
+        </div>
+
+        <div class="nav">
+          <button class="nav-btn active" id="nav-orders" onclick="showTab('orders', this)">Захиалга</button>
+          <button class="nav-btn" id="nav-request" onclick="showTab('request', this)">Хүсэлт</button>
+          <button class="nav-btn hidden" id="nav-items" onclick="showTab('items', this)">Бараа (Admin)</button>
+        </div>
+
+        <div class="side-actions">
+          <button class="btn ghost" onclick="refreshData()">Дахин ачаалах</button>
+        </div>
+      </aside>
+
+      <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+      <!-- Content -->
+      <main class="content">
+        <!-- Orders tab -->
+        <section id="tab-orders" class="tab-content">
+          <div class="section-head">
+            <div class="h1">Захиалгууд</div>
+          </div>
+
+          <div class="filters">
+            <input id="search-name" class="inp" placeholder="Нэрээр хайх" oninput="applyFilters()" />
+            <input id="search-code" class="inp" placeholder="Кодоор хайх" oninput="applyFilters()" />
+            <input id="search-role" class="inp" placeholder="Албан тушаал" oninput="applyFilters()" />
+
+            <select id="filter-item" class="inp" onchange="applyFilters()"></select>
+            <select id="filter-status" class="inp" onchange="applyFilters()">
+              <option value="">БҮХ ТӨЛӨВ</option>
+              <option value="Хүлээгдэж буй">Хүлээгдэж буй</option>
+              <option value="Зөвшөөрсөн">Олгосон</option>
+              <option value="Татгалзсан">Татгалзсан</option>
+            </select>
+
+            <select id="filter-year" class="inp" onchange="applyFilters()"></select>
+            <select id="filter-month" class="inp" onchange="applyFilters()"></select>
+
+            <select id="filter-place" class="inp" onchange="onPlaceChange()"></select>
+            <select id="filter-dept" class="inp" onchange="applyFilters()"></select>
+            <select id="filter-shift" class="inp" onchange="applyFilters()"></select>
+          </div>
+
+          <div id="orders-list-container" class="list"></div>
+        </section>
+
+        <!-- Request tab -->
+        <section id="tab-request" class="tab-content hidden">
+          <div class="section-head">
+            <div class="h1">PPE хүсэлт</div>
+            <div class="muted">Бараа сонгоод хүсэлт илгээнэ</div>
+          </div>
+
+          <div class="card">
+            <label class="lbl">Бараа</label>
+            <select id="req-item" class="inp" onchange="updateSizeOptions()"></select>
+
+            <label class="lbl">Размер</label>
+            <select id="req-size" class="inp"></select>
+
+            <label class="lbl">Тоо</label>
+            <input id="req-qty" class="inp" type="number" min="1" value="1" />
+
+            <button class="btn primary" onclick="submitRequest()">Илгээх</button>
+          </div>
+        </section>
+
+        <!-- Items tab (Admin) -->
+        <section id="tab-items" class="tab-content hidden">
+          <div class="section-head">
+            <div class="h1">Бараа (Admin)</div>
+            <div class="row">
+              <div id="items-count" class="muted"></div>
+              <div class="row">
+                <select id="items-filter-name" class="inp" onchange="renderItemsList()"></select>
+                <button class="btn ghost" onclick="clearItemsFilter()">Цэвэрлэх</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="h2">Шинэ бараа нэмэх</div>
+            <label class="lbl">Нэр</label>
+            <input id="new-item-name" class="inp" placeholder="Ж: Ажлын гутал" />
+
+            <label class="lbl">Размерууд (таслалаар)</label>
+            <input id="new-item-sizes" class="inp" placeholder="Ж: 39,40,41,42" />
+
+            <button class="btn primary" onclick="addItem()">Нэмэх</button>
+          </div>
+
+          <div id="items-list-container" class="list"></div>
+        </section>
+
+      </main>
+    </div>
+  </section>
+
+  <script src="./app.js?v=20260304_9"></script>
 </body>
 </html>
