@@ -25,6 +25,7 @@
 
       <div class="flex flex-col items-center text-center">
         <div class="font-black italic text-[14px] uppercase tracking-tighter text-blue-400">ETT PPE System</div>
+        <!-- ✅ ажилтан дээр app.js энэ мөрийг нуух болно -->
         <div id="user-display-name" class="text-[7px] font-black uppercase text-slate-400"></div>
       </div>
 
@@ -39,26 +40,33 @@
       <div class="p-6 border-b border-slate-800">
         <div class="font-black italic text-blue-500 uppercase tracking-widest">Үндсэн цэс</div>
 
-        <!-- ✅ NEW: Sidebar user/admin info card -->
-        <div id="sidebar-user-card" class="mt-4 bg-slate-950/40 border border-slate-700 rounded-2xl p-4 text-left">
-          <div id="sb-name" class="text-[12px] font-black uppercase text-white leading-tight">...</div>
-          <div id="sb-code" class="text-[9px] font-extrabold uppercase text-blue-300 mt-2">...</div>
-          <div id="sb-role" class="text-[9px] font-bold text-slate-300 mt-1">...</div>
+        <!-- ✅ Sidebar employee/admin card -->
+        <div id="sidebar-user-card" class="mt-4 sb-card">
+          <div id="sb-name" class="sb-name">...</div>
+          <div id="sb-id" class="sb-id">...</div>
+          <div id="sb-role" class="sb-role">...</div>
         </div>
       </div>
 
       <nav class="p-4">
         <button onclick="window.showTab('orders', this)" class="nav-btn active">
-          <i class="fas fa-list-ul mr-3"></i> Жагсаалт
+          <i class="fas fa-list-ul"></i>
+          <span class="nav-text">Жагсаалт</span>
         </button>
+
         <button id="nav-request" onclick="window.showTab('request', this)" class="nav-btn">
-          <i class="fas fa-plus-circle mr-3"></i> Хүсэлт гаргах
+          <i class="fas fa-plus-circle"></i>
+          <span class="nav-text">Хүсэлт гаргах</span>
         </button>
+
         <button id="nav-admin" onclick="window.showTab('admin-panel', this)" class="nav-btn">
-          <i class="fas fa-user-shield mr-3"></i> Удирдлага
+          <i class="fas fa-user-shield"></i>
+          <span class="nav-text">Удирдлага</span>
         </button>
+
         <button onclick="window.showTab('profile', this)" class="nav-btn">
-          <i class="fas fa-key mr-3"></i> Нууц үг
+          <i class="fas fa-key"></i>
+          <span class="nav-text">Нууц үг</span>
         </button>
       </nav>
 
@@ -70,6 +78,7 @@
     </aside>
 
     <main class="scroll-area">
+
       <div id="tab-orders" class="tab-content block">
         <div class="bg-white p-4 rounded-[2rem] border border-slate-200 shadow-sm space-y-4 mb-6">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -140,28 +149,6 @@
               <div id="hist-full-name" class="font-black text-[11px] uppercase text-slate-800"></div>
               <div id="hist-role" class="text-[8px] font-bold text-blue-600 mb-4"></div>
               <div id="hist-items-container" class="space-y-2 border-t pt-4"></div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="card">
-              <h3 class="font-black uppercase text-[10px] mb-4 text-green-600">Ажилтан нэмэх</h3>
-              <div class="space-y-3">
-                <input type="text" id="new-emp-code" placeholder="Код">
-                <input type="text" id="new-emp-lastname" placeholder="Овог">
-                <input type="text" id="new-emp-name" placeholder="Нэр">
-                <input type="text" id="new-emp-role" placeholder="Албан тушаал">
-                <button onclick="window.addEmployee()" class="btn-primary bg-green-600">Бүртгэх</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3 class="font-black uppercase text-[10px] mb-4 text-orange-600">Бараа нэмэх</h3>
-              <div class="space-y-3">
-                <input type="text" id="new-item-name" placeholder="Нэр">
-                <input type="text" id="new-item-sizes" placeholder="Размер (S,M,L)">
-                <button onclick="window.addItem()" class="btn-primary bg-orange-600">Нэмэх</button>
-              </div>
             </div>
           </div>
         </div>
