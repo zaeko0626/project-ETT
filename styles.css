@@ -311,3 +311,64 @@ input:focus,select:focus{
 
   .filters-grid{gap:12px}
 }
+/* ---------- Modal (in-page popup) ---------- */
+#modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(2,6,23,.55);
+  backdrop-filter: blur(6px);
+  z-index:999999;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+#modal-overlay.hidden{display:none !important;}
+
+.modal-card{
+  width:min(860px, 96vw);
+  max-height:min(80vh, 760px);
+  background:#fff;
+  border:1px solid #e2e8f0;
+  border-radius:22px;
+  box-shadow:0 20px 60px rgba(0,0,0,.20);
+  overflow:hidden;
+}
+
+.modal-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:14px 16px;
+  background:#0f172a;
+  color:#fff;
+}
+
+.modal-title{
+  font-weight:900;
+  font-size:13px;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.modal-x{
+  width:38px;height:38px;
+  border:none;
+  border-radius:14px;
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.modal-x:hover{background:rgba(255,255,255,.20);}
+
+.modal-body{
+  padding:16px;
+  max-height:calc(min(80vh, 760px) - 68px);
+  overflow:auto;
+  -webkit-overflow-scrolling:touch;
+  background:#f1f5f9;
+}
