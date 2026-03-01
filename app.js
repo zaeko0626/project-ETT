@@ -59,6 +59,34 @@ function forceToLogin() {
   showLoading(false);
 }
 
+/* ✅ Sidebar profile card updater */
+function updateSidebarUserCard() {
+  const nameEl = document.getElementById('sb-name');
+  const codeEl = document.getElementById('sb-code');
+  const roleEl = document.getElementById('sb-role');
+
+  if (!nameEl || !codeEl || !roleEl) return;
+
+  if (!currentUser) {
+    nameEl.innerText = "";
+    codeEl.innerText = "";
+    roleEl.innerText = "";
+    return;
+  }
+
+  if (currentUser.type === "admin") {
+    nameEl.innerText = "АДМИНИСТРАТОР";
+    codeEl.innerText = "";
+    roleEl.innerText = "";
+    return;
+  }
+
+  const fullName = (currentUser.ovog ? `${currentUser.ovog} ` : "") + (currentUser.ner || "");
+  nameEl.innerText = fullName.toUpperCase();
+  codeEl.innerText = String(currentUser.code || "").toUpperCase();
+  roleEl.innerText = String(currentUser.role || "");
+}
+
 window.handleLogin = async () => {
   const code = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value.trim();
@@ -85,6 +113,9 @@ function initApp() {
 
   document.getElementById('user-display-name').innerText =
     (currentUser && currentUser.ovog) ? `${currentUser.ovog} ${currentUser.ner}` : (currentUser?.ner || "");
+
+  // ✅ Update sidebar card
+  updateSidebarUserCard();
 
   if (currentUser && currentUser.type === 'admin') {
     document.getElementById('nav-request').classList.add('hidden');
@@ -120,10 +151,9 @@ function setupFilters() {
   document.getElementById('filter-month').innerHTML = mH;
 }
 
-/* ✅ Status name mapping (UI) */
 function uiStatus(status) {
   if (status === "Зөвшөөрсөн") return "Олгосон";
-  return status; // "Хүлээгдэж буй", "Татгалзсан" хэвээр
+  return status;
 }
 
 window.refreshData = async () => {
@@ -204,14 +234,11 @@ function renderOrders(orders) {
   container.innerHTML = orders.length
     ? orders.slice().reverse().map(o => {
 
-      // badge color depends on raw status
       let sC = "bg-amber-100 text-amber-700";
       if (o.status === 'Зөвшөөрсөн') sC = "bg-green-100 text-green-700";
       if (o.status === 'Татгалзсан') sC = "bg-red-100 text-red-700";
 
-      // ✅ Admin action buttons only show when status = "Хүлээгдэж буй"
       const shouldShowActions = (currentUser && currentUser.type === 'admin' && o.status === 'Хүлээгдэж буй');
-
       const adminActions = shouldShowActions ? `
         <div class="flex gap-2 mt-4 pt-4 border-t border-slate-100">
           <button onclick="window.updateStatus('${o.id}', 'Зөвшөөрсөн')" class="flex-1 bg-green-600 text-white py-2 rounded-lg text-[8px] font-black uppercase">Олгох</button>
@@ -242,7 +269,6 @@ function renderOrders(orders) {
 window.updateStatus = async (id, status) => {
   showLoading(true);
 
-  // ✅ UI дээр тухайн мөрний status-г түр update хийгээд товчнуудыг шууд нуух (optimistic)
   try {
     const idx = allOrders.findIndex(x => String(x.id) === String(id));
     if (idx >= 0) allOrders[idx].status = status;
@@ -251,12 +277,8 @@ window.updateStatus = async (id, status) => {
 
   try {
     const r = await postJson({ action: "update_status", id, status });
-    if (r.success) {
-      await window.refreshData(); // server-ээс баталгаажуулж дахин татна
-    } else {
-      alert(r.msg || "Status update error");
-      await window.refreshData();
-    }
+    if (r.success) await window.refreshData();
+    else { alert(r.msg || "Status update error"); await window.refreshData(); }
   } catch(e) {
     console.error(e);
     alert("Алдаа! (update_status)");
@@ -311,49 +333,6 @@ window.submitRequest = async () => {
   } catch(e) {
     console.error(e);
     alert("Алдаа! (add_order)");
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.addEmployee = async () => {
-  const payload = {
-    action: "add_employee",
-    code: document.getElementById('new-emp-code').value.trim(),
-    ner: document.getElementById('new-emp-name').value.trim(),
-    ovog: document.getElementById('new-emp-lastname').value.trim(),
-    role: document.getElementById('new-emp-role').value.trim()
-  };
-  if (!payload.code || !payload.ner) return alert("Мэдээллээ шалгана уу!");
-
-  showLoading(true);
-  try {
-    const r = await postJson(payload);
-    alert(r.msg || (r.success ? "Ажилтан нэмэгдлээ" : "Алдаа"));
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (add_employee)");
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.addItem = async () => {
-  const payload = {
-    action: "add_item",
-    name: document.getElementById('new-item-name').value.trim(),
-    sizes: document.getElementById('new-item-sizes').value.trim()
-  };
-  if (!payload.name) return alert("Нэр оруулна уу!");
-
-  showLoading(true);
-  try {
-    const r = await postJson(payload);
-    if (r.success) { alert("Бараа нэмэгдлээ"); window.refreshData(); }
-    else alert(r.msg || "Add item error");
-  } catch(e) {
-    console.error(e);
-    alert("Алдаа! (add_item)");
   } finally {
     showLoading(false);
   }
