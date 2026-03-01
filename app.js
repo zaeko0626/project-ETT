@@ -1,10 +1,10 @@
 // =========================
-// ETT PPE System - app.js (FULL)
+// ETT PPE System - app.js (FULL, CORS-safe)
+// Uses x-www-form-urlencoded to avoid OPTIONS preflight
 // =========================
 
-// 1) 🔧 API URL чинь /exec-ээр төгссөн байх ёстой
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbzt5PLrQ24ZmBnkZDKOR82gOXzQbSBDnQoplVQ_Sne0HIIzyq7ORksBPxMUOz_iqrjr/exec";
+  "https://script.google.com/macros/s/AKfycbwKtUSt5NLStZ0OCkwspBehi8PoUbV_NRKYrBE48Ehu3MmxzrGsq-kMGhORI_bX-i5O/exec";
 
 // -------------------------
 // Global state
@@ -42,6 +42,7 @@ function showLoading(show) {
 
 function uiStatus(status) {
   if (status === "Зөвшөөрсөн") return "Олгосон";
+  if (status === "Татгалзсан") return "Татгалзсан";
   return status || "";
 }
 
@@ -64,21 +65,26 @@ function formatDate(dt) {
 }
 
 // -------------------------
-// ✅ Robust API POST (JSON)
+// ✅ CORS-safe API POST (NO preflight)
 // -------------------------
-async function postJson(payload) {
+async function apiPost(payload) {
+  const params = new URLSearchParams();
+  Object.keys(payload || {}).forEach((k) => {
+    const v = payload[k];
+    params.append(k, v == null ? "" : String(v));
+  });
+
   const res = await fetch(API_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json;charset=utf-8",
+      // ✅ simple request => no OPTIONS preflight
+      "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
     },
-    body: JSON.stringify(payload),
-    redirect: "follow",
+    body: params.toString(),
   });
 
   const text = await res.text();
 
-  // HTTP error -> show real response
   if (!res.ok) {
     console.error("API HTTP ERROR:", res.status, text);
     throw new Error(`API HTTP ${res.status}: ${text.slice(0, 300)}`);
@@ -86,15 +92,8 @@ async function postJson(payload) {
 
   const json = safeJsonParse(text);
   if (!json) {
-    // This is the #1 cause: Apps Script returned HTML (deploy/permission, etc.)
-    console.error("API returned NON-JSON:", text);
-    const head = text.slice(0, 200).toLowerCase();
-    if (head.includes("<!doctype") || head.includes("<html")) {
-      throw new Error(
-        "API JSON биш HTML буцаалаа. (Apps Script Deploy/Permission асуудал байх магадлал өндөр)"
-      );
-    }
-    throw new Error("API non-JSON response");
+    console.error("API NON-JSON:", text);
+    throw new Error("API JSON биш response буцаалаа. Deploy/Access шалга.");
   }
 
   return json;
@@ -212,7 +211,7 @@ window.handleLogin = async () => {
 
   showLoading(true);
   try {
-    const result = await postJson({ action: "login", code, pass });
+    const result = await apiPost({ action: "login", code, pass });
     if (result.success) {
       currentUser = result.user;
       localStorage.setItem("ett_user", JSON.stringify(currentUser));
@@ -244,12 +243,12 @@ function initApp() {
 }
 
 // -------------------------
-// ✅ Data refresh
+// Data refresh
 // -------------------------
 window.refreshData = async () => {
   showLoading(true);
   try {
-    const data = await postJson({ action: "get_all_data" });
+    const data = await apiPost({ action: "get_all_data" });
 
     if (data.success === false) {
       alert(data.msg || "Дата татахад алдаа");
@@ -259,7 +258,6 @@ window.refreshData = async () => {
     allOrders = data.orders || [];
     allItems = data.items || [];
 
-    // Populate Order filters
     populateOrderItemFilter();
     populateRequestItemSelect();
 
@@ -279,29 +277,14 @@ window.refreshData = async () => {
     setTimeout(setVH, 0);
   } catch (e) {
     console.error(e);
-
-    // илүү ойлгомжтой message
-    const msg = String(e.message || e);
-    if (msg.includes("Deploy/Permission")) {
-      alert(
-        "Өгөгдөл татахад алдаа гарлаа.\n\n" +
-          "⚠️ Apps Script API JSON биш HTML буцааж байна.\n" +
-          "Deploy тохиргоо:\n" +
-          "Deploy → Manage deployments → Web app\n" +
-          "Execute as: Me\n" +
-          "Who has access: Anyone\n\n" +
-          "Мөн API_URL /exec зөв эсэхийг шалга."
-      );
-    } else {
-      alert("Өгөгдөл татахад алдаа гарлаа.\n\n" + msg);
-    }
+    alert("Өгөгдөл татахад алдаа гарлаа.\n\n" + String(e.message || e));
   } finally {
     showLoading(false);
   }
 };
 
 // -------------------------
-// ✅ Select population (fix option tags)
+// Select population
 // -------------------------
 function populateOrderItemFilter() {
   const filterItem = document.getElementById("filter-item");
@@ -325,9 +308,7 @@ function populateRequestItemSelect() {
   reqItem.innerHTML = html;
 }
 
-// -------------------------
 // Items name dropdown filter
-// -------------------------
 function setupItemsNameFilter() {
   const sel = document.getElementById("items-filter-name");
   if (!sel) return;
@@ -349,7 +330,7 @@ window.clearItemsFilter = () => {
 };
 
 // -------------------------
-// Order filters (existing)
+// Order filters
 // -------------------------
 function setupOrderFilters() {
   const yearSel = document.getElementById("filter-year");
@@ -550,7 +531,7 @@ function renderOrders(orders) {
 window.updateStatus = async (id, status) => {
   showLoading(true);
   try {
-    const r = await postJson({ action: "update_status", id, status });
+    const r = await apiPost({ action: "update_status", id, status });
     if (!r.success) alert(r.msg || "Status update error");
     await window.refreshData();
   } catch (e) {
@@ -571,7 +552,7 @@ window.submitRequest = async () => {
 
   showLoading(true);
   try {
-    const r = await postJson({
+    const r = await apiPost({
       action: "add_order",
       code: currentUser.code,
       item,
@@ -595,7 +576,7 @@ window.submitRequest = async () => {
 };
 
 // -------------------------
-// Items list
+// Items list + CRUD + history (ADMIN)
 // -------------------------
 window.renderItemsList = () => {
   const container = document.getElementById("items-list-container");
@@ -660,9 +641,6 @@ window.renderItemsList = () => {
   container.innerHTML = head + rows;
 };
 
-// -------------------------
-// Item CRUD + history
-// -------------------------
 window.addItem = async () => {
   const name = document.getElementById("new-item-name")?.value?.trim() || "";
   const sizes = document.getElementById("new-item-sizes")?.value?.trim() || "";
@@ -670,7 +648,7 @@ window.addItem = async () => {
 
   showLoading(true);
   try {
-    const r = await postJson({ action: "add_item", name, sizes });
+    const r = await apiPost({ action: "add_item", name, sizes });
     if (r.success) {
       document.getElementById("new-item-name").value = "";
       document.getElementById("new-item-sizes").value = "";
@@ -711,7 +689,7 @@ window.saveEditItem = async (oldName) => {
 
   showLoading(true);
   try {
-    const r = await postJson({ action: "update_item", oldName, newName, sizes });
+    const r = await apiPost({ action: "update_item", oldName, newName, sizes });
     if (r.success) {
       window.closeModal();
       await window.refreshData();
@@ -730,7 +708,7 @@ window.deleteItem = async (name) => {
 
   showLoading(true);
   try {
-    const r = await postJson({ action: "delete_item", name });
+    const r = await apiPost({ action: "delete_item", name });
     if (r.success) {
       await window.refreshData();
       alert("Устгагдлаа");
@@ -746,7 +724,7 @@ window.deleteItem = async (name) => {
 window.openItemHistory = async (item) => {
   showLoading(true);
   try {
-    const r = await postJson({ action: "get_item_history", item });
+    const r = await apiPost({ action: "get_item_history", item });
     if (!r.success) {
       alert(r.msg || "Алдаа");
       return;
@@ -806,7 +784,7 @@ window.changePassword = async () => {
 
   showLoading(true);
   try {
-    const r = await postJson({ action: "change_pass", code: currentUser.code, oldP, newP });
+    const r = await apiPost({ action: "change_pass", code: currentUser.code, oldP, newP });
     if (r.success) alert("Амжилттай!");
     else alert(r.msg || "Алдаа");
   } catch (e) {
