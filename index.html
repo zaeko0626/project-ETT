@@ -3,304 +3,305 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ETT PPE SYSTEM</title>
-
-  <!-- Fonts + Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-
-  <link rel="stylesheet" href="./styles.css?v=20260306">
+  <title>ETT PPE System</title>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
-
 <body>
 
-  <!-- Loading overlay -->
-  <div id="loading-overlay" class="loading-overlay hidden" aria-hidden="true">
-    <div class="loading-card">
-      <div class="loading-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
-      <div class="loading-icon" aria-hidden="true">⛏️</div>
-      <div class="loading-sub" id="loading-sub"></div>
+  <!-- Loading -->
+  <div id="loading-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="spinner">⛏️</div>
+      <div class="overlay-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
+      <div id="loading-sub" class="overlay-sub">—</div>
     </div>
   </div>
 
   <!-- Modal -->
-  <div id="modal-overlay" class="modal-overlay hidden" aria-hidden="true">
-    <div class="modal">
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-head">
         <div id="modal-title" class="modal-title">Modal</div>
-        <button class="icon-btn" onclick="closeModal()" aria-label="Close">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
+        <button class="icon-btn" onclick="closeModal()">✕</button>
       </div>
       <div id="modal-body" class="modal-body"></div>
     </div>
   </div>
 
-  <!-- Sidebar overlay -->
-  <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="closeSidebar()"></div>
-
-  <!-- Sidebar -->
-  <aside id="sidebar" class="sidebar hidden">
-    <div class="sidebar-top">
-      <div class="sb-brand">ETT PPE SYSTEM</div>
+  <!-- HEADER (hidden until login) -->
+  <header id="app-header" class="header hidden">
+    <button class="icon-btn" onclick="toggleSidebar()">☰</button>
+    <div class="brand">
+      <div class="brand-title">ETT PPE SYSTEM</div>
+      <div class="brand-sub">—</div>
     </div>
-
-    <div class="sidebar-scroll">
-      <!-- User card -->
-      <div class="sb-card">
-        <div class="sb-name" id="user-display-name">—</div>
-        <div class="sb-id" id="user-display-id"></div>
-        <div class="sb-role" id="user-display-role"></div>
-        <div class="sb-extra" id="user-display-extra"></div>
-      </div>
-
-      <!-- Nav -->
-      <nav class="nav">
-        <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">
-          <i class="fa-solid fa-list"></i><span>Хүсэлтийн жагсаалт</span>
-        </button>
-        <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">
-          <i class="fa-solid fa-pen-to-square"></i><span>Хүсэлт гаргах</span>
-        </button>
-        <button id="nav-items" class="nav-btn hidden" onclick="showTab('items', this)">
-          <i class="fa-solid fa-box"></i><span>Барааны мэдээлэл</span>
-        </button>
-        <button id="nav-employees" class="nav-btn hidden" onclick="showTab('employees', this)">
-          <i class="fa-solid fa-users"></i><span>Ажилтны мэдээлэл</span>
-        </button>
-        <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">
-          <i class="fa-solid fa-key"></i><span>Нууц үг</span>
-        </button>
-      </nav>
-    </div>
-
-    <div class="sidebar-footer">
-      <button class="nav-btn logout-btn" onclick="logout()">
-        <i class="fa-solid fa-right-from-bracket"></i><span>ГАРАХ</span>
-      </button>
-    </div>
-  </aside>
-
-  <!-- HEADER -->
-  <header id="app-header" class="app-header hidden">
-    <div class="header-left">
-      <button class="icon-btn" onclick="toggleSidebar()" aria-label="Menu">
-        <i class="fa-solid fa-bars"></i>
-      </button>
-    </div>
-
-    <div class="header-center">
-      <div class="app-title">ETT PPE SYSTEM</div>
-    </div>
-
-    <div class="header-right">
-      <button class="header-btn refresh-btn" onclick="refreshData()">
-        <i class="fa-solid fa-rotate-right"></i>
-        <span class="refresh-text">СЭРГЭЭХ</span>
-      </button>
+    <div class="header-actions">
+      <button class="btn" onclick="refreshData()">СЭРГЭЭХ</button>
+      <button class="btn danger" onclick="logout()">ГАРАХ</button>
     </div>
   </header>
 
-  <!-- LOGIN SCREEN -->
-  <div id="login-screen" class="screen">
-    <div class="login-wrap">
-      <div class="login-card">
-        <div class="login-title">PPE LOGIN</div>
-        <div class="login-sub">Нэвтрэх код, нууц үгээ оруулна уу</div>
+  <!-- SIDEBAR (hidden until login) -->
+  <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="closeSidebar()"></div>
 
+  <aside id="sidebar" class="sidebar hidden">
+    <div class="sidebar-top">
+      <div class="sidebar-title">ETT PPE SYSTEM</div>
+      <button class="icon-btn" onclick="closeSidebar()">✕</button>
+    </div>
+
+    <div class="nav">
+      <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">Хүсэлтийн жагсаалт</button>
+      <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">Хүсэлт гаргах</button>
+      <button id="nav-items" class="nav-btn" onclick="showTab('items', this)">Барааны мэдээлэл</button>
+      <button id="nav-users" class="nav-btn" onclick="showTab('users', this)">Ажилтны мэдээлэл</button>
+      <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">Нууц үг</button>
+    </div>
+  </aside>
+
+  <!-- LOGIN SCREEN -->
+  <main id="login-screen" class="screen">
+    <div class="card">
+      <div class="card-title">PPE LOGIN</div>
+      <div class="muted">Нэвтрэх код, нууц үгээ оруулна уу</div>
+
+      <div class="form">
         <label class="label">Код</label>
-        <input id="login-code" class="input" placeholder="Код" autocomplete="username"/>
+        <input id="login-code" class="input" placeholder="Ж: 1000123" autocomplete="username" />
 
         <label class="label">Нууц үг</label>
-        <input id="login-pass" type="password" class="input" placeholder="Нууц үг" autocomplete="current-password"/>
+        <input id="login-pass" class="input" type="password" placeholder="••••••" autocomplete="current-password" />
 
-        <button class="btn btn-primary" onclick="login()">НЭВТРЭХ</button>
-
-        <div class="login-hint">Admin demo: admin / 12345</div>
+        <button class="btn primary full" onclick="login()">НЭВТРЭХ</button>
+        <div class="hint">Admin demo: <b>admin</b> / <b>12345</b></div>
       </div>
     </div>
-  </div>
+  </main>
 
   <!-- MAIN SCREEN -->
-  <div id="main-screen" class="screen hidden">
+  <main id="main-screen" class="screen hidden">
 
-    <!-- TAB: Orders -->
+    <!-- ORDERS -->
     <section id="tab-orders" class="tab-content">
-      <div class="page-title">ХҮСЭЛТИЙН ЖАГСААЛТ</div>
+      <div class="page-head">
+        <div class="page-title">ХҮСЭЛТИЙН ЖАГСААЛТ</div>
+      </div>
 
-      <div class="card">
-        <div class="filters-grid">
-          <div class="f">
-            <div class="filter-label">Төлөв</div>
-            <select id="filter-status" class="select"></select>
-          </div>
-          <div class="f">
-            <div class="filter-label">Бараа</div>
-            <select id="filter-item" class="select"></select>
-          </div>
-          <div class="f">
-            <div class="filter-label">Он</div>
-            <select id="filter-year" class="select"></select>
-          </div>
-          <div class="f">
-            <div class="filter-label">Сар</div>
-            <select id="filter-month" class="select"></select>
+      <div class="filters card">
+        <div class="filter-grid">
+          <div class="field">
+            <div class="label">Төлөв</div>
+            <select id="filter-status" class="input"></select>
           </div>
 
-          <div class="f">
-            <div class="filter-label">Газар</div>
-            <select id="filter-place" class="select"></select>
-          </div>
-          <div class="f">
-            <div class="filter-label">Хэлтэс</div>
-            <select id="filter-dept" class="select"></select>
-          </div>
-          <div class="f">
-            <div class="filter-label">Ээлж</div>
-            <select id="filter-shift" class="select"></select>
+          <div class="field">
+            <div class="label">Бараа</div>
+            <select id="filter-item" class="input"></select>
           </div>
 
-          <div class="f">
-            <div class="filter-label">Нэрээр хайх</div>
-            <input id="search-name" class="input" placeholder="Жишээ нь: Бат"/>
-          </div>
-          <div class="f">
-            <div class="filter-label">Кодоор хайх</div>
-            <input id="search-code" class="input" placeholder="Жишээ нь: 12345"/>
-          </div>
-          <div class="f">
-            <div class="filter-label">Албан тушаал</div>
-            <input id="search-role" class="input" placeholder="Жишээ нь: Машинист"/>
+          <div class="field">
+            <div class="label">Он</div>
+            <select id="filter-year" class="input"></select>
           </div>
 
-          <div class="f clear-slot">
-            <div class="filter-label">&nbsp;</div>
-            <button class="icon-btn danger" onclick="clearOrderFilters()" title="Цэвэрлэх">
-              <i class="fa-solid fa-trash"></i>
-            </button>
+          <div class="field">
+            <div class="label">Сар</div>
+            <select id="filter-month" class="input"></select>
           </div>
+
+          <div class="field">
+            <div class="label">Газар</div>
+            <select id="filter-place" class="input"></select>
+          </div>
+
+          <div class="field">
+            <div class="label">Хэлтэс</div>
+            <select id="filter-dept" class="input"></select>
+          </div>
+
+          <div class="field">
+            <div class="label">Ээлж</div>
+            <select id="filter-shift" class="input"></select>
+          </div>
+
+          <div class="field">
+            <div class="label">Нэрээр хайх</div>
+            <input id="search-name" class="input" placeholder="Ж: Бат" />
+          </div>
+
+          <div class="field">
+            <div class="label">Кодоор хайх</div>
+            <input id="search-code" class="input" placeholder="Ж: 1000" />
+          </div>
+
+          <div class="field">
+            <div class="label">Албан тушаал</div>
+            <input id="search-role" class="input" placeholder="Ж: Механик" />
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn" onclick="resetFilters()">ЦЭВЭРЛЭХ</button>
         </div>
       </div>
 
-      <div class="card card-compact">
-        <div class="table-head orders-head">
-          <div class="th">АЖИЛТАН</div>
-          <div class="th">ГАЗАР, ХЭЛТЭС</div>
-          <div class="th">АЛБАН ТУШААЛ</div>
-          <div class="th">ЭЭЛЖ</div>
-          <div class="th">БАРАА</div>
-          <div class="th">ТОО ХЭМЖЭЭ</div>
-          <div class="th">ОГНОО</div>
-          <div class="th">ТӨЛӨВ</div>
-          <div class="th">ҮЙЛДЭЛ</div>
+      <div class="orders-box card">
+        <div class="orders-header">
+          <div>АЖИЛТАН</div>
+          <div>ГАЗАР, ХЭЛТЭС</div>
+          <div>АЛБАН ТУШААЛ</div>
+          <div>ЭЭЛЖ</div>
+          <div>БАРАА</div>
+          <div>ТОО ХЭМЖЭЭ</div>
+          <div>ОГНОО</div>
+          <div>ТӨЛӨВ</div>
+          <div>ҮЙЛДЭЛ</div>
         </div>
-        <div id="orders-list" class="table-body"></div>
+        <div id="orders-list" class="orders-list"></div>
       </div>
     </section>
 
-    <!-- TAB: Request -->
+    <!-- REQUEST -->
     <section id="tab-request" class="tab-content hidden">
-      <div class="page-title">ШИНЭ ХҮСЭЛТ</div>
+      <div class="page-head">
+        <div class="page-title">ШИНЭ ХҮСЭЛТ</div>
+      </div>
 
       <div class="card">
-        <div class="form-grid">
-          <div>
-            <div class="filter-label">Бараа</div>
-            <select id="req-item" class="select"></select>
-          </div>
-          <div>
-            <div class="filter-label">Хэмжээ</div>
-            <select id="req-size" class="select"></select>
-          </div>
-          <div>
-            <div class="filter-label">Тоо</div>
-            <input id="req-qty" class="input" type="number" min="1" value="1" />
-          </div>
-          <div class="form-grid-btn">
-            <button class="btn btn-primary w-100" onclick="submitRequest()">ИЛГЭЭХ</button>
-          </div>
+        <div class="form">
+          <div class="label">Бараа</div>
+          <select id="req-item" class="input"></select>
+
+          <div class="label">Хэмжээ</div>
+          <select id="req-size" class="input"></select>
+
+          <div class="label">Тоо</div>
+          <input id="req-qty" class="input" type="number" min="1" value="1" />
+
+          <button class="btn primary full" onclick="submitOrder()">ИЛГЭЭХ</button>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="page-subtitle">Миний олголтын түүх (Зөвшөөрсөн)</div>
+        <div id="user-history" class="history-list"></div>
       </div>
     </section>
 
-    <!-- TAB: Items -->
+    <!-- ITEMS -->
     <section id="tab-items" class="tab-content hidden">
-      <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
-
-      <div class="card">
-        <div class="card-title">Бараа нэмэх</div>
-        <div class="form-grid-2">
-          <input id="new-item-name" class="input" placeholder="Нэр (Жишээ нь: Гутал)"/>
-          <input id="new-item-sizes" class="input" placeholder="Размерууд (Жишээ нь: 38,39,40)"/>
-          <button class="btn btn-primary btn-min" onclick="addItem()">НЭМЭХ</button>
-        </div>
+      <div class="page-head">
+        <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
       </div>
 
-      <div class="card card-compact">
-        <div class="row-between">
-          <div class="card-title">Бараа шүүх</div>
-          <div class="row">
-            <select id="items-filter" class="select"></select>
-            <button class="btn btn-dark btn-min" onclick="clearItemsFilter()">ЦЭВЭРЛЭХ</button>
+      <div class="card">
+        <div class="row">
+          <div class="grow">
+            <div class="label">Бараа нэмэх</div>
+            <input id="new-item-name" class="input" placeholder="Барааны нэр" />
+          </div>
+          <div class="grow">
+            <div class="label">Size-үүд (таслалаар)</div>
+            <input id="new-item-sizes" class="input" placeholder="S,M,L,XL" />
+          </div>
+          <div class="row-actions">
+            <button class="btn primary" onclick="addItem()">НЭМЭХ</button>
           </div>
         </div>
 
-        <div class="items-head">
-          <div class="th">#</div>
-          <div class="th">БАРАА</div>
-          <div class="th">РАЗМЕР</div>
-          <div class="th">ҮЙЛДЭЛ</div>
+        <div class="row" style="margin-top:12px;">
+          <div class="grow">
+            <div class="label">Бараа шүүх</div>
+            <input id="item-search" class="input" placeholder="Нэрээр хайх..." />
+          </div>
+          <div class="row-actions">
+            <button class="btn" onclick="renderItems()">ШҮҮХ</button>
+            <button class="btn" onclick="clearItemSearch()">ЦЭВЭРЛЭХ</button>
+          </div>
         </div>
-        <div id="items-list" class="table-body"></div>
       </div>
-    </section>
-
-    <!-- TAB: Employees -->
-    <section id="tab-employees" class="tab-content hidden">
-      <div class="page-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
 
       <div class="card">
-        <div class="card-title">Ажилтан нэмэх</div>
-        <div class="form-grid-2">
-          <input id="emp-code" class="input" placeholder="Код (Жишээ нь: 12345)"/>
-          <input id="emp-pass" class="input" placeholder="Нууц үг (default: 12345)"/>
-          <input id="emp-ovog" class="input" placeholder="Овог (Жишээ нь: Бат)"/>
-          <input id="emp-ner" class="input" placeholder="Нэр (Жишээ нь: Дорж)"/>
-          <input id="emp-role" class="input" placeholder="Албан тушаал"/>
-          <input id="emp-place" class="input" placeholder="Газар"/>
-          <input id="emp-dept" class="input" placeholder="Хэлтэс"/>
-          <select id="emp-shift" class="select"></select>
-
-          <button class="btn btn-primary btn-min" onclick="addEmployee()">НЭМЭХ</button>
-        </div>
-      </div>
-
-      <div class="card card-compact">
-        <div class="items-head">
-          <div class="th">#</div>
-          <div class="th">АЖИЛТАН</div>
-          <div class="th">ҮЙЛДЭЛ</div>
-        </div>
-        <div id="employees-list" class="table-body"></div>
+        <div id="items-list" class="items-list"></div>
       </div>
     </section>
 
-    <!-- TAB: Password -->
+    <!-- USERS -->
+    <section id="tab-users" class="tab-content hidden">
+      <div class="page-head">
+        <div class="page-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
+        <div class="muted">(Admin)</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <div class="grow">
+            <div class="label">Код</div>
+            <input id="u-code" class="input" placeholder="1000123" />
+          </div>
+          <div class="grow">
+            <div class="label">Нууц үг</div>
+            <input id="u-pass" class="input" placeholder="12345" />
+          </div>
+          <div class="grow">
+            <div class="label">Нэр</div>
+            <input id="u-ner" class="input" placeholder="Нэр" />
+          </div>
+          <div class="grow">
+            <div class="label">Овог</div>
+            <input id="u-ovog" class="input" placeholder="Овог" />
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="grow">
+            <div class="label">Албан тушаал</div>
+            <input id="u-role" class="input" placeholder="Албан тушаал" />
+          </div>
+          <div class="grow">
+            <div class="label">Газар</div>
+            <input id="u-place" class="input" placeholder="Газар" />
+          </div>
+          <div class="grow">
+            <div class="label">Хэлтэс</div>
+            <input id="u-dept" class="input" placeholder="Хэлтэс" />
+          </div>
+          <div class="grow">
+            <div class="label">Ээлж</div>
+            <input id="u-shift" class="input" placeholder="А/Б/Өдөр/Шөнө" />
+          </div>
+          <div class="row-actions">
+            <button class="btn primary" onclick="addUser()">НЭМЭХ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div id="users-list" class="users-list"></div>
+      </div>
+    </section>
+
+    <!-- PASS -->
     <section id="tab-pass" class="tab-content hidden">
-      <div class="page-title">НУУЦ ҮГ СОЛИХ</div>
+      <div class="page-head">
+        <div class="page-title">НУУЦ ҮГ СОЛИХ</div>
+      </div>
+
       <div class="card">
-        <div class="form-grid-2">
-          <input id="old-pass" type="password" class="input" placeholder="Хуучин нууц үг"/>
-          <input id="new-pass" type="password" class="input" placeholder="Шинэ нууц үг"/>
-          <input id="new-pass-2" type="password" class="input" placeholder="Шинэ нууц үг давтах"/>
-          <button class="btn btn-primary btn-min" onclick="changePassword()">ХАДГАЛАХ</button>
+        <div class="form">
+          <div class="label">Хуучин нууц үг</div>
+          <input id="old-pass" class="input" type="password" />
+
+          <div class="label">Шинэ нууц үг</div>
+          <input id="new-pass" class="input" type="password" />
+
+          <button class="btn primary full" onclick="changePass()">СОЛИХ</button>
         </div>
       </div>
     </section>
 
-  </div><!-- /main-screen -->
+  </main>
 
-  <script src="./app.js?v=20260307"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
