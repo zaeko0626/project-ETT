@@ -1,10 +1,10 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: JS crash (esc), employee submit request, filters bind
+// FIX: Orders table columns + decision buttons + employee column hide + filters working
 // ===============================
 
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbwXEsHgL33if-Q_Uym4yaW4I-xika2GgSUY5ZxglEAC8v-wDcPfpw-GxOGFvRlCoLa1/exec";
+  "https://script.google.com/macros/s/AKfycbzrFXNS4aOBTKeSjxEpkKAshZDDriNcKt39e4qnHg-saVaDjmnIXsilfMxUn2PPUVEr/exec";
 
 let allOrders = [];
 let allItems = [];
@@ -13,7 +13,7 @@ let currentUser = null;
 
 const SHIFT_OPTIONS = ["А", "Б", "Өдөр", "Шөнө"];
 
-// ---------- VH ----------
+/* ---------------- Mobile VH ---------------- */
 function setVH() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -22,7 +22,7 @@ window.addEventListener("resize", setVH);
 window.addEventListener("orientationchange", () => setTimeout(setVH, 150));
 setVH();
 
-// ✅ FIX 1: Escape HTML (broken байсан)
+/* ---------------- HTML escape ---------------- */
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -32,7 +32,7 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-// ---------- Loading ----------
+/* ---------------- Loading overlay ---------------- */
 function showLoading(show, subText = "") {
   const el = document.getElementById("loading-overlay");
   if (!el) return;
@@ -41,7 +41,7 @@ function showLoading(show, subText = "") {
   el.classList.toggle("hidden", !show);
 }
 
-// ---------- Modal ----------
+/* ---------------- Modal ---------------- */
 window.openModal = (title, html) => {
   const ov = document.getElementById("modal-overlay");
   const t = document.getElementById("modal-title");
@@ -84,7 +84,7 @@ function popupOk(title, msg) {
   );
 }
 
-// ---------- API ----------
+/* ---------------- API ---------------- */
 async function apiPost(payload) {
   const res = await fetch(API_URL, {
     method: "POST",
@@ -93,6 +93,7 @@ async function apiPost(payload) {
     cache: "no-store",
     redirect: "follow",
   });
+
   const text = await res.text();
   let json;
   try {
@@ -103,20 +104,9 @@ async function apiPost(payload) {
   return json;
 }
 
-// ---------- Helpers ----------
+/* ---------------- Helpers ---------------- */
 function uniq(arr) {
   return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
-}
-function setSelectOptions(sel, values, allLabel = "Бүгд") {
-  if (!sel) return;
-  const v = (values || []).filter((x) => x != null && x !== "");
-  const html = [];
-  if (allLabel != null) html.push(`<option value="">${esc(allLabel)}</option>`);
-  v.forEach((val) => {
-    const vv = String(val);
-    html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
-  });
-  sel.innerHTML = html.join("");
 }
 function fmtDateOnly(v) {
   const d = new Date(v);
@@ -132,11 +122,49 @@ function statusMeta(raw) {
   if (s === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
-function isLoggedIn() {
-  return !!currentUser;
+function isAdmin() {
+  return currentUser?.type === "admin";
 }
 
-// ---------- UI visibility ----------
+/* ---------------- Select options ---------------- */
+function setSelectOptions(sel, values, allLabel = "Бүгд") {
+  if (!sel) return;
+  const v = (values || []).filter((x) => x != null && x !== "");
+  const html = [];
+  if (allLabel != null) html.push(`<option value="">${esc(allLabel)}</option>`);
+  v.forEach((val) => {
+    const vv = String(val);
+    html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
+  });
+  sel.innerHTML = html.join("");
+}
+
+/* ---------------- Employee column hide (no CSS edit, injected) ---------------- */
+function applyRoleViewCSS_() {
+  // нэг л удаа style нэмнэ
+  if (document.getElementById("role-view-style")) return;
+
+  const st = document.createElement("style");
+  st.id = "role-view-style";
+  st.textContent = `
+    /* employee mode: hide Place/Dept + Role + Actions */
+    body.employee-mode .orders-header .col-place,
+    body.employee-mode .orders-header .col-role,
+    body.employee-mode .orders-header .col-actions { display:none !important; }
+
+    body.employee-mode .order-row .col-place,
+    body.employee-mode .order-row .col-role,
+    body.employee-mode .order-row .col-actions { display:none !important; }
+  `;
+  document.head.appendChild(st);
+}
+
+function setRoleMode_() {
+  applyRoleViewCSS_();
+  document.body.classList.toggle("employee-mode", !isAdmin());
+}
+
+/* ---------------- UI visibility ---------------- */
 function setAuthUIVisible(isLoggedInNow) {
   const header = document.getElementById("app-header");
   const sidebar = document.getElementById("sidebar");
@@ -152,29 +180,29 @@ function setAuthUIVisible(isLoggedInNow) {
   }
 }
 
-// ---------- Sidebar ----------
+/* ---------------- Sidebar ---------------- */
 window.openSidebar = () => {
-  if (!isLoggedIn()) return;
-  document.getElementById("sidebar")?.classList.remove("hidden");
-  document.getElementById("sidebar-overlay")?.classList.remove("hidden");
-  document.getElementById("sidebar")?.classList.add("open");
-  document.getElementById("sidebar-overlay")?.classList.add("show");
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sidebar-overlay");
+  sb?.classList.remove("hidden");
+  ov?.classList.remove("hidden");
+  sb?.classList.add("open");
+  ov?.classList.add("show");
 };
 window.closeSidebar = () => {
-  document.getElementById("sidebar")?.classList.remove("open");
-  document.getElementById("sidebar-overlay")?.classList.remove("show");
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sidebar-overlay");
+  sb?.classList.remove("open");
+  ov?.classList.remove("show");
 };
 window.toggleSidebar = () => {
-  if (!isLoggedIn()) return;
   const sb = document.getElementById("sidebar");
   if (!sb) return;
   sb.classList.contains("open") ? window.closeSidebar() : window.openSidebar();
 };
 
-// ---------- Tabs ----------
+/* ---------------- Tabs ---------------- */
 window.showTab = (tabName, btn) => {
-  if (!isLoggedIn()) return;
-
   document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
   document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
 
@@ -184,9 +212,13 @@ window.showTab = (tabName, btn) => {
   if (window.innerWidth < 1024) window.closeSidebar();
 
   if (tabName === "orders") applyFilters();
+  if (tabName === "request") {
+    populateRequestItemSize();
+    bindRequestSendButton_();
+  }
 };
 
-// ---------- Login / Logout ----------
+/* ---------------- Login / Logout ---------------- */
 window.login = async () => {
   const code = document.getElementById("login-code")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
@@ -203,18 +235,19 @@ window.login = async () => {
     document.getElementById("main-screen")?.classList.remove("hidden");
     setAuthUIVisible(true);
 
-    const isAdmin = currentUser?.type === "admin";
-    document.getElementById("nav-items")?.classList.toggle("hidden", !isAdmin);
-    document.getElementById("nav-employees")?.classList.toggle("hidden", !isAdmin);
-    document.getElementById("nav-request")?.classList.toggle("hidden", isAdmin);
+    setRoleMode_();
 
-    if (isAdmin) {
-      showTab("orders", document.getElementById("nav-orders"));
-    } else {
-      showTab("request", document.getElementById("nav-request"));
-    }
+    // nav hide/show
+    const admin = isAdmin();
+    document.getElementById("nav-items")?.classList.toggle("hidden", !admin);
+    document.getElementById("nav-employees")?.classList.toggle("hidden", !admin);
+    document.getElementById("nav-request")?.classList.toggle("hidden", admin);
 
     await refreshData();
+
+    // default tab
+    if (admin) showTab("orders", document.getElementById("nav-orders"));
+    else showTab("request", document.getElementById("nav-request"));
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -240,13 +273,15 @@ window.logout = () => {
   window.closeSidebar();
 };
 
-// ---------- Request dropdowns ----------
+/* ---------------- Request dropdowns ---------------- */
 function populateRequestItemSize() {
   const itemSel = document.getElementById("req-item");
   const sizeSel = document.getElementById("req-size");
   if (!itemSel || !sizeSel) return;
 
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
+  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
   setSelectOptions(itemSel, names, "Сонгох...");
 
   function fillSizesForItem(name) {
@@ -262,14 +297,12 @@ function populateRequestItemSize() {
   itemSel.onchange = () => fillSizesForItem(itemSel.value);
 }
 
-// ✅ FIX 2: Ажилтан хүсэлт илгээх функц
 window.submitRequest = async () => {
   if (!currentUser) return;
 
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
-  const qtyRaw = document.getElementById("req-qty")?.value || "1";
-  let qty = parseInt(qtyRaw, 10);
+  let qty = parseInt(document.getElementById("req-qty")?.value || "1", 10);
   if (!qty || qty < 1) qty = 1;
 
   if (!item) return popupError("Алдаа", "Бараа сонгоно уу");
@@ -281,12 +314,10 @@ window.submitRequest = async () => {
     if (!r.success) throw new Error(r.msg || "Хүсэлт илгээхэд алдаа гарлаа");
 
     popupOk("Амжилттай", "Хүсэлт амжилттай илгээгдлээ");
-    // qty-г 1 болгож буцаах (хэрэв хүсвэл)
     const q = document.getElementById("req-qty");
     if (q) q.value = "1";
 
     await refreshData();
-    // ажилтан хүсэлтийн жагсаалт руу автоматаар очуулахгүй — одоогийн табаа хэвээр үлдээнэ
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -294,13 +325,11 @@ window.submitRequest = async () => {
   }
 };
 
-// (Хэрвээ HTML дээр onclick байхгүй бол автоматаар bind хийнэ)
+// Хэрвээ HTML дээр onclick тавиагүй бол “ИЛГЭЭХ” товчийг автоматаар холбож өгнө
 function bindRequestSendButton_() {
   const tab = document.getElementById("tab-request");
   if (!tab) return;
-
-  // "ИЛГЭЭХ" гэсэн товчийг request tab дотроос олж click-г холбож өгнө
-  const btns = tab.querySelectorAll("button, .btn");
+  const btns = tab.querySelectorAll("button");
   for (const b of btns) {
     const txt = (b.textContent || "").trim();
     if (txt === "ИЛГЭЭХ") {
@@ -310,27 +339,164 @@ function bindRequestSendButton_() {
   }
 }
 
-// ---------- Orders filters ----------
-window.applyFilters = () => {
-  const nS = document.getElementById("search-name")?.value?.trim() || "";
-  const cS = document.getElementById("search-code")?.value?.trim() || "";
-  const rS = document.getElementById("search-role")?.value?.trim() || "";
+/* ---------------- Orders filters populate ---------------- */
+function populateOrderFilters_() {
+  // эдгээр ID-ууд танайд байвал шууд бөглөнө
+  const itemSel = document.getElementById("filter-item");
+  const statusSel = document.getElementById("filter-status");
+  const yearSel = document.getElementById("filter-year");
+  const monthSel = document.getElementById("filter-month");
+  const placeSel = document.getElementById("filter-place");
+  const deptSel = document.getElementById("filter-dept");
+  const shiftSel = document.getElementById("filter-shift");
 
-  const iF = document.getElementById("filter-item")?.value || "";
-  const sF = document.getElementById("filter-status")?.value || "";
-  const yF = document.getElementById("filter-year")?.value || "";
-  const mF = document.getElementById("filter-month")?.value || "";
-  const pF = document.getElementById("filter-place")?.value || "";
-  const dF = document.getElementById("filter-dept")?.value || "";
-  const shF = document.getElementById("filter-shift")?.value || "";
+  if (itemSel) {
+    const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
+    setSelectOptions(itemSel, names, "Бүгд");
+  }
+  if (statusSel) {
+    const base = ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"];
+    const sts = uniq(base.concat(allOrders.map((o) => o.status).filter(Boolean))).filter(Boolean);
+    setSelectOptions(statusSel, sts, "Бүгд");
+  }
+  if (yearSel) {
+    const years = new Set();
+    allOrders.forEach((o) => {
+      const d = new Date(o.requestedDate);
+      if (!isNaN(d)) years.add(String(d.getFullYear()));
+    });
+    const yearsArr = Array.from(years).sort((a, b) => b.localeCompare(a));
+    setSelectOptions(yearSel, yearsArr, "Бүгд");
+  }
+  if (monthSel) {
+    const monthsArr = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+    setSelectOptions(monthSel, monthsArr, "Бүгд");
+  }
+  if (placeSel) {
+    const places = uniq(allOrders.map((o) => o.place)).sort((a, b) => String(a).localeCompare(String(b)));
+    setSelectOptions(placeSel, places, "Бүгд");
+  }
+  if (deptSel) {
+    const depts = uniq(allOrders.map((o) => o.department)).sort((a, b) => String(a).localeCompare(String(b)));
+    setSelectOptions(deptSel, depts, "Бүгд");
+  }
+  if (shiftSel) {
+    const shifts = uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))).filter(Boolean);
+    setSelectOptions(shiftSel, shifts, "Бүгд");
+  }
+}
+
+/* ---------------- Orders filters bind (ID зөрсөн ч ажиллах auto bind) ---------------- */
+function bindOrderFilterEvents_() {
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return;
+
+  // 1) ID таарвал шууд bind
+  const ids = [
+    "filter-status",
+    "filter-item",
+    "filter-year",
+    "filter-month",
+    "filter-place",
+    "filter-dept",
+    "filter-shift",
+    "search-name",
+    "search-code",
+    "search-role",
+  ];
+  ids.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isInput = el.tagName === "INPUT";
+    if (isInput) el.oninput = () => applyFilters();
+    else el.onchange = () => applyFilters();
+  });
+
+  // 2) ID зөрсөн байж магадгүй тул tab-orders доторх бүх select/input дээр bind
+  //    (login input-ууд биш, зөвхөн orders tab доторх)
+  tab.querySelectorAll("select").forEach((s) => {
+    s.addEventListener("change", () => applyFilters());
+  });
+  tab.querySelectorAll("input").forEach((i) => {
+    i.addEventListener("input", () => applyFilters());
+  });
+}
+
+window.clearOrderFilters = () => {
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return;
+
+  // ID таарсанууд
+  [
+    "filter-status",
+    "filter-item",
+    "filter-year",
+    "filter-month",
+    "filter-place",
+    "filter-dept",
+    "filter-shift",
+    "search-name",
+    "search-code",
+    "search-role",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+
+  // таб доторх бусад input/select-уудыг ч clear (хэрэв ID өөр бол)
+  tab.querySelectorAll("select").forEach((s) => (s.value = ""));
+  tab.querySelectorAll("input").forEach((i) => (i.value = ""));
+
+  applyFilters();
+};
+
+/* ---------------- Read filter values (fallback) ---------------- */
+function getFilterValue_(id, fallbackSelectors = []) {
+  const direct = document.getElementById(id);
+  if (direct) return direct.value || "";
+
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return "";
+
+  // fallbackSelectors: array of functions returning element or selector strings
+  for (const sel of fallbackSelectors) {
+    try {
+      if (typeof sel === "string") {
+        const el = tab.querySelector(sel);
+        if (el && "value" in el) return el.value || "";
+      } else if (typeof sel === "function") {
+        const el = sel(tab);
+        if (el && "value" in el) return el.value || "";
+      }
+    } catch (_) {}
+  }
+  return "";
+}
+
+window.applyFilters = () => {
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return;
+
+  // ID таарах үед
+  const nS = getFilterValue_("search-name");
+  const cS = getFilterValue_("search-code");
+  const rS = getFilterValue_("search-role");
+
+  const iF = getFilterValue_("filter-item");
+  const sF = getFilterValue_("filter-status");
+  const yF = getFilterValue_("filter-year");
+  const mF = getFilterValue_("filter-month");
+  const pF = getFilterValue_("filter-place");
+  const dF = getFilterValue_("filter-dept");
+  const shF = getFilterValue_("filter-shift");
 
   const filtered = (allOrders || []).filter((o) => {
     const d = new Date(o.requestedDate);
     const fullName = `${o.ovog || ""} ${o.ner || ""}`.toLowerCase();
 
-    const mN = !nS || fullName.includes(nS.toLowerCase());
-    const mC = !cS || String(o.code || "").includes(cS);
-    const mR = !rS || String(o.role || "").toLowerCase().includes(rS.toLowerCase());
+    const mN = !nS || fullName.includes(String(nS).toLowerCase());
+    const mC = !cS || String(o.code || "").includes(String(cS));
+    const mR = !rS || String(o.role || "").toLowerCase().includes(String(rS).toLowerCase());
 
     const mI = !iF || String(o.item || "") === String(iF);
     const mS = !sF || String(o.status || "") === String(sF);
@@ -348,41 +514,51 @@ window.applyFilters = () => {
   renderOrders(filtered);
 };
 
-function bindOrderFilterEvents_() {
-  const changeIds = [
-    "filter-status",
-    "filter-item",
-    "filter-year",
-    "filter-month",
-    "filter-place",
-    "filter-dept",
-    "filter-shift",
-  ];
-  const inputIds = ["search-name", "search-code", "search-role"];
+/* ---------------- Orders render (8 columns EXACT by header) ---------------- */
+function ensureOrdersHeaderClasses_() {
+  // header дээрх 8 баганын class-уудыг нэг удаа тааруулж өгнө (CSS өөрчлөхгүй)
+  // index.html дээр header текстүүд байгаа тул тэдний байрлалд class өгнө
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return;
 
-  changeIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.onchange = () => applyFilters();
+  // header container-ийг хайна: ихэнхдээ .orders-header эсвэл нэг row байдаг
+  // Бид текстээр нь олж болно
+  const headers = Array.from(tab.querySelectorAll("*")).filter((el) => {
+    const t = (el.textContent || "").trim();
+    return t === "АЖИЛТАН";
   });
 
-  inputIds.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.oninput = () => applyFilters();
-  });
+  if (!headers.length) return;
+
+  // "АЖИЛТАН" тексттэй элементээс нэг мөрний parent-ийг авна
+  const first = headers[0];
+  const row = first.parentElement;
+  if (!row) return;
+
+  row.classList.add("orders-header");
+
+  // row доторх header cell-үүдийг авна
+  const cells = Array.from(row.children);
+  // Хэрэв яг 8 биш бол оролдохгүй (нураахгүй)
+  if (cells.length < 8) return;
+
+  // дараалал: Ажилтан / Газар, хэлтэс / Албан тушаал / Бараа / Тоо хэмжээ / Огноо / Төлөв / Үйлдэл
+  const cls = ["col-emp", "col-place", "col-role", "col-item", "col-qty", "col-date", "col-status", "col-actions"];
+  for (let i = 0; i < 8; i++) cells[i].classList.add(cls[i]);
 }
 
-// ---------- Orders render ----------
-function renderOrders(orders) {
+function renderOrders(listData) {
   const list = document.getElementById("orders-list");
   if (!list) return;
 
-  let rows = orders || [];
+  ensureOrdersHeaderClasses_();
+  setRoleMode_(); // employee/admin mode apply
 
-  // ажилтан бол зөвхөн өөрийнхөө хүсэлтийг харах
-  if (currentUser && currentUser.type !== "admin") {
-    const myCode = String(currentUser.code || "").trim();
+  let rows = listData || [];
+
+  // ажилтан бол зөвхөн өөрийн хүсэлтийг харах
+  if (!isAdmin()) {
+    const myCode = String(currentUser?.code || "").trim();
     rows = rows.filter((o) => String(o.code || "").trim() === myCode);
   }
 
@@ -393,50 +569,73 @@ function renderOrders(orders) {
 
   const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
+  // ✅ мөр бүр 8 баганатай
   list.innerHTML = sorted
     .map((o) => {
       const st = statusMeta(o.status);
 
-      const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
-      const empId = esc(o.code || "");
+      const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
+      const empId = esc(o.code || "—");
 
-      const placeDept = [o.place, o.department].filter(Boolean).join(" • ");
+      const placeDept = [o.place, o.department, o.shift].filter(Boolean).join(" • ");
       const role = o.role || "";
-      const left2 = `${esc(placeDept)}${placeDept && role ? " • " : ""}${esc(role)}`;
 
       const item = esc(o.item || "—");
       const size = esc(o.size || "—");
       const qty = esc(o.quantity || o.qty || "—");
       const date = esc(fmtDateOnly(o.requestedDate));
 
-      const actions =
-        currentUser?.type === "admin"
-          ? `
-            <button class="btn sm success" onclick="approveOrder('${esc(o.id)}')">ЗӨВШӨӨРӨХ</button>
-            <button class="btn sm danger" onclick="rejectOrder('${esc(o.id)}')">ТАТГАЛЗАХ</button>
-          `
-          : `—`;
+      // ✅ товч зөвхөн “Хүлээгдэж буй” үед харагдана
+      const isPending = String(o.status || "") === "Хүлээгдэж буй";
+
+      let actions = `—`;
+      if (isAdmin()) {
+        if (isPending) {
+          actions = `
+            <button class="btn sm success" onclick="decideOrder('${esc(o.id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
+            <button class="btn sm danger" onclick="decideOrder('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
+          `;
+        } else {
+          actions = `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
+        }
+      } else {
+        // ажилтанд үйлдэл хэрэггүй (нуусан ч — үлдээнэ)
+        actions = `—`;
+      }
 
       return `
         <div class="order-row">
-          <div class="order-col">
-            <div class="cell-emp">
-              <div class="emp-name">${empName || "—"}</div>
-              <div class="emp-id">ID:${empId}</div>
-              <div class="subline">${left2}</div>
-            </div>
+          <div class="order-col col-emp">
+            <div class="emp-name">${empName}</div>
+            <div class="emp-id">ID:${empId}</div>
           </div>
-          <div class="order-col">
+
+          <div class="order-col col-place">
+            ${esc(placeDept || "—")}
+          </div>
+
+          <div class="order-col col-role">
+            ${esc(role || "—")}
+          </div>
+
+          <div class="order-col col-item">
             <div class="item">${item}</div>
-            <div class="subline">${size} • ${qty}</div>
+            <div class="subline">${size}</div>
           </div>
-          <div class="order-col">
-            <div class="date">${date}</div>
+
+          <div class="order-col col-qty">
+            ${qty}
           </div>
-          <div class="order-col">
+
+          <div class="order-col col-date">
+            ${date}
+          </div>
+
+          <div class="order-col col-status">
             <span class="status ${st.cls}">${esc(st.label)}</span>
           </div>
-          <div class="order-col actions">
+
+          <div class="order-col col-actions">
             ${actions}
           </div>
         </div>
@@ -445,36 +644,29 @@ function renderOrders(orders) {
     .join("");
 }
 
-// ---------- Orders actions ----------
-window.approveOrder = async (id) => {
-  if (!id) return;
-  showLoading(true, "Шинэчилж байна...");
+/* ---------------- Decide order (button -> remove immediately) ---------------- */
+window.decideOrder = async (id, status) => {
+  if (!id || !status) return;
+
+  // UI-г шууд шинэчилж “Шийдвэрлэсэн” болгоно (сервер хүлээхгүй)
+  const idx = allOrders.findIndex((x) => String(x.id) === String(id));
+  if (idx >= 0) allOrders[idx].status = status;
+
+  applyFilters(); // шууд refresh
+
   try {
-    const r = await apiPost({ action: "update_status", id, status: "Зөвшөөрсөн" });
+    const r = await apiPost({ action: "update_status", id, status });
     if (!r.success) throw new Error(r.msg || "Алдаа");
+    // серверийн алдаа байхгүй бол дахин татаж баталгаажуулна
     await refreshData();
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.rejectOrder = async (id) => {
-  if (!id) return;
-  showLoading(true, "Шинэчилж байна...");
-  try {
-    const r = await apiPost({ action: "update_status", id, status: "Татгалзсан" });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
+    // алдаа гарвал датагаа буцааж татах
     await refreshData();
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
   }
 };
 
-// ---------- Refresh ----------
+/* ---------------- Refresh ---------------- */
 window.refreshData = async () => {
   if (!currentUser) return;
   showLoading(true, "Өгөгдөл татаж байна...");
@@ -485,21 +677,18 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
-    // admin бол ажилтнууд татна
-    if (currentUser?.type === "admin") {
+    if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
-      if (!u.success) throw new Error(u.msg || "Users татахад алдаа");
-      allEmployees = u.users || [];
+      allEmployees = u.success ? (u.users || []) : [];
     } else {
       allEmployees = [];
     }
 
-    // request dropdown
+    populateOrderFilters_();
+    bindOrderFilterEvents_();
+
     populateRequestItemSize();
     bindRequestSendButton_();
-
-    // filters bind
-    bindOrderFilterEvents_();
 
     applyFilters();
   } catch (e) {
@@ -509,12 +698,13 @@ window.refreshData = async () => {
   }
 };
 
-// ---------- Init ----------
+/* ---------------- Init ---------------- */
 function initApp() {
   setAuthUIVisible(false);
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
+  // filters & request button bind (login-оос өмнө ч бэлтгэнэ)
   bindOrderFilterEvents_();
   bindRequestSendButton_();
 
