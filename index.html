@@ -13,7 +13,7 @@
     <div class="overlay-card">
       <div class="spinner">⛏️</div>
       <div class="overlay-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
-      <div id="loading-sub" class="overlay-sub">—</div>
+      <!-- ✅ доор нь бичиг байхгүй -->
     </div>
   </div>
 
@@ -37,7 +37,6 @@
     </div>
     <div class="header-actions">
       <button class="btn" onclick="refreshData()">СЭРГЭЭХ</button>
-      <!-- ✅ logout moved to sidebar bottom -->
     </div>
   </header>
 
@@ -50,10 +49,7 @@
       <button class="icon-btn" onclick="closeSidebar()">✕</button>
     </div>
 
-    <!-- ✅ User info -->
-    <div id="sidebar-userinfo" class="sidebar-userinfo">
-      — 
-    </div>
+    <div id="sidebar-userinfo" class="sidebar-userinfo">—</div>
 
     <div class="nav">
       <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">Захиалгын жагсаалт</button>
@@ -63,7 +59,6 @@
       <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">Нууц үг</button>
     </div>
 
-    <!-- ✅ Logout at bottom -->
     <div class="sidebar-bottom">
       <button id="btn-logout" class="btn danger full" onclick="logout()">ГАРАХ</button>
     </div>
@@ -83,7 +78,7 @@
         <input id="login-pass" class="input" type="password" placeholder="••••••" autocomplete="current-password" />
 
         <button class="btn primary full" onclick="login()">НЭВТРЭХ</button>
-        <div class="hint">Admin demo: <b>admin</b> / <b>12345</b></div>
+        <!-- ✅ Admin demo hint устгав -->
       </div>
     </div>
   </main>
@@ -97,13 +92,9 @@
         <div class="page-title">ЗАХИАЛГЫН ЖАГСААЛТ</div>
       </div>
 
-      <!-- Filters (admin: full, employee: limited via JS hide/show) -->
+      <!-- ✅ Filter bar: цөөн (status, shift-г header дээр) -->
       <div class="card" id="orders-filters">
         <div class="row" style="gap:12px; flex-wrap:wrap;">
-          <div class="grow">
-            <div class="label">Төлөв</div>
-            <select id="f-status" class="input"></select>
-          </div>
 
           <div class="grow">
             <div class="label">Он</div>
@@ -115,18 +106,12 @@
             <select id="f-month" class="input"></select>
           </div>
 
-          <!-- ✅ employee-only useful, admin also ok -->
           <div class="grow" id="f-item-wrap">
             <div class="label">Бараа</div>
             <select id="f-item" class="input"></select>
           </div>
 
           <!-- Admin-only filters -->
-          <div class="grow admin-only" id="f-shift-wrap">
-            <div class="label">Ээлж</div>
-            <select id="f-shift" class="input"></select>
-          </div>
-
           <div class="grow admin-only" id="f-place-wrap">
             <div class="label">Газар</div>
             <select id="f-place" class="input"></select>
@@ -161,13 +146,13 @@
 
       <div class="orders-box card">
         <div class="orders-header" id="requests-header">
-          <!-- JS will set header columns by role -->
+          <!-- JS renders header + header-filter(select) -->
         </div>
         <div id="requests-list" class="orders-list"></div>
       </div>
     </section>
 
-    <!-- REQUEST (employee only; admin hidden by JS) -->
+    <!-- REQUEST (employee only; admin hidden via JS) -->
     <section id="tab-request" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">ШИНЭ ЗАХИАЛГА</div>
@@ -197,6 +182,7 @@
           </div>
 
           <div style="height:10px;"></div>
+
           <div class="page-subtitle">СОНГОСОН БАРААНУУД</div>
           <div id="cart-list" class="items-list"></div>
 
@@ -210,7 +196,7 @@
       </div>
     </section>
 
-    <!-- ITEMS (admin only; employee hidden by JS + app.js already blocks) -->
+    <!-- ITEMS (admin only; employee hidden via JS) -->
     <section id="tab-items" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
@@ -290,7 +276,14 @@
           </div>
           <div class="grow">
             <div class="label">Ээлж</div>
-            <input id="u-shift" class="input" placeholder="А/Б/Өдөр/Шөнө" />
+            <!-- ✅ сонголт -->
+            <select id="u-shift" class="input">
+              <option value="">Сонгох</option>
+              <option value="А ээлж">А ээлж</option>
+              <option value="Б ээлж">Б ээлж</option>
+              <option value="В ээлж">В ээлж</option>
+              <option value="Г ээлж">Г ээлж</option>
+            </select>
           </div>
           <div class="row-actions">
             <button class="btn primary" onclick="addUser()">НЭМЭХ</button>
