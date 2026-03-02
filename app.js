@@ -1089,4 +1089,81 @@ function initApp() {
   });
 }
 window.onload = initApp;
+function setupOrderFilters() {
+  // Эдгээр ID-ууд чинь index.html дээр байвал шууд ажиллана
+  const ids = [
+    "f_status","f_item","f_year","f_month",
+    "f_place","f_department","f_shift",
+    "f_name","f_code","f_role"
+  ];
 
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("input", applyOrderFilters);
+    el.addEventListener("change", applyOrderFilters);
+  });
+
+  const clearBtn = document.getElementById("btn-clear-filters");
+  if (clearBtn) clearBtn.addEventListener("click", () => {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.tagName === "SELECT") el.value = "Бүгд";
+      else el.value = "";
+    });
+    applyOrderFilters();
+  });
+}
+
+function applyOrderFilters() {
+  // эх дата: allOrders гэж үзье (чи өөр нэртэй бол хэлээрэй)
+  let filtered = allOrders ? allOrders.slice() : [];
+
+  // user бол зөвхөн өөрийн
+  if (currentUser && currentUser.type !== "admin") {
+    const myCode = String(currentUser.code || "").trim();
+    filtered = filtered.filter(o => String(o.code || "").trim() === myCode);
+  }
+
+  // Helper
+  const v = (id) => {
+    const el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  };
+  const contains = (a,b) => String(a||"").toLowerCase().includes(String(b||"").toLowerCase());
+
+  const st = v("f_status");
+  if (st && st !== "Бүгд") filtered = filtered.filter(o => String(o.status||"") === st);
+
+  const it = v("f_item");
+  if (it && it !== "Бүгд") filtered = filtered.filter(o => String(o.item||"") === it);
+
+  const yr = v("f_year");
+  if (yr && yr !== "Бүгд") filtered = filtered.filter(o => (new Date(o.requestedDate)).getFullYear() === Number(yr));
+
+  const mo = v("f_month");
+  if (mo && mo !== "Бүгд") filtered = filtered.filter(o => ((new Date(o.requestedDate)).getMonth()+1) === Number(mo));
+
+  const pl = v("f_place");
+  if (pl && pl !== "Бүгд") filtered = filtered.filter(o => String(o.place||"") === pl);
+
+  const dp = v("f_department");
+  if (dp && dp !== "Бүгд") filtered = filtered.filter(o => String(o.department||"") === dp);
+
+  const sh = v("f_shift");
+  if (sh && sh !== "Бүгд") filtered = filtered.filter(o => String(o.shift||"") === sh);
+
+  const nameQ = v("f_name");
+  if (nameQ) filtered = filtered.filter(o => contains(`${o.ovog||""} ${o.ner||""}`, nameQ));
+
+  const codeQ = v("f_code");
+  if (codeQ) filtered = filtered.filter(o => contains(o.code, codeQ));
+
+  const roleQ = v("f_role");
+  if (roleQ) filtered = filtered.filter(o => contains(o.role, roleQ));
+
+  // ✅ энд renderOrders чинь параметр авдаг бол: renderOrders(filtered)
+  // хэрэв renderOrders allOrders ашигладаг бол түр хадгалаад:
+  renderOrders(filtered);
+}
