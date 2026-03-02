@@ -6,7 +6,7 @@
 // - Keeps existing tabs (Items/Users/Pass) compatible with Code.gs
 // ===============================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxhW_WTYiexNg7PBl9ULpsyS7Hf1-QlU3t6psVyy-6hfucPoWoEVfUhiWeKUstqJ56A/exec"; // <- Apps Script Web App URL
+const API_URL = "https://script.google.com/macros/s/AKfycbwrHEECw_UttXTLTknxFfcaCivYN29tDVN9mj0E9jjQTWcywJt6WklJYc-w7hCAZShE/exec"; // <- Apps Script Web App URL
 
 let currentUser = null;
 
