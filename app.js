@@ -1,8 +1,8 @@
 // ===============================
-// ETT PPE System - app.js (v20260306)
+// ETT PPE System - app.js (v20260306 FIX)
 // ===============================
+const API_URL = "https://script.google.com/macros/s/AKfycbxjp9O5F6yMDvcrRJdFKCro-DWYoYXznKjKcx9xP459cIqRMBbyd2dOF7w7ySPOBg/exec";
 
-const API_URL = "https://script.google.com/macros/s/AKfycbxjp9O5F6yMDvcrRJdFKCro-DWYoYXznKjKcx9xP459cIqRMBbyd2dOF7w7ySPOBg/exec"; // <-- IMPORTANT
 let allOrders = [];
 let allItems = [];
 let allEmployees = [];
@@ -19,7 +19,7 @@ window.addEventListener("resize", setVH);
 window.addEventListener("orientationchange", () => setTimeout(setVH, 150));
 setVH();
 
-// ---------- Escape HTML ----------
+// ---------- Escape HTML (FIXED) ----------
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -30,15 +30,12 @@ function esc(s) {
 }
 
 // ---------- Loading ----------
-function showLoading(isShow, subText = "") {
-  const ov = document.getElementById("loading-overlay");
-  if (!ov) return;
-
-  const sub = ov.querySelector(".loading-sub");
+function showLoading(show, subText = "") {
+  const el = document.getElementById("loading-overlay");
+  if (!el) return;
+  const sub = document.getElementById("loading-sub");
   if (sub) sub.textContent = subText || "";
-
-  if (isShow) ov.classList.remove("hidden");
-  else ov.classList.add("hidden");
+  el.classList.toggle("hidden", !show);
 }
 
 // ---------- Modal ----------
@@ -47,10 +44,10 @@ window.openModal = (title, html) => {
   const t = document.getElementById("modal-title");
   const b = document.getElementById("modal-body");
   if (!ov || !t || !b) {
-    alert(`${title}\n\n${html.replace(/<[^>]*>/g, "")}`);
+    alert(`${title}\n\n${String(html || "").replace(/<[^>]*>/g, "")}`);
     return;
   }
-  t.innerText = title || "";
+  t.textContent = title || "";
   b.innerHTML = html || "";
   ov.classList.remove("hidden");
 };
@@ -60,8 +57,9 @@ window.closeModal = () => {
   if (ov) ov.classList.add("hidden");
   if (b) b.innerHTML = "";
 };
+
 function popupError(title, msg) {
-  window.openModal(title || "Алдаа", `<div style="font-weight:900;color:#ef4444">${esc(msg || "")}</div>`);
+  window.openModal(title || "Алдаа", `<div style="white-space:pre-wrap;font-weight:700">${esc(msg || "")}</div>`);
 }
 
 // ---------- Sidebar ----------
@@ -79,7 +77,7 @@ window.toggleSidebar = () => {
   sb.classList.contains("open") ? window.closeSidebar() : window.openSidebar();
 };
 
-// ---------- Tabs (давхардахгүй) ----------
+// ---------- Tabs ----------
 window.showTab = (tabName, btn) => {
   document.querySelectorAll(".tab-content").forEach(el => el.classList.add("hidden"));
   document.getElementById("tab-" + tabName)?.classList.remove("hidden");
@@ -101,16 +99,16 @@ function updateSidebarUserCard() {
   const idEl = document.getElementById("sb-id");
   const roleEl = document.getElementById("sb-role");
   const extraEl = document.getElementById("sb-extra");
-
   if (!currentUser) return;
 
-  if (nameEl) nameEl.innerText = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim();
-  if (idEl) idEl.innerText = `${currentUser.code || ""}`;
-  if (roleEl) roleEl.innerText = (currentUser.type === "admin") ? "АДМИН" : (currentUser.role || "");
-  if (extraEl) extraEl.innerText = `${currentUser.place || ""} • ${currentUser.department || ""} • ${currentUser.shift || ""}`.replace(/^ • | • $/g, "");
+  const fullName = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim();
+  if (nameEl) nameEl.textContent = fullName || "";
+  if (idEl) idEl.textContent = `${currentUser.code || ""}`;
+  if (roleEl) roleEl.textContent = (currentUser.type === "admin") ? "АДМИН" : (currentUser.role || "");
+  if (extraEl) extraEl.textContent = `${currentUser.place || ""} • ${currentUser.department || ""} • ${currentUser.shift || ""}`.replace(/^ • | • $/g, "");
 }
 
-// ---------- API ----------
+// ---------- API (no CORS preflight: x-www-form-urlencoded) ----------
 async function apiPost(payload) {
   const body = new URLSearchParams();
   Object.entries(payload || {}).forEach(([k, v]) => body.append(k, v == null ? "" : String(v)));
@@ -136,56 +134,40 @@ async function apiPost(payload) {
 function uniq(arr) {
   return Array.from(new Set((arr || []).filter(x => x != null && x !== "")));
 }
-function setSelectOptions(sel, values, labels, allLabel) {
+
+function setSelectOptions(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
   const v = values || [];
-  const l = labels || v;
-
   let html = "";
-  if (allLabel) html += `<option value="">${esc(allLabel)}</option>`;
-  v.forEach((val, i) => {
-    html += `<option value="${esc(val)}">${esc(l[i] ?? val)}</option>`;
-  });
+  if (allLabel != null) html += `<option value="">${esc(allLabel)}</option>`;
+  v.forEach(val => html += `<option value="${esc(val)}">${esc(val)}</option>`);
   sel.innerHTML = html;
 }
-function matches(value, query) {
-  const v = String(value || "").toLowerCase();
-  const q = String(query || "").trim().toLowerCase();
-  if (!q) return true;
-  return v.includes(q);
-}
-function fmtDateTime(v) {
+
+function fmtDateOnly(v) {
   const d = new Date(v);
   if (isNaN(d)) return "";
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
-  return `${y}-${m}-${day} ${hh}:${mm}`;
-}
-function fmtDateOnly(v){
-  const d = new Date(v);
-  if (isNaN(d)) return "";
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
-function statusMeta(raw){
-  const s = String(raw||"").trim();
-  if (s === "Зөвшөөрсөн") return {label:"ОЛГОСОН", cls:"st-approved"};
-  if (s === "Татгалзсан") return {label:"ТАТГАЛЗСАН", cls:"st-rejected"};
-  return {label:"ХҮЛЭЭГДЭЖ БУЙ", cls:"st-pending"};
+
+function statusMeta(raw) {
+  const s = String(raw || "").trim();
+  if (s === "Зөвшөөрсөн") return { label: "ОЛГОСОН", cls: "st-approved" };
+  if (s === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
+  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 
 // ---------- Login / Logout ----------
 window.login = async () => {
   const code = document.getElementById("login-code")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
+
   if (!code || !pass) return popupError("Алдаа", "Код, нууц үг оруулна уу");
 
-  showLoading(true);
+  showLoading(true, "Нэвтэрч байна...");
   try {
     const r = await apiPost({ action: "login", code, pass });
     if (!r.success) return popupError("Алдаа", r.msg || "Нэвтрэх амжилтгүй");
@@ -193,10 +175,11 @@ window.login = async () => {
     currentUser = r.user;
     updateSidebarUserCard();
 
+    // IMPORTANT: hide login, show main
     document.getElementById("login-screen")?.classList.add("hidden");
     document.getElementById("main-screen")?.classList.remove("hidden");
 
-    // Role-based menu
+    // Role based menu
     const isAdmin = currentUser?.type === "admin";
     document.getElementById("nav-request")?.classList.toggle("hidden", isAdmin);
     document.getElementById("nav-items")?.classList.toggle("hidden", !isAdmin);
@@ -204,9 +187,11 @@ window.login = async () => {
 
     await refreshData();
 
-    // Default tab
-    if (isAdmin) showTab("orders", document.querySelector(".nav-btn"));
-    else showTab("request", document.getElementById("nav-request"));
+    if (isAdmin) {
+      showTab("orders", document.getElementById("nav-orders"));
+    } else {
+      showTab("request", document.getElementById("nav-request"));
+    }
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -219,24 +204,33 @@ window.logout = () => {
   allOrders = [];
   allItems = [];
   allEmployees = [];
+
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
+
+  // reset login inputs
+  const lc = document.getElementById("login-code");
+  const lp = document.getElementById("login-pass");
+  if (lc) lc.value = "";
+  if (lp) lp.value = "";
+
+  // close sidebar
+  window.closeSidebar();
 };
 
 // ---------- Refresh ----------
 window.refreshData = async () => {
-  showLoading(true);
+  showLoading(true, "Өгөгдөл татаж байна...");
   try {
     const r = await apiPost({ action: "get_all_data" });
-    if (!r.success) return popupError("Алдаа", r.msg || "Өгөгдөл татахад алдаа гарлаа.");
+    if (!r.success) throw new Error(r.msg || "Өгөгдөл татахад алдаа гарлаа.");
 
     allOrders = r.orders || [];
     allItems = r.items || [];
 
-    // employees data is separate action
     if (currentUser?.type === "admin") {
       const u = await apiPost({ action: "get_users" });
-      if (!u.success) return popupError("Алдаа", u.msg || "Users татахад алдаа");
+      if (!u.success) throw new Error(u.msg || "Users татахад алдаа");
       allEmployees = u.users || [];
     } else {
       allEmployees = [];
@@ -246,15 +240,15 @@ window.refreshData = async () => {
     populateStatusFilter();
     setupYearMonthFilters();
     setupPlaceDeptShiftFilters();
+    populateRequestItemSize();
     populateItemsFilter();
     setupEmployeeShiftOptions();
-    setupEmployeeSearchShiftOptions();
 
-    // counts
-    document.getElementById("items-count") && (document.getElementById("items-count").innerText = `${allItems.length} items`);
-    document.getElementById("emp-count") && (document.getElementById("emp-count").innerText = `${allEmployees.length} employees`);
+    const ic = document.getElementById("items-count");
+    const ec = document.getElementById("emp-count");
+    if (ic) ic.textContent = `${allItems.length} items`;
+    if (ec) ec.textContent = `${allEmployees.length} employees`;
 
-    // render current tab
     const visibleTab = document.querySelector(".tab-content:not(.hidden)")?.id || "";
     if (visibleTab === "tab-orders") applyFilters();
     if (visibleTab === "tab-items") renderItemsList();
@@ -271,20 +265,16 @@ function populateOrderItemFilter() {
   const el = document.getElementById("filter-item");
   if (!el) return;
   const names = uniq(allItems.map(it => it.name)).sort((a, b) => a.localeCompare(b));
-  setSelectOptions(el, names, names, "Бүгд");
+  setSelectOptions(el, names, "Бүгд");
 }
 
 function populateStatusFilter() {
   const el = document.getElementById("filter-status");
   if (!el) return;
-
-  // Always show 3 main statuses
+  // Always show 3 statuses
   const base = ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"];
-  const sts = uniq(base.concat(allOrders.map(o => o.status).filter(Boolean)))
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
-
-  setSelectOptions(el, sts, sts, "Бүгд");
+  const sts = uniq(base.concat(allOrders.map(o => o.status).filter(Boolean))).filter(Boolean);
+  setSelectOptions(el, sts, "Бүгд");
 }
 
 function setupYearMonthFilters() {
@@ -298,10 +288,10 @@ function setupYearMonthFilters() {
     if (!isNaN(d)) years.add(String(d.getFullYear()));
   });
   const yearsArr = Array.from(years).sort((a, b) => b.localeCompare(a));
-  setSelectOptions(yearSel, yearsArr, yearsArr, "Бүгд");
+  setSelectOptions(yearSel, yearsArr, "Бүгд");
 
   const monthsArr = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-  setSelectOptions(monthSel, monthsArr, monthsArr, "Бүгд");
+  setSelectOptions(monthSel, monthsArr, "Бүгд");
 }
 
 function setupPlaceDeptShiftFilters() {
@@ -309,11 +299,11 @@ function setupPlaceDeptShiftFilters() {
   const deptSel = document.getElementById("filter-dept");
   const shiftSel = document.getElementById("filter-shift");
 
-  if (placeSel) setSelectOptions(placeSel, uniq(allOrders.map(o => o.place)).sort((a,b)=>String(a).localeCompare(String(b))), null, "Бүгд");
-  if (deptSel) setSelectOptions(deptSel, uniq(allOrders.map(o => o.department)).sort((a,b)=>String(a).localeCompare(String(b))), null, "Бүгд");
+  if (placeSel) setSelectOptions(placeSel, uniq(allOrders.map(o => o.place)).sort((a,b)=>String(a).localeCompare(String(b))), "Бүгд");
+  if (deptSel) setSelectOptions(deptSel, uniq(allOrders.map(o => o.department)).sort((a,b)=>String(a).localeCompare(String(b))), "Бүгд");
 
-  const shifts = uniq(["А","Б","Өдөр","Шөнө"].concat(allOrders.map(o => o.shift))).filter(Boolean);
-  if (shiftSel) setSelectOptions(shiftSel, shifts, shifts, "Бүгд");
+  const shifts = uniq(SHIFT_OPTIONS.concat(allOrders.map(o => o.shift))).filter(Boolean);
+  if (shiftSel) setSelectOptions(shiftSel, shifts, "Бүгд");
 }
 
 window.clearOrderFilters = () => {
@@ -341,16 +331,22 @@ window.applyFilters = () => {
 
   const filtered = (allOrders || []).filter(o => {
     const d = new Date(o.requestedDate);
-    const mN = !nS || (`${o.ovog||""} ${o.ner||""}`.toLowerCase().includes(nS.toLowerCase()));
-    const mC = !cS || (String(o.code).includes(cS));
-    const mR = !rS || (o.role && o.role.toLowerCase().includes(rS.toLowerCase()));
+
+    const fullName = `${o.ovog || ""} ${o.ner || ""}`.toLowerCase();
+    const mN = !nS || fullName.includes(String(nS).toLowerCase());
+    const mC = !cS || String(o.code || "").includes(String(cS));
+    const mR = !rS || String(o.role || "").toLowerCase().includes(String(rS).toLowerCase());
+
     const mI = !iF || o.item === iF;
     const mS = !sF || o.status === sF;
+
     const mY = !yF || (!isNaN(d) && String(d.getFullYear()) === yF);
     const mM = !mF || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === mF);
-    const mP = !pF || (o.place || "") === pF;
-    const mD = !dF || (o.department || "") === dF;
-    const mSh = !shF || (o.shift || "") === shF;
+
+    const mP = !pF || String(o.place || "") === pF;
+    const mD = !dF || String(o.department || "") === dF;
+    const mSh = !shF || String(o.shift || "") === shF;
+
     return mN && mC && mR && mI && mS && mY && mM && mP && mD && mSh;
   });
 
@@ -362,44 +358,48 @@ function renderOrders(orders) {
   if (!container) return;
 
   if (!orders.length) {
-    container.innerHTML = `<div class="card"><div style="font-weight:900;color:#0f172a">Мэдээлэл олдсонгүй</div></div>`;
+    container.innerHTML = `<div class="card"><b>Мэдээлэл олдсонгүй</b></div>`;
     return;
   }
 
   container.innerHTML = orders.slice().reverse().map(o => {
     const st = statusMeta(o.status);
-    const emp = `${esc(o.code)} • ${esc(o.ovog)} ${esc(o.ner)}<br/><span style="font-size:11px;font-weight:800;color:#64748b">${esc(o.role||"")} • ${esc(o.place||"")} • ${esc(o.department||"")} • ${esc(o.shift||"")}</span>`;
-    const item = `<div style="font-weight:900;color:#0f172a">${esc(o.item||"")}</div><div style="font-size:11px;font-weight:800;color:#64748b">Размер: ${esc(o.size||"")}</div>`;
-    const qty = `<div style="font-weight:900;color:#0f172a;text-align:center">${esc(o.quantity ?? 1)}</div>`;
-    const dt = `<div style="font-weight:900;color:#0f172a;text-align:center">${esc(fmtDateOnly(o.requestedDate))}</div>`;
-    const status = `<span class="badge-status ${st.cls}">${st.label}</span>`;
+    const canAct = (currentUser?.type === "admin" && String(o.status || "") === "Хүлээгдэж буй");
 
-    const canAct = (currentUser?.type === "admin" && String(o.status||"") === "Хүлээгдэж буй");
-    const actions = canAct ? `
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-        <button class="btn-mini hist" onclick="setOrderStatus('${esc(o.id)}','Зөвшөөрсөн')">ОЛГОХ</button>
-        <button class="btn-mini del" onclick="setOrderStatus('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
-      </div>
-    ` : `<div style="text-align:right;color:#94a3b8;font-weight:900">ШИЙДВЭРЛЭСЭН</div>`;
+    const empLine = `${esc(o.code)} • ${esc(o.ovog)} ${esc(o.ner)}`;
+    const empSub = `${esc(o.role || "")} • ${esc(o.place || "")} • ${esc(o.department || "")} • ${esc(o.shift || "")}`.replace(/^ • | • $/g, "");
+
+    const itemHtml = `<div class="cell-item">${esc(o.item || "")}<div class="sub">Размер: ${esc(o.size || "")}</div></div>`;
+    const qtyHtml = `<div><b>${esc(o.quantity ?? 1)}</b></div>`;
+    const dateHtml = `<div><b>${esc(fmtDateOnly(o.requestedDate))}</b></div>`;
+    const statusHtml = `<span class="badge ${st.cls}">${st.label}</span>`;
+
+    const actions = canAct
+      ? `<div class="actions">
+           <button class="pill pill-blue" onclick="setStatus('${esc(o.id)}','Зөвшөөрсөн')">ОЛГОХ</button>
+           <button class="pill pill-red" onclick="setStatus('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
+         </div>`
+      : `<div class="actions"><button class="pill pill-gray" disabled>ШИЙДВЭРЛЭСЭН</button></div>`;
 
     return `
-      <div class="order-row">
-        <div>${emp}</div>
-        <div>${item}</div>
-        <div style="text-align:center">${qty}</div>
-        <div style="text-align:center">${dt}</div>
-        <div style="text-align:center">${status}</div>
+      <div class="row orders">
+        <div class="cell-emp">${empLine}<span class="sub">${empSub}</span></div>
+        <div>${itemHtml}</div>
+        <div>${qtyHtml}</div>
+        <div>${dateHtml}</div>
+        <div>${statusHtml}</div>
         <div>${actions}</div>
       </div>
     `;
   }).join("");
 }
 
-window.setOrderStatus = async (id, status) => {
-  showLoading(true);
+window.setStatus = async (id, status) => {
+  if (!id || !status) return;
+  showLoading(true, "Төлөв шинэчилж байна...");
   try {
     const r = await apiPost({ action: "update_status", id, status });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    if (!r.success) throw new Error(r.msg || "Шинэчилж чадсангүй");
     await refreshData();
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
@@ -409,31 +409,40 @@ window.setOrderStatus = async (id, status) => {
 };
 
 // ---------- Request (user) ----------
-window.onRequestItemChange = () => {
-  const itemName = document.getElementById("req-item")?.value || "";
-  const item = allItems.find(x => x.name === itemName);
+function populateRequestItemSize() {
+  const itemSel = document.getElementById("req-item");
   const sizeSel = document.getElementById("req-size");
-  if (!sizeSel) return;
+  if (!itemSel || !sizeSel) return;
 
-  const sizes = item ? String(item.sizes || "").split(",").map(s => s.trim()).filter(Boolean) : [];
-  setSelectOptions(sizeSel, sizes, sizes, "Сонгох...");
-};
+  const names = uniq(allItems.map(it => it.name)).sort((a,b)=>a.localeCompare(b));
+  itemSel.innerHTML = names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+
+  const updateSizes = () => {
+    const chosen = itemSel.value;
+    const found = allItems.find(x => x.name === chosen);
+    const sizes = String(found?.sizes || "").split(",").map(s => s.trim()).filter(Boolean);
+    sizeSel.innerHTML = sizes.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  };
+  itemSel.onchange = updateSizes;
+  updateSizes();
+}
 
 window.submitRequest = async () => {
-  if (!currentUser) return;
+  if (!currentUser || currentUser.type === "admin") return;
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
-  const qty = document.getElementById("req-qty")?.value || "1";
-  if (!item) return popupError("Алдаа", "Бараа сонгоно уу");
+  const qty = parseInt(document.getElementById("req-qty")?.value || "1", 10) || 1;
 
-  showLoading(true);
+  if (!item || !size) return popupError("Алдаа", "Бараа болон хэмжээ сонгоно уу.");
+
+  showLoading(true, "Хүсэлт илгээж байна...");
   try {
     const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
-
+    if (!r.success) throw new Error(r.msg || "Илгээж чадсангүй");
+    window.openModal("Амжилттай", `<b>Хүсэлт илгээгдлээ.</b>`);
     document.getElementById("req-qty").value = "1";
     await refreshData();
-    window.openModal("Амжилттай", `<div style="font-weight:900;color:#16a34a">Хүсэлт илгээгдлээ</div>`);
+    showTab("orders", document.getElementById("nav-orders"));
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -441,302 +450,299 @@ window.submitRequest = async () => {
   }
 };
 
-// ---------- Items ----------
+// ---------- Items (admin) ----------
 function populateItemsFilter() {
-  const el = document.getElementById("items-filter-name");
+  const el = document.getElementById("items-filter");
   if (!el) return;
-  const names = uniq(allItems.map(it => it.name)).sort((a, b) => a.localeCompare(b));
-  setSelectOptions(el, names, names, "Бүгд");
+  const names = uniq(allItems.map(i => i.name)).sort((a,b)=>a.localeCompare(b));
+  setSelectOptions(el, names, "Бүгд");
+  el.onchange = () => renderItemsList();
 }
 window.clearItemsFilter = () => {
-  const el = document.getElementById("items-filter-name");
+  const el = document.getElementById("items-filter");
   if (el) el.value = "";
   renderItemsList();
 };
+
+window.addItem = async () => {
+  const name = document.getElementById("item-name")?.value?.trim() || "";
+  const sizes = document.getElementById("item-sizes")?.value?.trim() || "";
+  if (!name) return popupError("Алдаа", "Нэр оруулна уу!");
+
+  showLoading(true, "Нэмэж байна...");
+  try {
+    const r = await apiPost({ action: "add_item", name, sizes });
+    if (!r.success) throw new Error(r.msg || "Нэмэхэд алдаа");
+    document.getElementById("item-name").value = "";
+    document.getElementById("item-sizes").value = "";
+    await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
 function renderItemsList() {
-  const container = document.getElementById("items-list-container");
-  if (!container) return;
+  const list = document.getElementById("items-list");
+  if (!list) return;
 
-  const sel = document.getElementById("items-filter-name");
-  const filterName = sel ? (sel.value || "") : "";
+  const f = document.getElementById("items-filter")?.value || "";
+  const items = (!f ? allItems : allItems.filter(x => x.name === f));
 
-  const rows = filterName ? allItems.filter(x => x.name === filterName) : allItems;
-  if (!rows.length) {
-    container.innerHTML = `<div class="card"><div style="font-weight:900;color:#0f172a">Бараа олдсонгүй</div></div>`;
+  if (!items.length) {
+    list.innerHTML = `<div class="card"><b>Бараа байхгүй</b></div>`;
     return;
   }
 
-  container.innerHTML = rows.map((it, idx) => {
-    const sizes = String(it.sizes || "").split(",").map(s => s.trim()).filter(Boolean);
-    const lockedNote = it.locked ? `<div style="font-size:10px;font-weight:900;color:#ef4444;margin-top:4px">LOCKED</div>` : "";
-
+  list.innerHTML = items.map((it, idx) => {
+    const locked = !!it.locked;
     return `
-      <div class="items-row">
-        <div class="items-no">${idx + 1}</div>
-        <div class="items-name">${esc(it.name)} ${lockedNote}</div>
-        <div class="items-sizes">${sizes.map(s => `<span class="sz">${esc(s)}</span>`).join("") || "-"}</div>
-
-        <div class="items-actions">
-          <button class="btn-mini edit" onclick="openItemEdit('${esc(it.name)}','${esc(it.sizes || "")}', ${it.locked ? "true" : "false"})">ЗАСАХ</button>
-          <button class="btn-mini hist" onclick="openItemHistory('${esc(it.name)}')">ТҮҮХ</button>
-          <button class="btn-mini del" onclick="deleteItem('${esc(it.name)}', ${it.locked ? "true" : "false"})">УСТГАХ</button>
+      <div class="row items">
+        <div><b>${idx + 1}</b></div>
+        <div><b>${esc(it.name)}</b></div>
+        <div>${esc(it.sizes || "")}</div>
+        <div class="actions">
+          <button class="pill pill-gray" ${locked ? "disabled" : ""} onclick="editItemPrompt('${esc(it.name)}','${esc(it.sizes || "")}',${locked})">ЗАСАХ</button>
+          <button class="pill pill-blue" onclick="viewItemHistory('${esc(it.name)}')">ТҮҮХ</button>
+          <button class="pill pill-red" ${locked ? "disabled" : ""} onclick="deleteItem('${esc(it.name)}',${locked})">УСТГАХ</button>
         </div>
       </div>
     `;
   }).join("");
 }
 
-window.addItem = async () => {
-  const name = document.getElementById("new-item-name")?.value?.trim() || "";
-  const sizes = document.getElementById("new-item-sizes")?.value?.trim() || "";
-  if (!name) return popupError("Алдаа", "Барааны нэр оруулна уу!");
-
-  showLoading(true);
-  try {
-    const r = await apiPost({ action: "add_item", name, sizes });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
-    document.getElementById("new-item-name").value = "";
-    document.getElementById("new-item-sizes").value = "";
-    await refreshData();
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.openItemEdit = (name, sizes, locked) => {
-  if (locked) return popupError("LOCKED", "Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул засах боломжгүй.");
-  window.openModal("Бараа засах", `
-    <div class="form-grid" style="grid-template-columns:1fr 1fr 220px">
-      <div>
-        <span class="filter-label">Бараа</span>
-        <input id="edit-item-name" value="${esc(name)}" />
-      </div>
-      <div>
-        <span class="filter-label">Размер</span>
-        <input id="edit-item-sizes" value="${esc(sizes)}" />
-      </div>
-      <div style="display:flex;align-items:flex-end">
-        <button class="btn-primary" onclick="saveItemEdit('${esc(name)}')">ХАДГАЛАХ</button>
-      </div>
+window.editItemPrompt = (name, sizes, locked) => {
+  if (locked) return popupError("Анхаар", "Энэ бараагаар хүсэлт бүртгэгдсэн тул засах боломжгүй.");
+  const html = `
+    <div class="field">
+      <div class="filter-label">Бараа</div>
+      <input id="edit-item-name" class="input" value="${esc(name)}" />
     </div>
-  `);
+    <div class="field" style="margin-top:10px">
+      <div class="filter-label">Размерууд</div>
+      <input id="edit-item-sizes" class="input" value="${esc(sizes)}" />
+    </div>
+    <div style="margin-top:12px;display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveItemEdit('${esc(name)}')">ХАДГАЛАХ</button>
+    </div>
+  `;
+  openModal("Бараа засах", html);
 };
+
 window.saveItemEdit = async (oldName) => {
   const newName = document.getElementById("edit-item-name")?.value?.trim() || "";
   const sizes = document.getElementById("edit-item-sizes")?.value?.trim() || "";
   if (!newName) return popupError("Алдаа", "Нэр хоосон байж болохгүй");
-  showLoading(true);
+
+  showLoading(true, "Хадгалж байна...");
   try {
     const r = await apiPost({ action: "update_item", oldName, newName, sizes });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    if (!r.success) throw new Error(r.msg || "Хадгалж чадсангүй");
     closeModal();
     await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
+
 window.deleteItem = async (name, locked) => {
-  if (locked) return popupError("LOCKED", "Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул устгах боломжгүй.");
-  if (!confirm(`"${name}" устгах уу?`)) return;
-  showLoading(true);
+  if (locked) return popupError("Анхаар", "Энэ бараагаар хүсэлт/олголт бүртгэгдсэн тул устгах боломжгүй.");
+  if (!confirm(`"${name}" барааг устгах уу?`)) return;
+
+  showLoading(true, "Устгаж байна...");
   try {
     const r = await apiPost({ action: "delete_item", name });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    if (!r.success) throw new Error(r.msg || "Устгаж чадсангүй");
     await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
-window.openItemHistory = async (name) => {
-  showLoading(true);
+
+window.viewItemHistory = async (item) => {
+  showLoading(true, "Түүх татаж байна...");
   try {
-    const r = await apiPost({ action: "get_item_history", item: name });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    const r = await apiPost({ action: "get_item_history", item });
+    if (!r.success) throw new Error(r.msg || "Түүх татахад алдаа");
 
-    const hist = r.history || [];
-    const rows = hist.length ? hist.map(h => `
-      <div class="card" style="margin-bottom:10px">
-        <div style="font-weight:900;color:#0f172a">${esc(h.ovog)} ${esc(h.ner)} (${esc(h.code)})</div>
-        <div style="margin-top:6px;color:#64748b;font-weight:800;font-size:11px">
-          ${esc(fmtDateOnly(h.date))} • Размер: ${esc(h.size)} • Тоо: ${esc(h.qty)}
-        </div>
-      </div>
-    `).join("") : `<div class="card"><div style="font-weight:900;color:#0f172a">Олголтын түүх байхгүй</div></div>`;
+    const rows = (r.history || []);
+    const html = rows.length
+      ? `<div class="card">${rows.map(h => `
+          <div style="padding:10px;border-bottom:1px solid #e2e8f0">
+            <b>${esc(h.code)} • ${esc(h.ovog)} ${esc(h.ner)}</b><br/>
+            ${esc(h.item || item)} • Размер: <b>${esc(h.size)}</b> • Тоо: <b>${esc(h.qty)}</b><br/>
+            <span style="color:#64748b;font-weight:700">${esc(fmtDateOnly(h.date))}</span>
+          </div>
+        `).join("")}</div>`
+      : `<div class="card"><b>Түүх байхгүй</b></div>`;
 
-    window.openModal("Олголтын ТҮҮХ", rows);
+    openModal("Олголтын түүх", html);
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
-// ---------- Employees ----------
+// ---------- Employees (admin) ----------
 function setupEmployeeShiftOptions() {
   const sel = document.getElementById("emp-shift");
   if (!sel) return;
-  const opts = ["", ...SHIFT_OPTIONS];
-  setSelectOptions(sel, opts, opts.map(x => x || "Сонгох..."), null);
-}
-function setupEmployeeSearchShiftOptions() {
-  const sel = document.getElementById("emp-search-shift");
-  if (!sel) return;
-  const opts = ["", ...SHIFT_OPTIONS];
-  setSelectOptions(sel, opts, opts.map(x => x || "Бүгд"), null);
-}
-
-function renderEmployeesList() {
-  const container = document.getElementById("employees-list-container");
-  if (!container) return;
-
-  const qRole = document.getElementById("emp-search-role")?.value || "";
-  const qPlace = document.getElementById("emp-search-place")?.value || "";
-  const qDept = document.getElementById("emp-search-dept")?.value || "";
-  const qShift = document.getElementById("emp-search-shift")?.value || "";
-
-  const list = (allEmployees || []).filter(u => {
-    const okRole = matches(u.role, qRole);
-    const okPlace = matches(u.place, qPlace);
-    const okDept = matches(u.department, qDept);
-    const okShift = !qShift || String(u.shift || "") === qShift;
-    return okRole && okPlace && okDept && okShift;
-  });
-
-  if (!list.length) {
-    container.innerHTML = `<div class="card"><div style="font-weight:900;color:#0f172a">Ажилтан олдсонгүй</div></div>`;
-    return;
-  }
-
-  container.innerHTML = list.map(u => {
-    const leftCols = `
-      <div style="font-weight:900;color:#0f172a">${esc(u.place || "-")}</div>
-      <div style="font-weight:900;color:#0f172a">${esc(u.department || "-")}</div>
-      <div style="font-weight:900;color:#0f172a">${esc(u.role || "-")}</div>
-      <div style="font-weight:900;color:#0f172a;text-align:center">${esc(u.shift || "-")}</div>
-      <div style="font-weight:900;color:#0f172a">${esc(u.code)}</div>
-      <div style="font-weight:900;color:#0f172a">${esc(u.ovog)} ${esc(u.ner)}</div>
-    `;
-
-    const actions = `
-      <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
-        <button class="btn-mini edit" onclick="openEmployeeEdit('${esc(u.code)}')">ЗАСАХ</button>
-        <button class="btn-mini hist" onclick="openEmployeeHistory('${esc(u.code)}','${esc(u.ovog)}','${esc(u.ner)}')">ТҮҮХ</button>
-        <button class="btn-mini del" onclick="deleteEmployee('${esc(u.code)}', ${u.locked ? "true" : "false"})">УСТГАХ</button>
-      </div>
-    `;
-
-    return `<div class="emp-row">${leftCols}<div>${actions}</div></div>`;
-  }).join("");
+  sel.innerHTML = SHIFT_OPTIONS.map(s => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
 }
 
 window.addEmployee = async () => {
   const code = document.getElementById("emp-code")?.value?.trim() || "";
-  const pass = document.getElementById("emp-pass")?.value?.trim() || "12345";
+  const pass = document.getElementById("emp-pass")?.value?.trim() || "";
   const ovog = document.getElementById("emp-ovog")?.value?.trim() || "";
-  const ner = document.getElementById("emp-ner")?.value?.trim() || "";
-  const place = document.getElementById("emp-place")?.value?.trim() || "";
-  const department = document.getElementById("emp-dept")?.value?.trim() || "";
+  const ner  = document.getElementById("emp-ner")?.value?.trim() || "";
   const role = document.getElementById("emp-role")?.value?.trim() || "";
+  const place= document.getElementById("emp-place")?.value?.trim() || "";
+  const department = document.getElementById("emp-dept")?.value?.trim() || "";
   const shift = document.getElementById("emp-shift")?.value?.trim() || "";
 
-  if (!code || !ner) return popupError("Алдаа", "Код болон Нэр заавал!");
+  if (!code || !ner) return popupError("Алдаа", "Код болон нэр заавал.");
 
-  showLoading(true);
+  showLoading(true, "Ажилтан нэмэж байна...");
   try {
-    const r = await apiPost({ action: "add_user", code, pass, ovog, ner, role, place, department, shift });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    const r = await apiPost({ action: "add_user", code, pass, ner, ovog, role, place, department, shift });
+    if (!r.success) throw new Error(r.msg || "Нэмэхэд алдаа");
 
     ["emp-code","emp-pass","emp-ovog","emp-ner","emp-role","emp-place","emp-dept"].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.value = "";
     });
-    const sh = document.getElementById("emp-shift");
-    if (sh) sh.value = "";
-
     await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
-window.openEmployeeEdit = (code) => {
-  const u = allEmployees.find(x => String(x.code) === String(code));
-  if (!u) return popupError("Алдаа", "Ажилтан олдсонгүй");
+function renderEmployeesList() {
+  const list = document.getElementById("employees-list");
+  if (!list) return;
 
-  window.openModal("Ажилтан засах", `
-    <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 1fr">
-      <div><span class="filter-label">Код</span><input id="edit-emp-code" value="${esc(u.code)}" disabled /></div>
-      <div><span class="filter-label">Нууц үг (хоосон байвал солихгүй)</span><input id="edit-emp-pass" placeholder="шинэ нууц үг" /></div>
-      <div><span class="filter-label">Овог</span><input id="edit-emp-ovog" value="${esc(u.ovog)}" /></div>
-      <div><span class="filter-label">Нэр</span><input id="edit-emp-ner" value="${esc(u.ner)}" /></div>
+  if (!allEmployees.length) {
+    list.innerHTML = `<div class="card"><b>Ажилтан байхгүй</b></div>`;
+    return;
+  }
 
-      <div><span class="filter-label">Газар</span><input id="edit-emp-place" value="${esc(u.place)}" /></div>
-      <div><span class="filter-label">Хэлтэс</span><input id="edit-emp-dept" value="${esc(u.department)}" /></div>
-      <div><span class="filter-label">Албан тушаал</span><input id="edit-emp-role" value="${esc(u.role)}" /></div>
-      <div><span class="filter-label">Ээлж</span>
-        <select id="edit-emp-shift">
-          <option value="">Сонгох...</option>
-          ${SHIFT_OPTIONS.map(s => `<option value="${esc(s)}" ${String(u.shift)===String(s)?"selected":""}>${esc(s)}</option>`).join("")}
+  list.innerHTML = allEmployees.map((u, idx) => {
+    const left = `
+      <b>${esc(u.code)}</b> • ${esc(u.ovog)} ${esc(u.ner)}<br/>
+      <span style="color:#64748b;font-weight:800">
+        ${esc(u.role || "")} • ${esc(u.place || "")} • ${esc(u.department || "")} • ${esc(u.shift || "")}
+      </span>
+    `;
+
+    return `
+      <div class="row" style="grid-template-columns: 60px 1fr 1fr; align-items:center">
+        <div><b>${idx + 1}</b></div>
+        <div>${left}</div>
+        <div class="actions">
+          <button class="pill pill-gray" ${u.locked ? "disabled" : ""} onclick="editEmployeePrompt('${esc(u.code)}', ${JSON.stringify(u).replace(/</g,"\\u003c")})">ЗАСАХ</button>
+          <button class="pill pill-blue" onclick="viewUserHistory('${esc(u.code)}')">ТҮҮХ</button>
+          <button class="pill pill-red" ${u.locked ? "disabled" : ""} onclick="deleteEmployee('${esc(u.code)}', ${u.locked ? "true":"false"})">УСТГАХ</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+window.editEmployeePrompt = (code, u) => {
+  if (!u) return;
+  if (u.locked) return popupError("Анхаар", "Энэ ажилтнаар хүсэлт/олголт бүртгэгдсэн тул засах боломжгүй гэж тохируулсан.");
+
+  const html = `
+    <div class="field"><div class="filter-label">Код</div><input class="input" value="${esc(code)}" disabled /></div>
+
+    <div class="form-grid" style="margin-top:10px">
+      <div class="field"><div class="filter-label">Нууц үг (хоосон бол өөрчлөхгүй)</div><input id="e-pass" class="input" placeholder="(хоосон)" /></div>
+      <div class="field"><div class="filter-label">Овог</div><input id="e-ovog" class="input" value="${esc(u.ovog||"")}" /></div>
+      <div class="field"><div class="filter-label">Нэр</div><input id="e-ner" class="input" value="${esc(u.ner||"")}" /></div>
+      <div class="field"><div class="filter-label">Албан тушаал</div><input id="e-role" class="input" value="${esc(u.role||"")}" /></div>
+      <div class="field"><div class="filter-label">Газар</div><input id="e-place" class="input" value="${esc(u.place||"")}" /></div>
+      <div class="field"><div class="filter-label">Хэлтэс</div><input id="e-dept" class="input" value="${esc(u.department||"")}" /></div>
+      <div class="field"><div class="filter-label">Ээлж</div>
+        <select id="e-shift" class="select">
+          ${SHIFT_OPTIONS.map(s => `<option value="${esc(s)}" ${String(u.shift||"")===s?"selected":""}>${esc(s)}</option>`).join("")}
         </select>
       </div>
-
-      <div style="grid-column:1/-1;display:flex;justify-content:flex-end">
-        <button class="btn-primary" onclick="saveEmployeeEdit('${esc(u.code)}')">ХАДГАЛАХ</button>
-      </div>
     </div>
-  `);
+
+    <div style="margin-top:12px;display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveEmployeeEdit('${esc(code)}')">ХАДГАЛАХ</button>
+    </div>
+  `;
+  openModal("Ажилтан засах", html);
 };
 
 window.saveEmployeeEdit = async (code) => {
-  const pass = document.getElementById("edit-emp-pass")?.value?.trim() || "";
-  const ovog = document.getElementById("edit-emp-ovog")?.value?.trim() || "";
-  const ner = document.getElementById("edit-emp-ner")?.value?.trim() || "";
-  const place = document.getElementById("edit-emp-place")?.value?.trim() || "";
-  const department = document.getElementById("edit-emp-dept")?.value?.trim() || "";
-  const role = document.getElementById("edit-emp-role")?.value?.trim() || "";
-  const shift = document.getElementById("edit-emp-shift")?.value?.trim() || "";
+  const pass = document.getElementById("e-pass")?.value?.trim() || "";
+  const ovog = document.getElementById("e-ovog")?.value?.trim() || "";
+  const ner  = document.getElementById("e-ner")?.value?.trim() || "";
+  const role = document.getElementById("e-role")?.value?.trim() || "";
+  const place= document.getElementById("e-place")?.value?.trim() || "";
+  const department = document.getElementById("e-dept")?.value?.trim() || "";
+  const shift = document.getElementById("e-shift")?.value?.trim() || "";
 
   if (!ner) return popupError("Алдаа", "Нэр хоосон байж болохгүй");
 
-  showLoading(true);
+  showLoading(true, "Хадгалж байна...");
   try {
-    const r = await apiPost({ action: "update_user", code, pass, ovog, ner, role, place, department, shift });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    const r = await apiPost({ action: "update_user", code, pass, ner, ovog, role, place, department, shift });
+    if (!r.success) throw new Error(r.msg || "Хадгалж чадсангүй");
     closeModal();
     await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
 window.deleteEmployee = async (code, locked) => {
-  if (locked) return popupError("LOCKED", "Энэ ажилтнаар хүсэлт/олголт бүртгэгдсэн тул устгах боломжгүй.");
-  if (!confirm(`${code} ажилтан устгах уу?`)) return;
+  if (locked) return popupError("Анхаар", "Энэ ажилтнаар хүсэлт/олголт бүртгэгдсэн тул устгах боломжгүй.");
+  if (!confirm(`"${code}" ажилтныг устгах уу?`)) return;
 
-  showLoading(true);
+  showLoading(true, "Устгаж байна...");
   try {
     const r = await apiPost({ action: "delete_user", code });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    if (!r.success) throw new Error(r.msg || "Устгаж чадсангүй");
     await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
-// Employee history
-window.openEmployeeHistory = async (code, ovog, ner) => {
-  showLoading(true);
+// NOTE: Backend-д "get_user_history" байхгүй бол Unknown action гарна.
+// Энэ үед Code.gs дээр action нэмэх хэрэгтэй.
+window.viewUserHistory = async (code) => {
+  showLoading(true, "Түүх татаж байна...");
   try {
     const r = await apiPost({ action: "get_user_history", code });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
+    if (!r.success) throw new Error(r.msg || "Түүх татахад алдаа");
 
-    const hist = r.history || [];
-    const rows = hist.length ? hist.map(h => `
-      <div class="card" style="margin-bottom:10px">
-        <div style="font-weight:900;color:#0f172a">${esc(h.item)} • Размер: ${esc(h.size)} • Тоо: ${esc(h.qty)}</div>
-        <div style="margin-top:6px;color:#64748b;font-weight:800;font-size:11px">${esc(fmtDateOnly(h.date))}</div>
-      </div>
-    `).join("") : `<div class="card"><div style="font-weight:900;color:#0f172a">Түүх байхгүй</div></div>`;
+    const rows = (r.history || []);
+    const html = rows.length
+      ? `<div class="card">${rows.map(h => `
+          <div style="padding:10px;border-bottom:1px solid #e2e8f0">
+            <b>${esc(h.item)} • Размер: ${esc(h.size)} • Тоо: ${esc(h.qty)}</b><br/>
+            <span style="color:#64748b;font-weight:800">${esc(fmtDateOnly(h.date))}</span>
+          </div>
+        `).join("")}</div>`
+      : `<div class="card"><b>Түүх байхгүй</b></div>`;
 
-    window.openModal(`Ажилтны ТҮҮХ • ${esc(code)} • ${esc(ovog||"")} ${esc(ner||"")}`, rows);
+    openModal("Ажилтны олголтын түүх", html);
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -747,30 +753,40 @@ window.openEmployeeHistory = async (code, ovog, ner) => {
 // ---------- Password ----------
 window.changePassword = async () => {
   if (!currentUser) return;
-  const oldP = document.getElementById("old-pass")?.value?.trim() || "";
-  const newP = document.getElementById("new-pass")?.value?.trim() || "";
-  const newP2 = document.getElementById("new-pass2")?.value?.trim() || "";
+  const oldP = document.getElementById("pass-old")?.value?.trim() || "";
+  const newP = document.getElementById("pass-new")?.value?.trim() || "";
+  if (!oldP || !newP) return popupError("Алдаа", "Хоёуланг нь бөглөнө үү.");
 
-  if (!oldP || !newP || !newP2) return popupError("Алдаа", "Мэдээлэл дутуу");
-  if (newP !== newP2) return popupError("Алдаа", "Шинэ нууц үг таарахгүй байна");
-
-  showLoading(true);
+  showLoading(true, "Хадгалж байна...");
   try {
     const r = await apiPost({ action: "change_pass", code: currentUser.code, oldP, newP });
-    if (!r.success) return popupError("Алдаа", r.msg || "Амжилтгүй");
-
-    document.getElementById("old-pass").value = "";
-    document.getElementById("new-pass").value = "";
-    document.getElementById("new-pass2").value = "";
-    window.openModal("Амжилттай", `<div style="font-weight:900;color:#16a34a">Нууц үг солигдлоо</div>`);
+    if (!r.success) throw new Error(r.msg || "Хадгалж чадсангүй");
+    window.openModal("Амжилттай", `<b>Нууц үг шинэчлэгдлээ.</b>`);
+    document.getElementById("pass-old").value = "";
+    document.getElementById("pass-new").value = "";
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
 // ---------- Init ----------
-window.onload = async () => {
-  // default shift selects
+window.onload = () => {
+  // Ensure main hidden initially (in case CSS cache)
+  document.getElementById("main-screen")?.classList.add("hidden");
+  document.getElementById("login-screen")?.classList.remove("hidden");
+
+  // Enter to login
+  document.getElementById("login-pass")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") window.login();
+  });
+
+  // Default select options
   setupEmployeeShiftOptions();
-  setupEmployeeSearchShiftOptions();
+
+  // Close modal with Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
 };
