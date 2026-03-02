@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// ONLY FIX: filters not working (bind events) + esc() syntax fix
+// FIX: JS crash (esc), employee submit request, filters bind
 // ===============================
 
 const API_URL =
@@ -13,7 +13,7 @@ let currentUser = null;
 
 const SHIFT_OPTIONS = ["А", "Б", "Өдөр", "Шөнө"];
 
-// ---------- VH (mobile safe area) ----------
+// ---------- VH ----------
 function setVH() {
   const vh = window.innerHeight * 0.01;
   document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -32,7 +32,7 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-// ---------- Loading overlay ----------
+// ---------- Loading ----------
 function showLoading(show, subText = "") {
   const el = document.getElementById("loading-overlay");
   if (!el) return;
@@ -107,7 +107,6 @@ async function apiPost(payload) {
 function uniq(arr) {
   return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
 }
-
 function setSelectOptions(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
   const v = (values || []).filter((x) => x != null && x !== "");
@@ -119,7 +118,6 @@ function setSelectOptions(sel, values, allLabel = "Бүгд") {
   });
   sel.innerHTML = html.join("");
 }
-
 function fmtDateOnly(v) {
   const d = new Date(v);
   if (isNaN(d)) return "";
@@ -128,19 +126,17 @@ function fmtDateOnly(v) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
-
 function statusMeta(raw) {
   const s = String(raw || "").trim();
   if (s === "Зөвшөөрсөн") return { label: "ОЛГОСОН", cls: "st-approved" };
   if (s === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
-
 function isLoggedIn() {
   return !!currentUser;
 }
 
-// ---------- Auth UI visibility ----------
+// ---------- UI visibility ----------
 function setAuthUIVisible(isLoggedInNow) {
   const header = document.getElementById("app-header");
   const sidebar = document.getElementById("sidebar");
@@ -165,10 +161,8 @@ window.openSidebar = () => {
   document.getElementById("sidebar-overlay")?.classList.add("show");
 };
 window.closeSidebar = () => {
-  const sb = document.getElementById("sidebar");
-  const ov = document.getElementById("sidebar-overlay");
-  sb?.classList.remove("open");
-  ov?.classList.remove("show");
+  document.getElementById("sidebar")?.classList.remove("open");
+  document.getElementById("sidebar-overlay")?.classList.remove("show");
 };
 window.toggleSidebar = () => {
   if (!isLoggedIn()) return;
@@ -181,52 +175,16 @@ window.toggleSidebar = () => {
 window.showTab = (tabName, btn) => {
   if (!isLoggedIn()) return;
 
-  document
-    .querySelectorAll(".tab-content")
-    .forEach((el) => el.classList.add("hidden"));
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
   document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
 
-  document
-    .querySelectorAll(".nav-btn")
-    .forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 
   if (window.innerWidth < 1024) window.closeSidebar();
 
   if (tabName === "orders") applyFilters();
-  if (tabName === "items") renderItemsList();
-  if (tabName === "employees") renderEmployeesList();
 };
-
-// ---------- Sidebar user card ----------
-function updateSidebarUserCard() {
-  const nameEl = document.getElementById("user-display-name");
-  const idEl = document.getElementById("user-display-id");
-  const roleEl = document.getElementById("user-display-role");
-  const exEl = document.getElementById("user-display-extra");
-
-  if (!currentUser) {
-    if (nameEl) nameEl.textContent = "—";
-    if (idEl) idEl.textContent = "";
-    if (roleEl) roleEl.textContent = "";
-    if (exEl) exEl.textContent = "";
-    return;
-  }
-
-  const fullName =
-    `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim() ||
-    currentUser.ner ||
-    "";
-  if (nameEl) nameEl.textContent = fullName || "—";
-  if (idEl) idEl.textContent = currentUser.code ? `${currentUser.code}` : "";
-  if (roleEl)
-    roleEl.textContent =
-      currentUser.type === "admin" ? "АДМИН" : currentUser.role || "";
-  const extra = [currentUser.place, currentUser.department, currentUser.shift]
-    .filter(Boolean)
-    .join(" • ");
-  if (exEl) exEl.textContent = extra;
-}
 
 // ---------- Login / Logout ----------
 window.login = async () => {
@@ -240,7 +198,6 @@ window.login = async () => {
     if (!r.success) return popupError("Алдаа", r.msg || "Нэвтрэх амжилтгүй");
 
     currentUser = r.user;
-    updateSidebarUserCard();
 
     document.getElementById("login-screen")?.classList.add("hidden");
     document.getElementById("main-screen")?.classList.remove("hidden");
@@ -289,9 +246,7 @@ function populateRequestItemSize() {
   const sizeSel = document.getElementById("req-size");
   if (!itemSel || !sizeSel) return;
 
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
+  const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
   setSelectOptions(itemSel, names, "Сонгох...");
 
   function fillSizesForItem(name) {
@@ -307,83 +262,55 @@ function populateRequestItemSize() {
   itemSel.onchange = () => fillSizesForItem(itemSel.value);
 }
 
-// ---------- Orders filters ----------
-function populateOrderItemFilter() {
-  const el = document.getElementById("filter-item");
-  if (!el) return;
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
-  setSelectOptions(el, names, "Бүгд");
-}
-function populateStatusFilter() {
-  const el = document.getElementById("filter-status");
-  if (!el) return;
-  const base = ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"];
-  const sts = uniq(base.concat(allOrders.map((o) => o.status).filter(Boolean))).filter(Boolean);
-  setSelectOptions(el, sts, "Бүгд");
-}
-function setupYearMonthFilters() {
-  const yearSel = document.getElementById("filter-year");
-  const monthSel = document.getElementById("filter-month");
-  if (!yearSel || !monthSel) return;
+// ✅ FIX 2: Ажилтан хүсэлт илгээх функц
+window.submitRequest = async () => {
+  if (!currentUser) return;
 
-  const years = new Set();
-  allOrders.forEach((o) => {
-    const d = new Date(o.requestedDate);
-    if (!isNaN(d)) years.add(String(d.getFullYear()));
-  });
-  const yearsArr = Array.from(years).sort((a, b) => b.localeCompare(a));
-  setSelectOptions(yearSel, yearsArr, "Бүгд");
+  const item = document.getElementById("req-item")?.value || "";
+  const size = document.getElementById("req-size")?.value || "";
+  const qtyRaw = document.getElementById("req-qty")?.value || "1";
+  let qty = parseInt(qtyRaw, 10);
+  if (!qty || qty < 1) qty = 1;
 
-  const monthsArr = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0")
-  );
-  setSelectOptions(monthSel, monthsArr, "Бүгд");
-}
-function setupPlaceDeptShiftFilters() {
-  const placeSel = document.getElementById("filter-place");
-  const deptSel = document.getElementById("filter-dept");
-  const shiftSel = document.getElementById("filter-shift");
+  if (!item) return popupError("Алдаа", "Бараа сонгоно уу");
+  if (!size) return popupError("Алдаа", "Хэмжээ сонгоно уу");
 
-  if (placeSel) {
-    const places = uniq(allOrders.map((o) => o.place)).sort((a, b) =>
-      String(a).localeCompare(String(b))
-    );
-    setSelectOptions(placeSel, places, "Бүгд");
+  showLoading(true, "Хүсэлт илгээж байна...");
+  try {
+    const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
+    if (!r.success) throw new Error(r.msg || "Хүсэлт илгээхэд алдаа гарлаа");
+
+    popupOk("Амжилттай", "Хүсэлт амжилттай илгээгдлээ");
+    // qty-г 1 болгож буцаах (хэрэв хүсвэл)
+    const q = document.getElementById("req-qty");
+    if (q) q.value = "1";
+
+    await refreshData();
+    // ажилтан хүсэлтийн жагсаалт руу автоматаар очуулахгүй — одоогийн табаа хэвээр үлдээнэ
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
+  } finally {
+    showLoading(false);
   }
-  if (deptSel) {
-    const depts = uniq(allOrders.map((o) => o.department)).sort((a, b) =>
-      String(a).localeCompare(String(b))
-    );
-    setSelectOptions(deptSel, depts, "Бүгд");
-  }
-  if (shiftSel) {
-    const shifts = uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))).filter(Boolean);
-    setSelectOptions(shiftSel, shifts, "Бүгд");
-  }
-}
-
-window.clearOrderFilters = () => {
-  [
-    "filter-status",
-    "filter-item",
-    "filter-year",
-    "filter-month",
-    "filter-place",
-    "filter-dept",
-    "filter-shift",
-    "search-name",
-    "search-code",
-    "search-role",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.value = ""; // бүгдийг цэвэрлэнэ
-  });
-  applyFilters();
 };
 
+// (Хэрвээ HTML дээр onclick байхгүй бол автоматаар bind хийнэ)
+function bindRequestSendButton_() {
+  const tab = document.getElementById("tab-request");
+  if (!tab) return;
+
+  // "ИЛГЭЭХ" гэсэн товчийг request tab дотроос олж click-г холбож өгнө
+  const btns = tab.querySelectorAll("button, .btn");
+  for (const b of btns) {
+    const txt = (b.textContent || "").trim();
+    if (txt === "ИЛГЭЭХ") {
+      b.onclick = () => window.submitRequest();
+      break;
+    }
+  }
+}
+
+// ---------- Orders filters ----------
 window.applyFilters = () => {
   const nS = document.getElementById("search-name")?.value?.trim() || "";
   const cS = document.getElementById("search-code")?.value?.trim() || "";
@@ -421,7 +348,6 @@ window.applyFilters = () => {
   renderOrders(filtered);
 };
 
-// ✅ FIX 2: Filters дээр эвент bind (сонголт өөрчлөгдөхөд applyFilters ажиллана)
 function bindOrderFilterEvents_() {
   const changeIds = [
     "filter-status",
@@ -454,6 +380,7 @@ function renderOrders(orders) {
 
   let rows = orders || [];
 
+  // ажилтан бол зөвхөн өөрийнхөө хүсэлтийг харах
   if (currentUser && currentUser.type !== "admin") {
     const myCode = String(currentUser.code || "").trim();
     rows = rows.filter((o) => String(o.code || "").trim() === myCode);
@@ -498,11 +425,19 @@ function renderOrders(orders) {
               <div class="emp-id">ID:${empId}</div>
               <div class="subline">${left2}</div>
             </div>
+          </div>
+          <div class="order-col">
             <div class="item">${item}</div>
             <div class="subline">${size} • ${qty}</div>
+          </div>
+          <div class="order-col">
             <div class="date">${date}</div>
+          </div>
+          <div class="order-col">
             <span class="status ${st.cls}">${esc(st.label)}</span>
-            <div class="actions">${actions}</div>
+          </div>
+          <div class="order-col actions">
+            ${actions}
           </div>
         </div>
       `;
@@ -550,6 +485,7 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
+    // admin бол ажилтнууд татна
     if (currentUser?.type === "admin") {
       const u = await apiPost({ action: "get_users" });
       if (!u.success) throw new Error(u.msg || "Users татахад алдаа");
@@ -558,13 +494,11 @@ window.refreshData = async () => {
       allEmployees = [];
     }
 
-    populateOrderItemFilter();
-    populateStatusFilter();
-    setupYearMonthFilters();
-    setupPlaceDeptShiftFilters();
+    // request dropdown
     populateRequestItemSize();
+    bindRequestSendButton_();
 
-    // ✅ шүүлтийн эвентүүд
+    // filters bind
     bindOrderFilterEvents_();
 
     applyFilters();
@@ -581,15 +515,14 @@ function initApp() {
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
-  // ✅ page дээр байгаа үед ч шүүлт ажиллуулахын тулд нэг удаа bind хийнэ
   bindOrderFilterEvents_();
+  bindRequestSendButton_();
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") window.login();
   });
 }
-
 window.onload = function () {
   initApp();
 };
