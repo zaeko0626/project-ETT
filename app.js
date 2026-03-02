@@ -178,6 +178,8 @@ window.login = async () => {
     // IMPORTANT: hide login, show main
     document.getElementById("login-screen")?.classList.add("hidden");
     document.getElementById("main-screen")?.classList.remove("hidden");
+    document.getElementById("sidebar")?.classList.remove("open");
+    document.getElementById("sidebar-overlay")?.classList.remove("show");
 
     // Role based menu
     const isAdmin = currentUser?.type === "admin";
@@ -773,10 +775,22 @@ window.changePassword = async () => {
 
 // ---------- Init ----------
 window.onload = () => {
-  // Ensure main hidden initially (in case CSS cache)
-  document.getElementById("main-screen")?.classList.add("hidden");
+  // ALWAYS start at login screen
   document.getElementById("login-screen")?.classList.remove("hidden");
+  document.getElementById("main-screen")?.classList.add("hidden");
+  document.getElementById("sidebar")?.classList.remove("open");
+  document.getElementById("sidebar-overlay")?.classList.remove("show");
 
+  document.getElementById("login-pass")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") window.login();
+  });
+
+  setupEmployeeShiftOptions();
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
+};
   // Enter to login
   document.getElementById("login-pass")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") window.login();
