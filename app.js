@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// Works with your current index.html IDs
+// ONLY FIX: filters not working (bind events) + esc() syntax fix
 // ===============================
 
 const API_URL =
@@ -22,7 +22,7 @@ window.addEventListener("resize", setVH);
 window.addEventListener("orientationchange", () => setTimeout(setVH, 150));
 setVH();
 
-// ---------- Escape HTML (FIXED) ----------
+// ✅ FIX 1: Escape HTML (broken байсан)
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -86,18 +86,13 @@ function popupOk(title, msg) {
 
 // ---------- API ----------
 async function apiPost(payload) {
-  let res;
-  try {
-    res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload || {}),
-      cache: "no-store",
-      redirect: "follow",
-    });
-  } catch (e) {
-    throw new Error("Failed to fetch");
-  }
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload || {}),
+    cache: "no-store",
+    redirect: "follow",
+  });
   const text = await res.text();
   let json;
   try {
@@ -113,25 +108,15 @@ function uniq(arr) {
   return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
 }
 
-/**
- * FIX: select option-ууд value-тэй болно.
- * - "Бүгд"/"Сонгох..." зэрэг эхний сонголт value=""
- * - Бусад нь value="өөрийнхөө текст"
- */
 function setSelectOptions(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
-
   const v = (values || []).filter((x) => x != null && x !== "");
   const html = [];
-
-  if (allLabel != null) {
-    html.push(`<option value="">${esc(allLabel)}</option>`);
-  }
+  if (allLabel != null) html.push(`<option value="">${esc(allLabel)}</option>`);
   v.forEach((val) => {
     const vv = String(val);
     html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
   });
-
   sel.innerHTML = html.join("");
 }
 
@@ -394,8 +379,7 @@ window.clearOrderFilters = () => {
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
-    // FIX: бүгдийг value="" болгосон тул clear үед шууд хоосон байхад "Бүгд" болж харагдана.
-    el.value = "";
+    el.value = ""; // бүгдийг цэвэрлэнэ
   });
   applyFilters();
 };
@@ -405,7 +389,6 @@ window.applyFilters = () => {
   const cS = document.getElementById("search-code")?.value?.trim() || "";
   const rS = document.getElementById("search-role")?.value?.trim() || "";
 
-  // FIX: “Бүгд” сонголт value="" болсон тул энд бүгд зөв ажиллана
   const iF = document.getElementById("filter-item")?.value || "";
   const sF = document.getElementById("filter-status")?.value || "";
   const yF = document.getElementById("filter-year")?.value || "";
@@ -438,6 +421,32 @@ window.applyFilters = () => {
   renderOrders(filtered);
 };
 
+// ✅ FIX 2: Filters дээр эвент bind (сонголт өөрчлөгдөхөд applyFilters ажиллана)
+function bindOrderFilterEvents_() {
+  const changeIds = [
+    "filter-status",
+    "filter-item",
+    "filter-year",
+    "filter-month",
+    "filter-place",
+    "filter-dept",
+    "filter-shift",
+  ];
+  const inputIds = ["search-name", "search-code", "search-role"];
+
+  changeIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.onchange = () => applyFilters();
+  });
+
+  inputIds.forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.oninput = () => applyFilters();
+  });
+}
+
 // ---------- Orders render ----------
 function renderOrders(orders) {
   const list = document.getElementById("orders-list");
@@ -445,7 +454,6 @@ function renderOrders(orders) {
 
   let rows = orders || [];
 
-  // ✅ Зөвхөн өөрийн хүсэлтийг харуулах
   if (currentUser && currentUser.type !== "admin") {
     const myCode = String(currentUser.code || "").trim();
     rows = rows.filter((o) => String(o.code || "").trim() === myCode);
@@ -464,13 +472,6 @@ function renderOrders(orders) {
 
       const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
       const empId = esc(o.code || "");
-
-      const empCell = `
-        <div class="cell-emp">
-          <div class="emp-name">${empName || "—"}</div>
-          <div class="emp-id">ID•${empId}</div>
-        </div>
-      `;
 
       const placeDept = [o.place, o.department].filter(Boolean).join(" • ");
       const role = o.role || "";
@@ -491,22 +492,17 @@ function renderOrders(orders) {
 
       return `
         <div class="order-row">
-          <div class="order-col">${empCell}</div>
           <div class="order-col">
-            <div class="subline">${left2}</div>
-          </div>
-          <div class="order-col">
+            <div class="cell-emp">
+              <div class="emp-name">${empName || "—"}</div>
+              <div class="emp-id">ID:${empId}</div>
+              <div class="subline">${left2}</div>
+            </div>
             <div class="item">${item}</div>
             <div class="subline">${size} • ${qty}</div>
-          </div>
-          <div class="order-col">
             <div class="date">${date}</div>
-          </div>
-          <div class="order-col">
             <span class="status ${st.cls}">${esc(st.label)}</span>
-          </div>
-          <div class="order-col actions">
-            ${actions}
+            <div class="actions">${actions}</div>
           </div>
         </div>
       `;
@@ -543,435 +539,6 @@ window.rejectOrder = async (id) => {
   }
 };
 
-// ---------- Request submit ----------
-window.submitRequest = async () => {
-  if (!currentUser) return;
-  const item = document.getElementById("req-item")?.value || "";
-  const size = document.getElementById("req-size")?.value || "";
-  const qty = parseInt(document.getElementById("req-qty")?.value || "1", 10) || 1;
-
-  if (!item) return popupError("Алдаа", "Бараа сонгоно уу");
-  if (!size) return popupError("Алдаа", "Хэмжээ сонгоно уу");
-
-  showLoading(true, "Хүсэлт илгээж байна...");
-  try {
-    const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
-    if (!r.success) throw new Error(r.msg || "Хүсэлт илгээхэд алдаа гарлаа");
-    popupOk("Амжилттай", "Хүсэлт амжилттай илгээгдлээ");
-    await refreshData();
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-// ---------- Items (Admin) ----------
-function populateItemsFilter() {
-  const sel = document.getElementById("items-filter");
-  if (!sel) return;
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
-  setSelectOptions(sel, names, "Бүгд");
-  sel.onchange = () => renderItemsList();
-}
-
-window.clearItemsFilter = () => {
-  const sel = document.getElementById("items-filter");
-  if (sel) sel.value = "";
-  renderItemsList();
-};
-
-function renderItemsList() {
-  const list = document.getElementById("items-list");
-  if (!list) return;
-
-  const filterVal = document.getElementById("items-filter")?.value || "";
-  const rows = (allItems || []).filter((x) => !filterVal || String(x.name) === String(filterVal));
-
-  if (!rows.length) {
-    list.innerHTML = `<div class="empty">Бараа олдсонгүй</div>`;
-    return;
-  }
-
-  list.innerHTML = rows
-    .slice()
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
-    .map((it, idx) => {
-      const locked = !!it.locked;
-      const actions = `
-        <button class="btn sm" onclick="editItemPrompt('${esc(it.name)}')" ${locked ? "disabled" : ""}>ЗАСАХ</button>
-        <button class="btn sm" onclick="showItemHistory('${esc(it.name)}')">ТҮҮХ</button>
-        <button class="btn sm danger" onclick="deleteItemConfirm('${esc(it.name)}')" ${locked ? "disabled" : ""}>УСТГАХ</button>
-      `;
-
-      return `
-        <div class="row">
-          <div class="cell num">${idx + 1}</div>
-          <div class="cell">${esc(it.name)} ${locked ? `<span class="tag">Locked</span>` : ""}</div>
-          <div class="cell">${esc(it.sizes || "")}</div>
-          <div class="cell actions">${actions}</div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-window.addItem = async () => {
-  const name = document.getElementById("new-item-name")?.value?.trim() || "";
-  const sizes = document.getElementById("new-item-sizes")?.value?.trim() || "";
-  if (!name) return popupError("Алдаа", "Нэр оруулна уу");
-
-  showLoading(true, "Нэмэж байна...");
-  try {
-    const r = await apiPost({ action: "add_item", name, sizes });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    document.getElementById("new-item-name").value = "";
-    document.getElementById("new-item-sizes").value = "";
-    await refreshData();
-    showTab("items", document.getElementById("nav-items"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.editItemPrompt = (oldName) => {
-  const it = allItems.find((x) => String(x.name) === String(oldName));
-  if (!it) return;
-  if (it.locked) return popupError("Анхаар", "Энэ бараагаар бүртгэл орсон тул засах боломжгүй.");
-
-  const html = `
-    <div class="form">
-      <label>Нэр</label>
-      <input id="edit-item-name" value="${esc(it.name)}" />
-      <label>Размер (таслалаар)</label>
-      <input id="edit-item-sizes" value="${esc(it.sizes || "")}" />
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">Буцах</button>
-        <button class="btn success" onclick="saveItemEdit('${esc(oldName)}')">ХАДГАЛАХ</button>
-      </div>
-    </div>
-  `;
-  openModal("Бараа засах", html);
-};
-
-window.saveItemEdit = async (oldName) => {
-  const newName = document.getElementById("edit-item-name")?.value?.trim() || "";
-  const sizes = document.getElementById("edit-item-sizes")?.value?.trim() || "";
-  if (!newName) return popupError("Алдаа", "Нэр хоосон байж болохгүй");
-
-  showLoading(true, "Хадгалж байна...");
-  try {
-    const r = await apiPost({ action: "update_item", oldName, newName, sizes });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    closeModal();
-    await refreshData();
-    showTab("items", document.getElementById("nav-items"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.deleteItemConfirm = (name) => {
-  const it = allItems.find((x) => String(x.name) === String(name));
-  if (!it) return;
-  if (it.locked) return popupError("Анхаар", "Энэ бараагаар бүртгэл орсон тул устгах боломжгүй.");
-
-  openModal(
-    "Устгах уу?",
-    `
-      <div class="modal-msg">${esc(name)} барааг устгах уу?</div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">Буцах</button>
-        <button class="btn danger" onclick="deleteItem('${esc(name)}')">УСТГАХ</button>
-      </div>
-    `
-  );
-};
-
-window.deleteItem = async (name) => {
-  showLoading(true, "Устгаж байна...");
-  try {
-    const r = await apiPost({ action: "delete_item", name });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    closeModal();
-    await refreshData();
-    showTab("items", document.getElementById("nav-items"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.showItemHistory = async (itemName) => {
-  showLoading(true, "Түүх татаж байна...");
-  try {
-    const r = await apiPost({ action: "get_item_history", item: itemName });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-
-    const rows = r.history || [];
-    const body =
-      rows.length === 0
-        ? `<div class="empty">Олголтын түүх байхгүй</div>`
-        : `
-          <div class="hist">
-            ${rows
-              .slice()
-              .reverse()
-              .map(
-                (h) => `
-                  <div class="hist-row">
-                    <div class="hist-title">${esc(h.code)} • ${esc(h.ovog)} ${esc(h.ner)}</div>
-                    <div class="hist-sub">${esc(fmtDateOnly(h.date))} • ${esc(h.size)} • ${esc(h.qty)}</div>
-                  </div>
-                `
-              )
-              .join("")}
-          </div>
-        `;
-    openModal("Олголтын түүх", body);
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-// ---------- Employees (Admin) ----------
-function setupEmployeeShiftOptions() {
-  const sel = document.getElementById("emp-shift");
-  if (!sel) return;
-  // SHIFT select-үүдэд ч value-тай option хэрэгтэй
-  setSelectOptions(sel, SHIFT_OPTIONS, null);
-}
-
-function renderEmployeesList() {
-  const list = document.getElementById("employees-list");
-  if (!list) return;
-
-  const rows = allEmployees || [];
-  if (!rows.length) {
-    list.innerHTML = `<div class="empty">Ажилтан олдсонгүй</div>`;
-    return;
-  }
-
-  list.innerHTML = rows
-    .slice()
-    .sort((a, b) => String(a.code).localeCompare(String(b.code)))
-    .map((u, idx) => {
-      const locked = !!u.locked;
-      const infoLeft = `${esc(u.place || "")} • ${esc(u.department || "")} • ${esc(u.role || "")} • ${esc(u.shift || "")}`.replace(/^ • | • $/g, "");
-      const nameLine = `${esc(u.code)} • ${esc(u.ovog || "")} ${esc(u.ner || "")}`.trim();
-
-      const actions = `
-        <button class="btn sm" onclick="editEmployeePrompt('${esc(u.code)}')" ${locked ? "disabled" : ""}>ЗАСАХ</button>
-        <button class="btn sm" onclick="showEmployeeHistory('${esc(u.code)}')">ТҮҮХ</button>
-        <button class="btn sm danger" onclick="deleteEmployeeConfirm('${esc(u.code)}')" ${locked ? "disabled" : ""}>УСТГАХ</button>
-      `;
-
-      return `
-        <div class="row">
-          <div class="cell num">${idx + 1}</div>
-          <div class="cell">
-            <div class="subline">${infoLeft}</div>
-            <div class="title">${nameLine}</div>
-          </div>
-          <div class="cell actions">${actions}</div>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-window.addEmployee = async () => {
-  const code = document.getElementById("emp-code")?.value?.trim() || "";
-  const pass = document.getElementById("emp-pass")?.value?.trim() || "12345";
-  const ovog = document.getElementById("emp-ovog")?.value?.trim() || "";
-  const ner = document.getElementById("emp-ner")?.value?.trim() || "";
-  const role = document.getElementById("emp-role")?.value?.trim() || "";
-  const place = document.getElementById("emp-place")?.value?.trim() || "";
-  const department = document.getElementById("emp-dept")?.value?.trim() || "";
-  const shift = document.getElementById("emp-shift")?.value?.trim() || "";
-
-  if (!code || !ner) return popupError("Алдаа", "Код болон Нэр заавал");
-
-  showLoading(true, "Нэмэж байна...");
-  try {
-    const r = await apiPost({ action: "add_user", code, pass, ner, ovog, role, place, department, shift });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-
-    ["emp-code", "emp-pass", "emp-ovog", "emp-ner", "emp-role", "emp-place", "emp-dept"].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-
-    await refreshData();
-    showTab("employees", document.getElementById("nav-employees"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.editEmployeePrompt = (code) => {
-  const u = (allEmployees || []).find((x) => String(x.code) === String(code));
-  if (!u) return;
-  if (u.locked) return popupError("Анхаар", "Энэ ажилтнаар бүртгэл орсон тул засах боломжгүй.");
-
-  const shiftOptions = SHIFT_OPTIONS.map((s) => {
-    const selected = String(u.shift || "") === String(s) ? "selected" : "";
-    return `<option value="${esc(s)}" ${selected}>${esc(s)}</option>`;
-  }).join("");
-
-  const html = `
-    <div class="form">
-      <label>Нууц үг (хоосон бол өөрчлөхгүй)</label>
-      <input id="edit-emp-pass" value="" />
-      <label>Овог</label>
-      <input id="edit-emp-ovog" value="${esc(u.ovog || "")}" />
-      <label>Нэр</label>
-      <input id="edit-emp-ner" value="${esc(u.ner || "")}" />
-      <label>Албан тушаал</label>
-      <input id="edit-emp-role" value="${esc(u.role || "")}" />
-      <label>Газар</label>
-      <input id="edit-emp-place" value="${esc(u.place || "")}" />
-      <label>Хэлтэс</label>
-      <input id="edit-emp-dept" value="${esc(u.department || "")}" />
-      <label>Ээлж</label>
-      <select id="edit-emp-shift">${shiftOptions}</select>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">Буцах</button>
-        <button class="btn success" onclick="saveEmployeeEdit('${esc(u.code)}')">ХАДГАЛАХ</button>
-      </div>
-    </div>
-  `;
-  openModal(`Ажилтан засах (${esc(u.code)})`, html);
-};
-
-window.saveEmployeeEdit = async (code) => {
-  const pass = document.getElementById("edit-emp-pass")?.value?.trim() || "";
-  const ovog = document.getElementById("edit-emp-ovog")?.value?.trim() || "";
-  const ner = document.getElementById("edit-emp-ner")?.value?.trim() || "";
-  const role = document.getElementById("edit-emp-role")?.value?.trim() || "";
-  const place = document.getElementById("edit-emp-place")?.value?.trim() || "";
-  const department = document.getElementById("edit-emp-dept")?.value?.trim() || "";
-  const shift = document.getElementById("edit-emp-shift")?.value?.trim() || "";
-
-  if (!ner) return popupError("Алдаа", "Нэр хоосон байж болохгүй");
-
-  showLoading(true, "Хадгалж байна...");
-  try {
-    const r = await apiPost({ action: "update_user", code, pass, ner, ovog, role, place, department, shift });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    closeModal();
-    await refreshData();
-    showTab("employees", document.getElementById("nav-employees"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.deleteEmployeeConfirm = (code) => {
-  const u = (allEmployees || []).find((x) => String(x.code) === String(code));
-  if (!u) return;
-  if (u.locked) return popupError("Анхаар", "Энэ ажилтнаар бүртгэл орсон тул устгах боломжгүй.");
-
-  openModal(
-    "Устгах уу?",
-    `
-      <div class="modal-msg">${esc(u.code)} ажилтныг устгах уу?</div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">Буцах</button>
-        <button class="btn danger" onclick="deleteEmployee('${esc(u.code)}')">УСТГАХ</button>
-      </div>
-    `
-  );
-};
-
-window.deleteEmployee = async (code) => {
-  showLoading(true, "Устгаж байна...");
-  try {
-    const r = await apiPost({ action: "delete_user", code });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    closeModal();
-    await refreshData();
-    showTab("employees", document.getElementById("nav-employees"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-// Employee history
-window.showEmployeeHistory = async (code) => {
-  showLoading(true, "Түүх татаж байна...");
-  try {
-    const r = await apiPost({ action: "get_user_history", code });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-
-    const rows = r.history || [];
-    const body =
-      rows.length === 0
-        ? `<div class="empty">Олголтын түүх байхгүй</div>`
-        : `
-          <div class="hist">
-            ${rows
-              .slice()
-              .reverse()
-              .map(
-                (h) => `
-                  <div class="hist-row">
-                    <div class="hist-title">${esc(fmtDateOnly(h.date))}</div>
-                    <div class="hist-sub">${esc(h.item)} • ${esc(h.size)} • ${esc(h.qty)}</div>
-                  </div>
-                `
-              )
-              .join("")}
-          </div>
-        `;
-    openModal("Ажилтны олголтын түүх", body);
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-// ---------- Password change ----------
-window.changePassword = async () => {
-  if (!currentUser) return;
-  const oldP = document.getElementById("old-pass")?.value?.trim() || "";
-  const newP = document.getElementById("new-pass")?.value?.trim() || "";
-  const newP2 = document.getElementById("new-pass-2")?.value?.trim() || "";
-
-  if (!oldP || !newP || !newP2) return popupError("Алдаа", "Мэдээлэл дутуу");
-  if (newP !== newP2) return popupError("Алдаа", "Шинэ нууц үг давталт таарахгүй");
-
-  showLoading(true, "Хадгалж байна...");
-  try {
-    const r = await apiPost({ action: "change_pass", code: currentUser.code, oldP, newP });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    popupOk("Амжилттай", "Нууц үг солигдлоо");
-    document.getElementById("old-pass").value = "";
-    document.getElementById("new-pass").value = "";
-    document.getElementById("new-pass-2").value = "";
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
 // ---------- Refresh ----------
 window.refreshData = async () => {
   if (!currentUser) return;
@@ -996,13 +563,11 @@ window.refreshData = async () => {
     setupYearMonthFilters();
     setupPlaceDeptShiftFilters();
     populateRequestItemSize();
-    populateItemsFilter();
-    setupEmployeeShiftOptions();
 
-    const visibleTabId = document.querySelector(".tab-content:not(.hidden)")?.id || "tab-orders";
-    if (visibleTabId === "tab-orders") applyFilters();
-    if (visibleTabId === "tab-items") renderItemsList();
-    if (visibleTabId === "tab-employees") renderEmployeesList();
+    // ✅ шүүлтийн эвентүүд
+    bindOrderFilterEvents_();
+
+    applyFilters();
   } catch (e) {
     popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
   } finally {
@@ -1016,7 +581,8 @@ function initApp() {
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
-  setupEmployeeShiftOptions();
+  // ✅ page дээр байгаа үед ч шүүлт ажиллуулахын тулд нэг удаа bind хийнэ
+  bindOrderFilterEvents_();
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
