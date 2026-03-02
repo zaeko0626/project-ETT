@@ -1,26 +1,39 @@
 // ===============================
-// ETT PPE System - app.js (Requests workflow)
-// - Requests + Request_Items (line_id)
-// - Employee multi-item cart submit
-// - Admin per-item approve/reject + finalize request
-// - Keeps existing tabs (Items/Users/Pass) compatible with Code.gs
+// ETT PPE System - app.js
+// - Requests + Request_items workflow
+// - Request ID: №10000001...
+// - Employee code under employee name
+// - Filters support (if filter inputs exist in HTML)
 // ===============================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbwID1Fdo_AVGkEqINvJFyNYwT50i1S8BZJRDSpd-Lc10KVr1cL9S1Q6_gh1Aq_FXOLl/exec"; // <- Apps Script Web App URL
+const API_URL = "https://script.google.com/macros/s/AKfycbzqdEl1j2A_Yw8eCnAVA6A8sJjsEIQHgTVZtWRfSyDRfWafHApwdTU67gqZSFynbi2D/exec"; // <- Apps Script Web App /exec URL
 
 let currentUser = null;
 
-// Data from backend
-let requests = [];        // Requests sheet
-let requestItems = [];    // Request_Items sheet
-let itemsMaster = [];     // Items sheet
-let users = [];           // Users sheet (admin only)
+// Backend data
+let requests = [];
+let requestItems = [];
+let itemsMaster = [];
+let users = [];
 
 // Modal state
 let currentModalRequestId = null;
 
 // Cart (employee)
 let cart = []; // { item, size, qty }
+
+// Filters (admin mainly)
+let orderFilters = {
+  status: "",
+  year: "",
+  month: "",
+  shift: "",
+  place: "",
+  dept: "",
+  role: "",
+  code: "",
+  name: ""
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -43,6 +56,14 @@ function fmtDateOnly(v) {
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
+function getYear(v) {
+  const d = new Date(v);
+  return isNaN(d) ? "" : String(d.getFullYear());
+}
+function getMonth(v) {
+  const d = new Date(v);
+  return isNaN(d) ? "" : String(d.getMonth() + 1).padStart(2, "0");
+}
 
 function statusMetaOverall(s) {
   const st = String(s || "").trim();
@@ -50,7 +71,6 @@ function statusMetaOverall(s) {
   if (st === "Хэсэгчлэн") return { label: "ХЭСЭГЧЛЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
-
 function statusMetaItem(s) {
   const st = String(s || "").trim();
   if (st === "Зөвшөөрсөн") return { label: "ЗӨВШӨӨРСӨН", cls: "st-approved" };
@@ -149,7 +169,10 @@ window.showTab = (tabName, btn) => {
 
   if (window.innerWidth < 1024) closeSidebar();
 
-  if (tabName === "orders") renderRequests();
+  if (tabName === "orders") {
+    populateOrderFilters(); // if filter elements exist
+    renderRequests();
+  }
   if (tabName === "request") {
     fillRequestForm();
     renderCart();
@@ -183,24 +206,127 @@ function ensureRequestsGridCSS() {
 // ---------- Requests render ----------
 function getVisibleRequests() {
   if (isAdmin()) return requests.slice();
-
   const myCode = String(currentUser?.code || "").trim();
   return requests.filter(r => String(r.code || "").trim() === myCode);
 }
-
 function countItemsForRequest(reqId) {
   return requestItems.filter(x => String(x.request_id) === String(reqId)).length;
 }
 
+// ---------- Filters ----------
+function setSelectOptions(sel, values, allLabel = "Бүгд") {
+  if (!sel) return;
+  const uniq = Array.from(new Set((values || []).filter(v => v != null && v !== "")));
+  uniq.sort((a,b)=>String(a).localeCompare(String(b)));
+  const opts = [`<option value="">${esc(allLabel)}</option>`];
+  uniq.forEach(v => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
+  sel.innerHTML = opts.join("");
+}
+
+function populateOrderFilters() {
+  // if filter UI doesn't exist -> skip (so app won't break)
+  const fStatus = $("f-status");
+  const fYear = $("f-year");
+  const fMonth = $("f-month");
+  const fShift = $("f-shift");
+  const fPlace = $("f-place");
+  const fDept = $("f-dept");
+
+  if (!fStatus && !fYear && !fMonth && !fShift && !fPlace && !fDept) return;
+
+  const data = getVisibleRequests();
+
+  setSelectOptions(fStatus, ["Хүлээгдэж буй", "Хэсэгчлэн", "Шийдвэрлэсэн"], "Бүгд");
+  setSelectOptions(fYear, data.map(r => getYear(r.requestedDate)).filter(Boolean), "Бүгд");
+  setSelectOptions(fMonth, ["01","02","03","04","05","06","07","08","09","10","11","12"], "Бүгд");
+  setSelectOptions(fShift, data.map(r => (r.shift || "").toString().trim()).filter(Boolean), "Бүгд");
+  setSelectOptions(fPlace, data.map(r => (r.place || "").toString().trim()).filter(Boolean), "Бүгд");
+  setSelectOptions(fDept, data.map(r => (r.department || "").toString().trim()).filter(Boolean), "Бүгд");
+
+  // restore current values
+  if (fStatus) fStatus.value = orderFilters.status || "";
+  if (fYear) fYear.value = orderFilters.year || "";
+  if (fMonth) fMonth.value = orderFilters.month || "";
+  if (fShift) fShift.value = orderFilters.shift || "";
+  if (fPlace) fPlace.value = orderFilters.place || "";
+  if (fDept) fDept.value = orderFilters.dept || "";
+  if ($("f-role")) $("f-role").value = orderFilters.role || "";
+  if ($("f-code")) $("f-code").value = orderFilters.code || "";
+  if ($("f-name")) $("f-name").value = orderFilters.name || "";
+}
+
+window.applyOrderFilters = () => {
+  orderFilters.status = ($("f-status")?.value || "").trim();
+  orderFilters.year = ($("f-year")?.value || "").trim();
+  orderFilters.month = ($("f-month")?.value || "").trim();
+  orderFilters.shift = ($("f-shift")?.value || "").trim();
+  orderFilters.place = ($("f-place")?.value || "").trim();
+  orderFilters.dept = ($("f-dept")?.value || "").trim();
+  orderFilters.role = ($("f-role")?.value || "").trim();
+  orderFilters.code = ($("f-code")?.value || "").trim();
+  orderFilters.name = ($("f-name")?.value || "").trim();
+  renderRequests();
+};
+
+window.clearOrderFilters = () => {
+  orderFilters = { status:"", year:"", month:"", shift:"", place:"", dept:"", role:"", code:"", name:"" };
+
+  if ($("f-status")) $("f-status").value = "";
+  if ($("f-year")) $("f-year").value = "";
+  if ($("f-month")) $("f-month").value = "";
+  if ($("f-shift")) $("f-shift").value = "";
+  if ($("f-place")) $("f-place").value = "";
+  if ($("f-dept")) $("f-dept").value = "";
+  if ($("f-role")) $("f-role").value = "";
+  if ($("f-code")) $("f-code").value = "";
+  if ($("f-name")) $("f-name").value = "";
+
+  renderRequests();
+};
+
+function applyFiltersToData(data) {
+  return data.filter(r => {
+    const st = String(r.overall_status || "").trim();
+    const yr = getYear(r.requestedDate);
+    const mo = getMonth(r.requestedDate);
+    const shift = String(r.shift || "").trim();
+    const place = String(r.place || "").trim();
+    const dept = String(r.department || "").trim();
+    const role = String(r.role || "").trim();
+    const code = String(r.code || "").trim();
+    const fullName = `${String(r.ovog||"").trim()} ${String(r.ner||"").trim()}`.trim();
+
+    if (orderFilters.status && st !== orderFilters.status) return false;
+    if (orderFilters.year && yr !== orderFilters.year) return false;
+    if (orderFilters.month && mo !== orderFilters.month) return false;
+    if (orderFilters.shift && shift !== orderFilters.shift) return false;
+    if (orderFilters.place && place !== orderFilters.place) return false;
+    if (orderFilters.dept && dept !== orderFilters.dept) return false;
+
+    if (orderFilters.role && !role.toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
+    if (orderFilters.code && !code.includes(orderFilters.code)) return false;
+    if (orderFilters.name && !fullName.toLowerCase().includes(orderFilters.name.toLowerCase())) return false;
+
+    return true;
+  });
+}
+
 function renderRequests() {
   ensureRequestsGridCSS();
-
   const list = $("requests-list");
   if (!list) return;
 
-  const data = getVisibleRequests()
+  let data = getVisibleRequests()
     .slice()
     .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
+
+  // apply filters if filter UI exists OR filter state has any value
+  const hasAnyFilter =
+    !!orderFilters.status || !!orderFilters.year || !!orderFilters.month || !!orderFilters.shift ||
+    !!orderFilters.place || !!orderFilters.dept || !!orderFilters.role || !!orderFilters.code || !!orderFilters.name;
+
+  const filterUIExists = !!$("f-status") || !!$("f-year") || !!$("f-month") || !!$("f-shift") || !!$("f-place") || !!$("f-dept");
+  if (hasAnyFilter || filterUIExists) data = applyFiltersToData(data);
 
   if (!data.length) {
     list.innerHTML = `<div class="muted" style="padding:12px 0;">Хүсэлт олдсонгүй</div>`;
@@ -217,21 +343,26 @@ function renderRequests() {
     const cnt = countItemsForRequest(r.request_id);
     const st = statusMetaOverall(r.overall_status);
     const dt = esc(fmtDateOnly(r.requestedDate));
+    const role = esc(r.role || "");
 
     return `
       <div class="request-row" onclick="openRequestDetail('${rid}')">
         <div>
           <div class="req-id">${rid}</div>
-          <div class="sub">ID:${code}</div>
+          <div class="sub">${dt}</div>
         </div>
+
         <div>
           <div style="font-weight:800">${emp}</div>
-          <div class="sub">${esc(r.role || "")}</div>
+          <div class="sub">ID:${code}</div>
+          ${role ? `<div class="sub">${role}</div>` : ``}
         </div>
+
         <div>
           <div style="font-weight:800">${place}</div>
           <div class="sub">Хэлтэс: ${dept}</div>
         </div>
+
         <div>${shift}</div>
         <div><span class="tag">${cnt} бараа</span></div>
         <div><span class="status ${st.cls}">${esc(st.label)}</span></div>
@@ -241,24 +372,22 @@ function renderRequests() {
   }).join("");
 }
 
-// ---------- Request Detail Modal (admin + employee read-only) ----------
+// ---------- Request Detail Modal ----------
 window.openRequestDetail = (request_id) => {
   currentModalRequestId = request_id;
 
   const req = requests.find(x => String(x.request_id) === String(request_id));
   if (!req) return popupError("Request олдсонгүй");
 
-  const lines = requestItems
-    .filter(x => String(x.request_id) === String(request_id))
-    .slice();
+  const lines = requestItems.filter(x => String(x.request_id) === String(request_id));
 
   const st = statusMetaOverall(req.overall_status);
 
-  const title = `Request: ${request_id}`;
   const header = `
     <div class="kv" style="margin-bottom:10px;">
       <div><div class="k">Ажилтан</div><div class="v">${esc(req.ovog||"")} ${esc(req.ner||"")}</div></div>
       <div><div class="k">Код</div><div class="v">${esc(req.code||"")}</div></div>
+      <div><div class="k">Албан тушаал</div><div class="v">${esc(req.role||"")}</div></div>
       <div><div class="k">Газар</div><div class="v">${esc(req.place||"")}</div></div>
       <div><div class="k">Хэлтэс</div><div class="v">${esc(req.department||"")}</div></div>
       <div><div class="k">Ээлж</div><div class="v">${esc(req.shift||"")}</div></div>
@@ -314,7 +443,7 @@ window.openRequestDetail = (request_id) => {
          <button class="btn" onclick="closeModal()">ХААХ</button>
        </div>`;
 
-  openModal(title, `
+  openModal(`Request: ${request_id}`, `
     ${header}
     ${tableHead}
     <div class="orders-list" style="padding:10px 0;">
@@ -330,8 +459,7 @@ window.setItemDecision = async (line_id, status) => {
     const r = await apiPost({ action: "update_item_status", line_id, status });
     if (!r.success) throw new Error(r.msg || "Алдаа");
 
-    await refreshData(false); // keep tab
-    // re-open current modal to refresh UI
+    await refreshData(false);
     if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
     popupError(e.message || String(e));
@@ -358,14 +486,6 @@ window.finalizeCurrentRequest = async () => {
 };
 
 // ---------- Employee: Multi-item cart ----------
-function setSelectOptions(sel, values, allLabel = "Сонгох") {
-  if (!sel) return;
-  const uniq = Array.from(new Set((values || []).filter(v => v != null && v !== "")));
-  const opts = [`<option value="">${esc(allLabel)}</option>`];
-  uniq.forEach(v => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
-  sel.innerHTML = opts.join("");
-}
-
 function fillRequestForm() {
   const itemSel = $("req-item");
   const sizeSel = $("req-size");
@@ -395,7 +515,6 @@ window.addToCart = () => {
   if (!item) return popupError("Бараа сонгоно уу");
   if (!size) return popupError("Размер сонгоно уу");
 
-  // merge same item+size
   const idx = cart.findIndex(x => x.item === item && x.size === size);
   if (idx >= 0) cart[idx].qty += qty;
   else cart.push({ item, size, qty });
@@ -448,7 +567,7 @@ window.submitMultiRequest = async () => {
 
     cart = [];
     renderCart();
-    popupOk("Хүсэлт амжилттай илгээгдлээ");
+    popupOk(`Хүсэлт амжилттай илгээгдлээ (${r.request_id || ""})`);
     await refreshData(false);
     showTab("orders", $("nav-orders"));
   } catch (e) {
@@ -772,8 +891,8 @@ window.changePass = async () => {
     showLoading(true, "Сольж байна...");
     const r = await apiPost({ action: "change_pass", code: currentUser.code, oldP, newP });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-    $("old-pass").value = "";
-    $("new-pass").value = "";
+    if ($("old-pass")) $("old-pass").value = "";
+    if ($("new-pass")) $("new-pass").value = "";
     popupOk("Нууц үг солигдлоо");
   } catch (e) {
     popupError(e.message || String(e));
@@ -801,13 +920,14 @@ window.refreshData = async (keepTab = true) => {
 
     if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
-      if (u.success) users = u.users || [];
-      else users = [];
+      users = u.success ? (u.users || []) : [];
     } else {
       users = [];
     }
 
-    // Refresh UI on current tab
+    // refresh filters (if UI exists)
+    populateOrderFilters();
+
     if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
     if (activeTab === "nav-request") showTab("request", $("nav-request"));
     if (activeTab === "nav-items") showTab("items", $("nav-items"));
@@ -835,7 +955,6 @@ window.login = async () => {
     currentUser = r.user;
     setLoggedInUI(true);
 
-    // admin-only tabs visibility
     const usersBtn = $("nav-users");
     if (usersBtn) usersBtn.style.display = isAdmin() ? "" : "none";
 
@@ -859,6 +978,7 @@ window.logout = () => {
   users = [];
   cart = [];
   currentModalRequestId = null;
+  orderFilters = { status:"", year:"", month:"", shift:"", place:"", dept:"", role:"", code:"", name:"" };
 
   setLoggedInUI(false);
 
@@ -874,5 +994,4 @@ function init() {
     if (e.key === "Enter") login();
   });
 }
-
 window.addEventListener("load", init);
