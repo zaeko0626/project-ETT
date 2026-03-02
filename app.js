@@ -146,9 +146,12 @@ function setAuthScreens_(loggedIn) {
   if (login) login.classList.toggle("hidden", loggedIn);
   if (main) main.classList.toggle("hidden", !loggedIn);
 
-  if (loggedIn) revealMainChrome_();
+  // Show header/sidebar ONLY when logged in
+  ["app-header", "header", "topbar", "sidebar", "sidebar-overlay"].forEach((id) => {
+    const el = $(id);
+    if (el) el.classList.toggle("hidden", !loggedIn);
+  });
 }
-
 /* ---------------- Sidebar actions (if your HTML uses these IDs/classes) ---------------- */
 window.openSidebar = () => {
   const sb = $("sidebar") || document.querySelector(".sidebar");
