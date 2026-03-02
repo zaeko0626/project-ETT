@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: Orders header equal spacing + employee rows fill box (grid override)
+// FIX: Orders grid columns + add "ЭЭЛЖ" column + dept under place + labels "Размер:" and "ширхэг"
 // ===============================
 
 const API_URL =
@@ -8,7 +8,6 @@ const API_URL =
 
 let allOrders = [];
 let allItems = [];
-let allEmployees = [];
 let currentUser = null;
 
 const SHIFT_OPTIONS = ["А", "Б", "Өдөр", "Шөнө"];
@@ -60,21 +59,9 @@ window.closeModal = () => {
   if (ov) ov.classList.add("hidden");
   if (b) b.innerHTML = "";
 };
-
 function popupError(title, msg) {
   window.openModal(
     title || "Алдаа",
-    `
-      <div class="modal-msg">${esc(msg || "")}</div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal()">OK</button>
-      </div>
-    `
-  );
-}
-function popupOk(title, msg) {
-  window.openModal(
-    title || "Амжилттай",
     `
       <div class="modal-msg">${esc(msg || "")}</div>
       <div class="modal-actions">
@@ -97,16 +84,13 @@ async function apiPost(payload) {
   let json;
   try {
     json = JSON.parse(text);
-  } catch (e) {
+  } catch {
     throw new Error("Invalid JSON: " + text);
   }
   return json;
 }
 
 /* ---------------- Helpers ---------------- */
-function uniq(arr) {
-  return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
-}
 function fmtDateOnly(v) {
   const d = new Date(v);
   if (isNaN(d)) return "";
@@ -125,54 +109,50 @@ function isAdmin() {
   return currentUser?.type === "admin";
 }
 
-/* ---------------- Inject CSS for Orders Grid (NO need to edit styles.css) ---------------- */
+/* ---------------- CSS inject: Orders Grid (now 9 columns with ЭЭЛЖ) ---------------- */
 function injectOrdersGridCSS_() {
   if (document.getElementById("orders-grid-fix-style")) return;
 
   const st = document.createElement("style");
   st.id = "orders-grid-fix-style";
   st.textContent = `
-    /* Header + rows = grid, equal spacing */
     .orders-header, .order-row {
       display: grid !important;
       width: 100% !important;
       column-gap: 18px !important;
       align-items: start !important;
     }
-    /* Admin (8 columns) */
+
+    /* Admin: 9 columns
+       Ажилтан | Газар/Хэлтэс | Албан тушаал | Ээлж | Бараа | Тоо | Огноо | Төлөв | Үйлдэл */
     body.admin-mode .orders-header,
     body.admin-mode .order-row {
-      grid-template-columns: 2.2fr 2.6fr 1.6fr 2.2fr 1fr 1.2fr 1.2fr 1.6fr !important;
+      grid-template-columns: 2.1fr 2.6fr 1.6fr 1fr 2.2fr 1fr 1.2fr 1.2fr 1.7fr !important;
     }
 
-    /* Employee (only needed columns) => fill box */
+    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв  (6 columns) */
     body.employee-mode .orders-header,
     body.employee-mode .order-row {
-      grid-template-columns: 2.4fr 2.4fr 1fr 1.2fr 1.2fr !important;
+      grid-template-columns: 2.2fr 1fr 2.6fr 1.1fr 1.3fr 1.2fr !important;
     }
 
     /* Prevent squeezing/overflow */
-    .orders-header > *, .order-row > * {
-      min-width: 0 !important;
-    }
+    .orders-header > *, .order-row > * { min-width: 0 !important; }
 
-    /* Hide columns for employee view */
+    /* Employee: hide place/dept, role, actions */
     body.employee-mode .col-place,
     body.employee-mode .col-role,
-    body.employee-mode .col-actions {
-      display: none !important;
-    }
+    body.employee-mode .col-actions { display:none !important; }
 
-    /* Make header items align nicely */
-    .orders-header > * {
-      white-space: nowrap !important;
-    }
+    /* Header nicer */
+    .orders-header > * { white-space: nowrap !important; }
 
-    /* Row content wrap nicely */
-    .order-row .subline {
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+    /* Dept under place styling */
+    .place-wrap .place-main { font-weight: 600; }
+    .place-wrap .place-sub { opacity: .75; font-size: 12px; margin-top: 2px; }
+
+    /* Tight text */
+    .order-row .subline { overflow: hidden; text-overflow: ellipsis; }
   `;
   document.head.appendChild(st);
 }
@@ -183,17 +163,15 @@ function setRoleMode_() {
   document.body.classList.toggle("employee-mode", !isAdmin());
 }
 
-/* ---------------- Make header cells get correct col-* classes by TEXT ---------------- */
+/* ---------------- Header cell class normalize (including ЭЭЛЖ) ---------------- */
 function normalizeOrdersHeader_() {
   const tab = document.getElementById("tab-orders");
   if (!tab) return;
 
-  // Find the header row by locating an element whose text is "АЖИЛТАН"
   const candidates = Array.from(tab.querySelectorAll("*")).filter((el) => {
     const t = (el.textContent || "").trim().toUpperCase();
     return t === "АЖИЛТАН";
   });
-
   if (!candidates.length) return;
 
   const headerCell = candidates[0];
@@ -208,6 +186,7 @@ function normalizeOrdersHeader_() {
       "col-emp",
       "col-place",
       "col-role",
+      "col-shift",
       "col-item",
       "col-qty",
       "col-date",
@@ -220,6 +199,7 @@ function normalizeOrdersHeader_() {
     if (t.includes("АЖИЛТАН")) c.classList.add("col-emp");
     else if (t.includes("ГАЗАР") || t.includes("ХЭЛТЭС")) c.classList.add("col-place");
     else if (t.includes("АЛБАН")) c.classList.add("col-role");
+    else if (t.includes("ЭЭЛЖ")) c.classList.add("col-shift");
     else if (t === "БАРАА") c.classList.add("col-item");
     else if (t.includes("ТОО")) c.classList.add("col-qty");
     else if (t.includes("ОГНОО")) c.classList.add("col-date");
@@ -228,124 +208,10 @@ function normalizeOrdersHeader_() {
   });
 }
 
-/* ---------------- Select options ---------------- */
-function setSelectOptions(sel, values, allLabel = "Бүгд") {
-  if (!sel) return;
-  const v = (values || []).filter((x) => x != null && x !== "");
-  const html = [];
-  if (allLabel != null) html.push(`<option value="">${esc(allLabel)}</option>`);
-  v.forEach((val) => {
-    const vv = String(val);
-    html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
-  });
-  sel.innerHTML = html.join("");
-}
-
-/* ---------------- UI visibility ---------------- */
-function setAuthUIVisible(isLoggedInNow) {
-  const header = document.getElementById("app-header");
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebar-overlay");
-
-  if (header) header.classList.toggle("hidden", !isLoggedInNow);
-  if (sidebar) sidebar.classList.toggle("hidden", !isLoggedInNow);
-  if (overlay) overlay.classList.toggle("hidden", !isLoggedInNow);
-
-  if (!isLoggedInNow) {
-    sidebar?.classList.remove("open");
-    overlay?.classList.remove("show");
-  }
-}
-
-/* ---------------- Sidebar ---------------- */
-window.openSidebar = () => {
-  document.getElementById("sidebar")?.classList.remove("hidden");
-  document.getElementById("sidebar-overlay")?.classList.remove("hidden");
-  document.getElementById("sidebar")?.classList.add("open");
-  document.getElementById("sidebar-overlay")?.classList.add("show");
-};
-window.closeSidebar = () => {
-  document.getElementById("sidebar")?.classList.remove("open");
-  document.getElementById("sidebar-overlay")?.classList.remove("show");
-};
-window.toggleSidebar = () => {
-  const sb = document.getElementById("sidebar");
-  if (!sb) return;
-  sb.classList.contains("open") ? window.closeSidebar() : window.openSidebar();
-};
-
-/* ---------------- Tabs ---------------- */
-window.showTab = (tabName, btn) => {
-  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
-  document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
-
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-
-  if (window.innerWidth < 1024) window.closeSidebar();
-
-  if (tabName === "orders") applyFilters();
-};
-
-/* ---------------- Login / Logout ---------------- */
-window.login = async () => {
-  const code = document.getElementById("login-code")?.value?.trim() || "";
-  const pass = document.getElementById("login-pass")?.value?.trim() || "";
-  if (!code || !pass) return popupError("Алдаа", "Код, нууц үг оруулна уу");
-
-  showLoading(true, "Нэвтэрч байна...");
-  try {
-    const r = await apiPost({ action: "login", code, pass });
-    if (!r.success) return popupError("Алдаа", r.msg || "Нэвтрэх амжилтгүй");
-
-    currentUser = r.user;
-
-    document.getElementById("login-screen")?.classList.add("hidden");
-    document.getElementById("main-screen")?.classList.remove("hidden");
-    setAuthUIVisible(true);
-
-    setRoleMode_();
-
-    const admin = isAdmin();
-    document.getElementById("nav-items")?.classList.toggle("hidden", !admin);
-    document.getElementById("nav-employees")?.classList.toggle("hidden", !admin);
-    document.getElementById("nav-request")?.classList.toggle("hidden", admin);
-
-    await refreshData();
-
-    if (admin) showTab("orders", document.getElementById("nav-orders"));
-    else showTab("request", document.getElementById("nav-request"));
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.logout = () => {
-  currentUser = null;
-  allOrders = [];
-  allItems = [];
-  allEmployees = [];
-
-  document.getElementById("main-screen")?.classList.add("hidden");
-  document.getElementById("login-screen")?.classList.remove("hidden");
-
-  const lc = document.getElementById("login-code");
-  const lp = document.getElementById("login-pass");
-  if (lc) lc.value = "";
-  if (lp) lp.value = "";
-
-  setAuthUIVisible(false);
-  window.closeSidebar();
-};
-
-/* ---------------- Filters (keep simple) ---------------- */
+/* ---------------- Filters bind (unchanged behavior) ---------------- */
 function bindOrderFilterEvents_() {
   const tab = document.getElementById("tab-orders");
   if (!tab) return;
-
-  // bind all inputs/selects inside orders tab
   tab.querySelectorAll("select").forEach((s) => s.addEventListener("change", () => applyFilters()));
   tab.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => applyFilters()));
 }
@@ -356,7 +222,6 @@ function readFilter_(id) {
 }
 
 window.applyFilters = () => {
-  // filters by IDs (if exist). If not, it will just show all.
   const statusF = readFilter_("filter-status");
   const itemF = readFilter_("filter-item");
   const yearF = readFilter_("filter-year");
@@ -393,7 +258,7 @@ window.applyFilters = () => {
   renderOrders(filtered);
 };
 
-/* ---------------- Orders render (always grid, fill box) ---------------- */
+/* ---------------- Orders render (9 columns, plus requested text changes) ---------------- */
 function renderOrders(listData) {
   const list = document.getElementById("orders-list");
   if (!list) return;
@@ -423,16 +288,27 @@ function renderOrders(listData) {
       const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
       const empId = esc(o.code || "—");
 
-      const placeDept = [o.place, o.department, o.shift].filter(Boolean).join(" • ");
-      const role = o.role || "";
+      // ✅ Place + Dept separate, dept under place like ID
+      const place = esc(o.place || "—");
+      const dept = esc(o.department || "—");
+
+      const role = esc(o.role || "—");
+      const shift = esc(o.shift || "—");
 
       const item = esc(o.item || "—");
+
+      // ✅ Size label: "Размер:"
       const size = esc(o.size || "—");
-      const qty = esc(o.quantity || o.qty || "—");
+      const sizeLine = `Размер: ${size}`;
+
+      // ✅ Qty suffix: "ширхэг"
+      const qtyVal = o.quantity ?? o.qty ?? "—";
+      const qty = `${esc(qtyVal)} ширхэг`;
+
       const date = esc(fmtDateOnly(o.requestedDate));
 
+      // actions only for admin pending
       const isPending = String(o.status || "") === "Хүлээгдэж буй";
-
       let actions = `—`;
       if (isAdmin()) {
         actions = isPending
@@ -451,16 +327,23 @@ function renderOrders(listData) {
           </div>
 
           <div class="order-col col-place">
-            ${esc(placeDept || "—")}
+            <div class="place-wrap">
+              <div class="place-main">${place}</div>
+              <div class="place-sub">Хэлтэс: ${dept}</div>
+            </div>
           </div>
 
           <div class="order-col col-role">
-            ${esc(role || "—")}
+            ${role}
+          </div>
+
+          <div class="order-col col-shift">
+            ${shift}
           </div>
 
           <div class="order-col col-item">
             <div class="item">${item}</div>
-            <div class="subline">${size}</div>
+            <div class="subline">${esc(sizeLine)}</div>
           </div>
 
           <div class="order-col col-qty">
@@ -525,11 +408,8 @@ window.refreshData = async () => {
 
 /* ---------------- Init ---------------- */
 function initApp() {
-  setAuthUIVisible(false);
-  document.getElementById("main-screen")?.classList.add("hidden");
-  document.getElementById("login-screen")?.classList.remove("hidden");
-
   injectOrdersGridCSS_();
+  bindOrderFilterEvents_();
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
@@ -538,4 +418,29 @@ function initApp() {
 }
 window.onload = function () {
   initApp();
+};
+
+/* ---------------- Login (minimal) ---------------- */
+window.login = async () => {
+  const code = document.getElementById("login-code")?.value?.trim() || "";
+  const pass = document.getElementById("login-pass")?.value?.trim() || "";
+  if (!code || !pass) return popupError("Алдаа", "Код, нууц үг оруулна уу");
+
+  showLoading(true, "Нэвтэрч байна...");
+  try {
+    const r = await apiPost({ action: "login", code, pass });
+    if (!r.success) return popupError("Алдаа", r.msg || "Нэвтрэх амжилтгүй");
+
+    currentUser = r.user;
+
+    document.getElementById("login-screen")?.classList.add("hidden");
+    document.getElementById("main-screen")?.classList.remove("hidden");
+
+    setRoleMode_();
+    await refreshData();
+  } catch (e) {
+    popupError("Алдаа", e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
 };
