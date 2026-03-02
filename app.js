@@ -515,7 +515,7 @@ function renderOrders(orders) {
         `
         : `
           <div class="cell">
-            <div class="muted">/хэвээрээ/</div>
+            <span class="badge st-decided">ШИЙДВЭРЛЭСЭН</span>
           </div>
         `;
 
