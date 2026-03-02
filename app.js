@@ -30,10 +30,15 @@ function esc(s) {
 }
 
 // ---------- Loading ----------
-function showLoading(show) {
-  const el = document.getElementById("loading-overlay");
-  if (!el) return;
-  el.classList.toggle("hidden", !show);
+function showLoading(isShow, subText = "") {
+  const ov = document.getElementById("loading-overlay");
+  if (!ov) return;
+
+  const sub = ov.querySelector(".loading-sub");
+  if (sub) sub.textContent = subText || "";
+
+  if (isShow) ov.classList.remove("hidden");
+  else ov.classList.add("hidden");
 }
 
 // ---------- Modal ----------
