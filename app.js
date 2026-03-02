@@ -1088,7 +1088,11 @@ function initApp() {
     if (e.key === "Enter") window.login();
   });
 }
-window.onload = initApp;
+window.onload = function () {
+  initApp();
+  setupOrderFilters();    // ✅ шүүлтүүрийн event-үүдийг холбож өгнө
+  applyOrderFilters();    // ✅ эхний удаа шүүгээд render хийнэ
+};
 function setupOrderFilters() {
   // Эдгээр ID-ууд чинь index.html дээр байвал шууд ажиллана
   const ids = [
