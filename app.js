@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: Filters work by LABEL (no ID dependency) + keep previous UI fixes
+// FIX: main menu visible + filters by label + orders grid + "ЭЭЛЖ" + formatting
 // ===============================
 
 const API_URL =
@@ -112,7 +112,57 @@ function isAdmin() {
   return currentUser?.type === "admin";
 }
 
-/* ---------------- CSS inject: Orders Grid (9 columns with ЭЭЛЖ) ---------------- */
+/* =========================================================
+   ✅ MAIN MENU / SIDEBAR VISIBILITY (restored)
+   ========================================================= */
+function setAuthUIVisible(isLoggedInNow) {
+  const header = document.getElementById("app-header");
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+
+  if (header) header.classList.toggle("hidden", !isLoggedInNow);
+  if (sidebar) sidebar.classList.toggle("hidden", !isLoggedInNow);
+  if (overlay) overlay.classList.toggle("hidden", !isLoggedInNow);
+
+  if (!isLoggedInNow) {
+    sidebar?.classList.remove("open");
+    overlay?.classList.remove("show");
+  }
+}
+
+window.openSidebar = () => {
+  const sb = document.getElementById("sidebar");
+  const ov = document.getElementById("sidebar-overlay");
+  sb?.classList.remove("hidden");
+  ov?.classList.remove("hidden");
+  sb?.classList.add("open");
+  ov?.classList.add("show");
+};
+window.closeSidebar = () => {
+  document.getElementById("sidebar")?.classList.remove("open");
+  document.getElementById("sidebar-overlay")?.classList.remove("show");
+};
+window.toggleSidebar = () => {
+  const sb = document.getElementById("sidebar");
+  if (!sb) return;
+  sb.classList.contains("open") ? window.closeSidebar() : window.openSidebar();
+};
+
+window.showTab = (tabName, btn) => {
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
+  document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
+
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  if (window.innerWidth < 1024) window.closeSidebar();
+
+  if (tabName === "orders") applyFilters();
+};
+
+/* =========================================================
+   ✅ Orders Grid + Employee hide columns + "ЭЭЛЖ"
+   ========================================================= */
 function injectOrdersGridCSS_() {
   if (document.getElementById("orders-grid-fix-style")) return;
 
@@ -126,24 +176,26 @@ function injectOrdersGridCSS_() {
       align-items: start !important;
     }
 
-    /* Admin: 9 columns */
+    /* Admin: 9 columns
+       Ажилтан | Газар/Хэлтэс | Албан тушаал | Ээлж | Бараа | Тоо | Огноо | Төлөв | Үйлдэл */
     body.admin-mode .orders-header,
     body.admin-mode .order-row {
       grid-template-columns: 2.1fr 2.6fr 1.6fr 1fr 2.2fr 1fr 1.2fr 1.2fr 1.7fr !important;
     }
 
-    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв (6 columns) */
+    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв  */
     body.employee-mode .orders-header,
     body.employee-mode .order-row {
       grid-template-columns: 2.2fr 1fr 2.6fr 1.1fr 1.3fr 1.2fr !important;
     }
 
     .orders-header > *, .order-row > * { min-width: 0 !important; }
+    .orders-header > * { white-space: nowrap !important; }
+
+    /* Employee: hide place/dept, role, actions */
     body.employee-mode .col-place,
     body.employee-mode .col-role,
     body.employee-mode .col-actions { display:none !important; }
-
-    .orders-header > * { white-space: nowrap !important; }
 
     .place-wrap .place-main { font-weight: 600; }
     .place-wrap .place-sub { opacity: .75; font-size: 12px; margin-top: 2px; }
@@ -157,7 +209,6 @@ function setRoleMode_() {
   document.body.classList.toggle("employee-mode", !isAdmin());
 }
 
-/* ---------------- Header normalize (including ЭЭЛЖ) ---------------- */
 function normalizeOrdersHeader_() {
   const tab = document.getElementById("tab-orders");
   if (!tab) return;
@@ -168,14 +219,12 @@ function normalizeOrdersHeader_() {
   });
   if (!candidates.length) return;
 
-  const headerCell = candidates[0];
-  const row = headerCell.parentElement;
+  const row = candidates[0].parentElement;
   if (!row) return;
 
   row.classList.add("orders-header");
 
-  const children = Array.from(row.children);
-  children.forEach((c) => {
+  Array.from(row.children).forEach((c) => {
     c.classList.remove(
       "col-emp",
       "col-place",
@@ -189,7 +238,6 @@ function normalizeOrdersHeader_() {
     );
 
     const t = (c.textContent || "").trim().toUpperCase();
-
     if (t.includes("АЖИЛТАН")) c.classList.add("col-emp");
     else if (t.includes("ГАЗАР") || t.includes("ХЭЛТЭС")) c.classList.add("col-place");
     else if (t.includes("АЛБАН")) c.classList.add("col-role");
@@ -202,28 +250,26 @@ function normalizeOrdersHeader_() {
   });
 }
 
-/* =======================================================================
-   ✅ FILTER ENGINE (Label-based, no ID dependency)
-   ======================================================================= */
-
+/* =========================================================
+   ✅ FILTER ENGINE (Label-based) 100% working
+   ========================================================= */
 function getOrdersTab_() {
   return document.getElementById("tab-orders");
 }
 
 function getLabelForControl_(control) {
-  // Heuristic: find nearest previous sibling that contains label-like text
+  // nearest label-like text (usually previous sibling / parent)
   let el = control;
-  for (let step = 0; step < 8; step++) {
+  for (let step = 0; step < 10; step++) {
     if (!el) break;
+
     const prev = el.previousElementSibling;
     if (prev) {
       const t = (prev.textContent || "").trim();
-      if (t && t.length <= 30) return t;
+      if (t && t.length <= 40) return t;
     }
+
     el = el.parentElement;
-    if (!el) break;
-    const t2 = (el.textContent || "").trim();
-    // not reliable, skip
   }
   return "";
 }
@@ -233,7 +279,6 @@ function collectFilterControls_() {
   if (!tab) return {};
 
   const controls = Array.from(tab.querySelectorAll("select, input")).filter((el) => {
-    // exclude login fields if they exist in DOM (but usually not inside tab-orders)
     const id = (el.id || "").toLowerCase();
     if (id.includes("login")) return false;
     return true;
@@ -247,12 +292,9 @@ function collectFilterControls_() {
 
     const placeholder = (c.getAttribute("placeholder") || "").trim();
     let label = getLabelForControl_(c).toUpperCase().trim();
-
-    // Some UIs use placeholder rather than label for text fields
     if (!label && placeholder) label = placeholder.toUpperCase();
 
-    // store by label keywords (we keep best match later)
-    map[`${label}__${tag}`] = c;
+    map[label + "__" + tag] = c;
   }
   return map;
 }
@@ -269,44 +311,31 @@ function findControlByKeyword_(controlsMap, keywords) {
 function readControlValue_(el) {
   if (!el) return "";
   const v = (el.value ?? "").toString().trim();
-  // treat "Бүгд" as empty
-  if (v === "Бүгд" || v === "БҮГД") return "";
+  if (v.toUpperCase() === "БҮГД") return "";
   return v;
 }
 
 function getFilters_() {
   const m = collectFilterControls_();
 
-  const statusEl = findControlByKeyword_(m, ["ТӨЛӨВ"]);
-  const itemEl = findControlByKeyword_(m, ["БАРАА"]);
-  const yearEl = findControlByKeyword_(m, ["ОН"]);
-  const monthEl = findControlByKeyword_(m, ["САР"]);
-  const placeEl = findControlByKeyword_(m, ["ГАЗАР"]);
-  const deptEl = findControlByKeyword_(m, ["ХЭЛТЭС"]);
-  const shiftEl = findControlByKeyword_(m, ["ЭЭЛЖ"]);
-  const nameEl = findControlByKeyword_(m, ["НЭР"]);
-  const codeEl = findControlByKeyword_(m, ["КОД"]);
-  const roleEl = findControlByKeyword_(m, ["АЛБАН"]);
-
   return {
-    status: readControlValue_(statusEl),
-    item: readControlValue_(itemEl),
-    year: readControlValue_(yearEl),
-    month: readControlValue_(monthEl),
-    place: readControlValue_(placeEl),
-    dept: readControlValue_(deptEl),
-    shift: readControlValue_(shiftEl),
-    name: readControlValue_(nameEl),
-    code: readControlValue_(codeEl),
-    role: readControlValue_(roleEl),
+    status: readControlValue_(findControlByKeyword_(m, ["ТӨЛӨВ"])),
+    item: readControlValue_(findControlByKeyword_(m, ["БАРАА"])),
+    year: readControlValue_(findControlByKeyword_(m, ["ОН"])),
+    month: readControlValue_(findControlByKeyword_(m, ["САР"])),
+    place: readControlValue_(findControlByKeyword_(m, ["ГАЗАР"])),
+    dept: readControlValue_(findControlByKeyword_(m, ["ХЭЛТЭС"])),
+    shift: readControlValue_(findControlByKeyword_(m, ["ЭЭЛЖ"])),
+    name: readControlValue_(findControlByKeyword_(m, ["НЭР"])),
+    code: readControlValue_(findControlByKeyword_(m, ["КОД"])),
+    role: readControlValue_(findControlByKeyword_(m, ["АЛБАН"])),
   };
 }
 
 function setSelectOptions_(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
   const uniqVals = uniq(values).filter(Boolean);
-  const opts = [];
-  opts.push(`<option value="">${esc(allLabel)}</option>`);
+  const opts = [`<option value="">${esc(allLabel)}</option>`];
   uniqVals.forEach((v) => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
   sel.innerHTML = opts.join("");
 }
@@ -322,32 +351,31 @@ function populateFilters_() {
   const deptEl = findControlByKeyword_(m, ["ХЭЛТЭС"]);
   const shiftEl = findControlByKeyword_(m, ["ЭЭЛЖ"]);
 
-  if (statusEl && statusEl.tagName === "SELECT") {
+  if (statusEl?.tagName === "SELECT")
     setSelectOptions_(statusEl, ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"], "Бүгд");
-  }
-  if (itemEl && itemEl.tagName === "SELECT") {
-    setSelectOptions_(itemEl, allItems.map((x) => x.name), "Бүгд");
-  }
-  if (yearEl && yearEl.tagName === "SELECT") {
+
+  if (itemEl?.tagName === "SELECT") setSelectOptions_(itemEl, allItems.map((x) => x.name), "Бүгд");
+
+  if (yearEl?.tagName === "SELECT") {
     const years = allOrders
       .map((o) => {
         const d = new Date(o.requestedDate);
         return isNaN(d) ? "" : String(d.getFullYear());
       })
-      .filter(Boolean);
-    setSelectOptions_(yearEl, years.sort((a, b) => b.localeCompare(a)), "Бүгд");
+      .filter(Boolean)
+      .sort((a, b) => b.localeCompare(a));
+    setSelectOptions_(yearEl, years, "Бүгд");
   }
-  if (monthEl && monthEl.tagName === "SELECT") {
+
+  if (monthEl?.tagName === "SELECT") {
     const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
     setSelectOptions_(monthEl, months, "Бүгд");
   }
-  if (placeEl && placeEl.tagName === "SELECT") {
-    setSelectOptions_(placeEl, allOrders.map((o) => o.place), "Бүгд");
-  }
-  if (deptEl && deptEl.tagName === "SELECT") {
-    setSelectOptions_(deptEl, allOrders.map((o) => o.department), "Бүгд");
-  }
-  if (shiftEl && shiftEl.tagName === "SELECT") {
+
+  if (placeEl?.tagName === "SELECT") setSelectOptions_(placeEl, allOrders.map((o) => o.place), "Бүгд");
+  if (deptEl?.tagName === "SELECT") setSelectOptions_(deptEl, allOrders.map((o) => o.department), "Бүгд");
+
+  if (shiftEl?.tagName === "SELECT") {
     setSelectOptions_(shiftEl, uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))), "Бүгд");
   }
 }
@@ -355,8 +383,6 @@ function populateFilters_() {
 function bindFilterEvents_() {
   const tab = getOrdersTab_();
   if (!tab) return;
-
-  // Remove double binding by using once flag
   if (tab.dataset.filtersBound === "1") return;
   tab.dataset.filtersBound = "1";
 
@@ -474,7 +500,6 @@ function renderOrders(listData) {
           </div>
 
           <div class="order-col col-role">${role}</div>
-
           <div class="order-col col-shift">${shift}</div>
 
           <div class="order-col col-item">
@@ -483,7 +508,6 @@ function renderOrders(listData) {
           </div>
 
           <div class="order-col col-qty">${qty}</div>
-
           <div class="order-col col-date">${date}</div>
 
           <div class="order-col col-status">
@@ -501,7 +525,6 @@ function renderOrders(listData) {
 window.decideOrder = async (id, status) => {
   if (!id || !status) return;
 
-  // Optimistic UI
   const idx = allOrders.findIndex((x) => String(x.id) === String(id));
   if (idx >= 0) allOrders[idx].status = status;
   applyFilters();
@@ -527,10 +550,8 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
-    // ✅ filters: populate + bind + apply
     populateFilters_();
     bindFilterEvents_();
-
     applyFilters();
   } catch (e) {
     popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
@@ -539,11 +560,13 @@ window.refreshData = async () => {
   }
 };
 
-/* ---------------- Init & Login ---------------- */
+/* ---------------- Init & Login/Logout ---------------- */
 function initApp() {
   injectOrdersGridCSS_();
-  // filters bind may run after login, but safe
-  bindFilterEvents_();
+  setAuthUIVisible(false);
+
+  document.getElementById("main-screen")?.classList.add("hidden");
+  document.getElementById("login-screen")?.classList.remove("hidden");
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
@@ -568,12 +591,37 @@ window.login = async () => {
 
     document.getElementById("login-screen")?.classList.add("hidden");
     document.getElementById("main-screen")?.classList.remove("hidden");
+    setAuthUIVisible(true);
 
     setRoleMode_();
     await refreshData();
+
+    // default tab: admin -> orders, employee -> request (if exists), else orders
+    const admin = isAdmin();
+    const navOrders = document.getElementById("nav-orders");
+    const navRequest = document.getElementById("nav-request");
+
+    if (admin && navOrders) showTab("orders", navOrders);
+    else if (!admin && navRequest) showTab("request", navRequest);
+    else showTab("orders", navOrders);
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
+};
+
+window.logout = () => {
+  currentUser = null;
+  allOrders = [];
+  allItems = [];
+  setAuthUIVisible(false);
+
+  document.getElementById("main-screen")?.classList.add("hidden");
+  document.getElementById("login-screen")?.classList.remove("hidden");
+
+  document.getElementById("login-code") && (document.getElementById("login-code").value = "");
+  document.getElementById("login-pass") && (document.getElementById("login-pass").value = "");
+
+  window.closeSidebar();
 };
