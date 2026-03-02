@@ -642,7 +642,6 @@ function initApp() {
   // Always keep chrome ready (some templates keep it hidden until login)
   injectOrdersGridCSS_();
   setAuthScreens_(false);
-  revealMainChrome_(); // makes sure header/sidebar texts exist (won't hurt)
 
   const pass = $("login-pass");
   pass?.addEventListener("keydown", (e) => {
