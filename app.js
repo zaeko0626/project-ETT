@@ -3,7 +3,7 @@
 // Works with your current index.html IDs
 // ===============================
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbwXEsHgL33if-Q_Uym4yaW4I-xika2GgSUY5ZxglEAC8v-wDcPfpw-GxOGFvRlCoLa1/exec";
+  "https://script.google.com/macros/s/AKfycbzrFXNS4aOBTKeSjxEpkKAshZDDriNcKt39e4qnHg-saVaDjmnIXsilfMxUn2PPUVEr/exec";
 
 let allOrders = [];
 let allItems = [];
