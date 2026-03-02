@@ -2,10 +2,10 @@
 
 /* ===============================
    ETT PPE SYSTEM - styles.css
-   FULL REBUILD (v20260306)
+   FULL FIX (v20260306-LOGIN-FIX)
    =============================== */
 
-/* ---- Reset ---- */
+/* ---- Reset + Theme ---- */
 :root{
   --bg:#f3f6fb;
   --card:#ffffff;
@@ -33,12 +33,16 @@
 
 *{ margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html, body{ height:100%; }
+
 body{
   font-family:"Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
   font-optical-sizing: auto;
   background:var(--bg);
   color:var(--text);
   line-height:1.35;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .hidden{ display:none !important; }
@@ -48,21 +52,14 @@ html, body, button, input, select, textarea, option, label, a, span, div, p, h1,
   font-family:"Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif !important;
 }
 
-/* Make Mongolian letters render cleanly */
-body, input, select, textarea, button{
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+::placeholder{
+  color: rgba(100,116,139,.85);
+  font-weight: 600;
 }
 
 /* ===============================
-   Layout
+   Header
    =============================== */
-#main-page{
-  min-height: calc(var(--vh) * 100);
-}
-
-/* Header */
 .app-header{
   position: sticky;
   top: 0;
@@ -83,6 +80,7 @@ body, input, select, textarea, button{
   align-items:center;
   gap:10px;
 }
+
 .menu-btn{
   width:44px;height:44px;border-radius:14px;
   border:1px solid rgba(255,255,255,.12);
@@ -100,7 +98,7 @@ body, input, select, textarea, button{
   text-align:center;
   font-weight:900;
   letter-spacing:.08em;
-  text-transform: uppercase;
+  text-transform:uppercase;
   color:#fff;
   font-size:14px;
   user-select:none;
@@ -112,7 +110,6 @@ body, input, select, textarea, button{
   gap:10px;
 }
 
-/* Header refresh button */
 .header-btn{
   border:none;
   background: var(--primary);
@@ -132,21 +129,21 @@ body, input, select, textarea, button{
 .header-btn:hover{ filter:brightness(1.05); }
 .header-btn:active{ transform: translateY(1px); }
 
-/* Page container */
+/* ===============================
+   Page container
+   =============================== */
 .page{
   padding: 18px 16px 40px;
   max-width: 1200px;
   margin: 0 auto;
 }
 
-/* Cards */
 .card{
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow2);
 }
-
 .card-pad{ padding: 16px; }
 .card-title{
   font-size:14px;
@@ -156,10 +153,7 @@ body, input, select, textarea, button{
   margin-bottom: 12px;
   color: var(--text);
 }
-.subtle{
-  color: var(--muted);
-  font-size:12px;
-}
+.subtle{ color: var(--muted); font-size:12px; }
 
 /* ===============================
    Sidebar
@@ -306,12 +300,6 @@ input:focus, select:focus, textarea:focus{
   box-shadow: 0 0 0 3px rgba(37,99,235,.15);
 }
 
-::placeholder{
-  color: rgba(100,116,139,.85);
-  font-weight: 600;
-}
-
-/* Button base */
 .btn{
   border:none;
   height:44px;
@@ -339,7 +327,6 @@ input:focus, select:focus, textarea:focus{
 
 .btn-wide{ width:100%; }
 
-/* Small action pills */
 .btn-mini{
   height: 36px;
   padding: 0 12px;
@@ -347,7 +334,6 @@ input:focus, select:focus, textarea:focus{
   font-size: 11px;
 }
 
-/* Icon button */
 .icon-btn{
   width:48px;height:48px;
   border-radius: 18px;
@@ -363,7 +349,7 @@ input:focus, select:focus, textarea:focus{
 .icon-btn:active{ transform: translateY(1px); }
 
 /* ===============================
-   Filters area
+   Filters
    =============================== */
 .filters-card{
   padding: 16px;
@@ -376,15 +362,6 @@ input:focus, select:focus, textarea:focus{
   display:grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-}
-.filters-grid .btn-wide{
-  height: 44px;
-}
-.filters-row3{
-  display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap:12px;
-  margin-top:12px;
 }
 .filters-actions{
   display:flex;
@@ -411,7 +388,6 @@ input:focus, select:focus, textarea:focus{
   margin-top: 12px;
   margin-bottom: 10px;
 }
-
 .orders-head{ grid-template-columns: 1.6fr 1.6fr .8fr .9fr .9fr 1.1fr; }
 .employees-head{ grid-template-columns: 1fr 1fr 1fr .6fr .7fr 1.2fr 1.1fr; }
 
@@ -428,9 +404,6 @@ input:focus, select:focus, textarea:focus{
 }
 .order-row{ grid-template-columns: 1.6fr 1.6fr .8fr .9fr .9fr 1.1fr; }
 .emp-row{ grid-template-columns: 1fr 1fr 1fr .6fr .7fr 1.2fr 1.1fr; }
-
-.muted{ color: var(--muted); font-size:12px; font-weight:700; }
-.bold{ font-weight:900; }
 
 .badge-status{
   display:inline-flex;
@@ -456,7 +429,7 @@ input:focus, select:focus, textarea:focus{
 }
 
 /* ===============================
-   Items table-ish
+   Items list
    =============================== */
 .items-head{
   display:grid;
@@ -486,14 +459,9 @@ input:focus, select:focus, textarea:focus{
   margin-bottom:10px;
   box-shadow: 0 10px 25px rgba(0,0,0,.04);
 }
-.item-sizes{
-  font-weight:800;
-  font-size:12px;
-  color: var(--text);
-}
 
 /* ===============================
-   Modal (popup inside page)
+   Modal
    =============================== */
 #modal-overlay{
   position:fixed;
@@ -569,10 +537,7 @@ input:focus, select:focus, textarea:focus{
   color:#fff;
   text-align:center;
 }
-.loading-icon{
-  font-size: 44px;
-  margin-bottom: 10px;
-}
+.loading-icon{ font-size: 44px; margin-bottom: 10px; }
 .loading-text{
   font-weight:900;
   letter-spacing:.08em;
@@ -580,28 +545,27 @@ input:focus, select:focus, textarea:focus{
   margin-bottom: 12px;
 }
 .spinner{
-  width: 44px;
-  height: 44px;
+  width: 44px; height: 44px;
   border-radius: 999px;
   border: 4px solid rgba(255,255,255,.25);
   border-top-color: rgba(255,255,255,.90);
   margin: 0 auto;
   animation: spin 1s linear infinite;
 }
-@keyframes spin{
-  to{ transform: rotate(360deg); }
-}
+@keyframes spin{ to{ transform: rotate(360deg); } }
 
 /* ===============================
-   Login page
+   Login page (FIXED)
    =============================== */
 #login-page{
+  /* header доороос “эвтэйхэн” эхлүүлэх */
   min-height: calc(var(--vh) * 100);
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:center;
-  padding: 24px 16px;
+  padding: calc(24px + 60px + var(--sat)) 16px 24px;
 }
+
 .login-card{
   width: min(520px, 96vw);
   background:#fff;
@@ -610,6 +574,7 @@ input:focus, select:focus, textarea:focus{
   box-shadow: var(--shadow);
   overflow:hidden;
 }
+
 .login-top{
   padding: 18px 18px;
   background: linear-gradient(180deg, #0f172a, #0b1220);
@@ -622,9 +587,7 @@ input:focus, select:focus, textarea:focus{
   text-transform:uppercase;
   font-size: 14px;
 }
-.login-body{
-  padding: 18px;
-}
+.login-body{ padding: 18px; }
 .login-note{
   margin-top: 10px;
   font-size: 12px;
@@ -639,17 +602,11 @@ input:focus, select:focus, textarea:focus{
   .form-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
   .filters-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
 }
-
 @media (max-width: 900px){
   .orders-head, .employees-head, .items-head{ display:none; }
-
-  .order-row, .emp-row, .item-row{
-    grid-template-columns: 1fr;
-  }
+  .order-row, .emp-row, .item-row{ grid-template-columns: 1fr; }
   .order-row > div, .emp-row > div, .item-row > div{
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
+    display:flex; justify-content:space-between; gap:10px;
   }
   .header-title{ font-size: 12px; }
 }
