@@ -432,3 +432,25 @@ a{ color:inherit; text-decoration:none; }
   .form-grid{ grid-template-columns: 1.1fr 1.1fr .6fr .8fr; }
   .form-grid-2{ grid-template-columns: 1fr 1fr; }
 }
+
+
+
+/* ===== Orders: 8-column row layout (requested) ===== */
+.row-orders-8{
+  display:grid;
+  grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr .7fr .8fr .8fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+@media (max-width: 900px){
+  .row-orders-8{ grid-template-columns: 1fr; gap: 10px; }
+}
+
+/* ===== Approve button: same box style, green ===== */
+.btn-success{
+  background:#1f9d53;
+  border:1px solid rgba(0,0,0,.08);
+  color:#fff;
+}
+.btn-success:hover{ filter:brightness(.95); }
