@@ -1,9 +1,10 @@
 // ===============================
-// ETT PPE System - app.js (FULL FIX)
+// ETT PPE System - app.js
 // Works with your current index.html IDs
 // ===============================
+
 const API_URL =
-  "https://script.google.com/macros/s/AKfycbzrFXNS4aOBTKeSjxEpkKAshZDDriNcKt39e4qnHg-saVaDjmnIXsilfMxUn2PPUVEr/exec";
+  "https://script.google.com/macros/s/AKfycbwXEsHgL33if-Q_Uym4yaW4I-xika2GgSUY5ZxglEAC8v-wDcPfpw-GxOGFvRlCoLa1/exec";
 
 let allOrders = [];
 let allItems = [];
@@ -21,14 +22,14 @@ window.addEventListener("resize", setVH);
 window.addEventListener("orientationchange", () => setTimeout(setVH, 150));
 setVH();
 
-// ---------- Escape HTML ----------
+// ---------- Escape HTML (FIXED) ----------
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#39;");
 }
 
 // ---------- Loading overlay ----------
@@ -45,7 +46,6 @@ window.openModal = (title, html) => {
   const ov = document.getElementById("modal-overlay");
   const t = document.getElementById("modal-title");
   const b = document.getElementById("modal-body");
-
   if (!ov || !t || !b) {
     alert(`${title}\n\n${String(html || "").replace(/<[^>]*>/g, "")}`);
     return;
@@ -54,7 +54,6 @@ window.openModal = (title, html) => {
   b.innerHTML = html || "";
   ov.classList.remove("hidden");
 };
-
 window.closeModal = () => {
   const ov = document.getElementById("modal-overlay");
   const b = document.getElementById("modal-body");
@@ -66,27 +65,26 @@ function popupError(title, msg) {
   window.openModal(
     title || "Алдаа",
     `
-    <div class="modal-text">${esc(msg || "")}</div>
-    <div class="modal-actions">
-      <button class="btn btn-primary btn-min" onclick="closeModal()">OK</button>
-    </div>
-  `
+      <div class="modal-msg">${esc(msg || "")}</div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">OK</button>
+      </div>
+    `
   );
 }
-
 function popupOk(title, msg) {
   window.openModal(
     title || "Амжилттай",
     `
-    <div class="modal-text">${esc(msg || "")}</div>
-    <div class="modal-actions">
-      <button class="btn btn-primary btn-min" onclick="closeModal()">OK</button>
-    </div>
-  `
+      <div class="modal-msg">${esc(msg || "")}</div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">OK</button>
+      </div>
+    `
   );
 }
 
-// ---------- API (no CORS preflight: text/plain JSON) ----------
+// ---------- API ----------
 async function apiPost(payload) {
   let res;
   try {
@@ -100,7 +98,6 @@ async function apiPost(payload) {
   } catch (e) {
     throw new Error("Failed to fetch");
   }
-
   const text = await res.text();
   let json;
   try {
@@ -116,13 +113,26 @@ function uniq(arr) {
   return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
 }
 
+/**
+ * FIX: select option-ууд value-тэй болно.
+ * - "Бүгд"/"Сонгох..." зэрэг эхний сонголт value=""
+ * - Бусад нь value="өөрийнхөө текст"
+ */
 function setSelectOptions(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
+
   const v = (values || []).filter((x) => x != null && x !== "");
-  const opts = [];
-  if (allLabel != null) opts.push(`<option value="">${esc(allLabel)}</option>`);
-  v.forEach((val) => opts.push(`<option value="${esc(val)}">${esc(val)}</option>`));
-  sel.innerHTML = opts.join("");
+  const html = [];
+
+  if (allLabel != null) {
+    html.push(`<option value="">${esc(allLabel)}</option>`);
+  }
+  v.forEach((val) => {
+    const vv = String(val);
+    html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
+  });
+
+  sel.innerHTML = html.join("");
 }
 
 function fmtDateOnly(v) {
@@ -145,13 +155,12 @@ function isLoggedIn() {
   return !!currentUser;
 }
 
-// ---------- Auth UI visibility (IMPORTANT) ----------
+// ---------- Auth UI visibility ----------
 function setAuthUIVisible(isLoggedInNow) {
   const header = document.getElementById("app-header");
   const sidebar = document.getElementById("sidebar");
   const overlay = document.getElementById("sidebar-overlay");
 
-  // header/sidebar should NOT show on login screen
   if (header) header.classList.toggle("hidden", !isLoggedInNow);
   if (sidebar) sidebar.classList.toggle("hidden", !isLoggedInNow);
   if (overlay) overlay.classList.toggle("hidden", !isLoggedInNow);
@@ -170,14 +179,12 @@ window.openSidebar = () => {
   document.getElementById("sidebar")?.classList.add("open");
   document.getElementById("sidebar-overlay")?.classList.add("show");
 };
-
 window.closeSidebar = () => {
   const sb = document.getElementById("sidebar");
   const ov = document.getElementById("sidebar-overlay");
   sb?.classList.remove("open");
   ov?.classList.remove("show");
 };
-
 window.toggleSidebar = () => {
   if (!isLoggedIn()) return;
   const sb = document.getElementById("sidebar");
@@ -189,15 +196,18 @@ window.toggleSidebar = () => {
 window.showTab = (tabName, btn) => {
   if (!isLoggedIn()) return;
 
-  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
+  document
+    .querySelectorAll(".tab-content")
+    .forEach((el) => el.classList.add("hidden"));
   document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
 
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  document
+    .querySelectorAll(".nav-btn")
+    .forEach((b) => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
 
   if (window.innerWidth < 1024) window.closeSidebar();
 
-  // re-render per tab
   if (tabName === "orders") applyFilters();
   if (tabName === "items") renderItemsList();
   if (tabName === "employees") renderEmployeesList();
@@ -218,11 +228,18 @@ function updateSidebarUserCard() {
     return;
   }
 
-  const fullName = `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim() || (currentUser.ner || "");
+  const fullName =
+    `${currentUser.ovog || ""} ${currentUser.ner || ""}`.trim() ||
+    currentUser.ner ||
+    "";
   if (nameEl) nameEl.textContent = fullName || "—";
   if (idEl) idEl.textContent = currentUser.code ? `${currentUser.code}` : "";
-  if (roleEl) roleEl.textContent = currentUser.type === "admin" ? "АДМИН" : (currentUser.role || "");
-  const extra = [currentUser.place, currentUser.department, currentUser.shift].filter(Boolean).join(" • ");
+  if (roleEl)
+    roleEl.textContent =
+      currentUser.type === "admin" ? "АДМИН" : currentUser.role || "";
+  const extra = [currentUser.place, currentUser.department, currentUser.shift]
+    .filter(Boolean)
+    .join(" • ");
   if (exEl) exEl.textContent = extra;
 }
 
@@ -230,7 +247,6 @@ function updateSidebarUserCard() {
 window.login = async () => {
   const code = document.getElementById("login-code")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
-
   if (!code || !pass) return popupError("Алдаа", "Код, нууц үг оруулна уу");
 
   showLoading(true, "Нэвтэрч байна...");
@@ -241,20 +257,15 @@ window.login = async () => {
     currentUser = r.user;
     updateSidebarUserCard();
 
-    // IMPORTANT: hide login, show main + auth UI
     document.getElementById("login-screen")?.classList.add("hidden");
     document.getElementById("main-screen")?.classList.remove("hidden");
     setAuthUIVisible(true);
 
-    // Role based menu
     const isAdmin = currentUser?.type === "admin";
     document.getElementById("nav-items")?.classList.toggle("hidden", !isAdmin);
     document.getElementById("nav-employees")?.classList.toggle("hidden", !isAdmin);
-
-    // request tab should be hidden for admin (your earlier requirement)
     document.getElementById("nav-request")?.classList.toggle("hidden", isAdmin);
 
-    // default tab
     if (isAdmin) {
       showTab("orders", document.getElementById("nav-orders"));
     } else {
@@ -278,7 +289,6 @@ window.logout = () => {
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
-  // reset login inputs
   const lc = document.getElementById("login-code");
   const lp = document.getElementById("login-pass");
   if (lc) lc.value = "";
@@ -294,7 +304,9 @@ function populateRequestItemSize() {
   const sizeSel = document.getElementById("req-size");
   if (!itemSel || !sizeSel) return;
 
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
+  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
   setSelectOptions(itemSel, names, "Сонгох...");
 
   function fillSizesForItem(name) {
@@ -306,31 +318,26 @@ function populateRequestItemSize() {
     setSelectOptions(sizeSel, sizes, "Сонгох...");
   }
 
-  // initial sizes
   fillSizesForItem(itemSel.value);
-
-  itemSel.onchange = () => {
-    fillSizesForItem(itemSel.value);
-  };
+  itemSel.onchange = () => fillSizesForItem(itemSel.value);
 }
 
 // ---------- Orders filters ----------
 function populateOrderItemFilter() {
   const el = document.getElementById("filter-item");
   if (!el) return;
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
+  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
   setSelectOptions(el, names, "Бүгд");
 }
-
 function populateStatusFilter() {
   const el = document.getElementById("filter-status");
   if (!el) return;
-  // Always show 3 statuses
   const base = ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"];
   const sts = uniq(base.concat(allOrders.map((o) => o.status).filter(Boolean))).filter(Boolean);
   setSelectOptions(el, sts, "Бүгд");
 }
-
 function setupYearMonthFilters() {
   const yearSel = document.getElementById("filter-year");
   const monthSel = document.getElementById("filter-month");
@@ -344,21 +351,26 @@ function setupYearMonthFilters() {
   const yearsArr = Array.from(years).sort((a, b) => b.localeCompare(a));
   setSelectOptions(yearSel, yearsArr, "Бүгд");
 
-  const monthsArr = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const monthsArr = Array.from({ length: 12 }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
   setSelectOptions(monthSel, monthsArr, "Бүгд");
 }
-
 function setupPlaceDeptShiftFilters() {
   const placeSel = document.getElementById("filter-place");
   const deptSel = document.getElementById("filter-dept");
   const shiftSel = document.getElementById("filter-shift");
 
   if (placeSel) {
-    const places = uniq(allOrders.map((o) => o.place)).sort((a, b) => String(a).localeCompare(String(b)));
+    const places = uniq(allOrders.map((o) => o.place)).sort((a, b) =>
+      String(a).localeCompare(String(b))
+    );
     setSelectOptions(placeSel, places, "Бүгд");
   }
   if (deptSel) {
-    const depts = uniq(allOrders.map((o) => o.department)).sort((a, b) => String(a).localeCompare(String(b)));
+    const depts = uniq(allOrders.map((o) => o.department)).sort((a, b) =>
+      String(a).localeCompare(String(b))
+    );
     setSelectOptions(deptSel, depts, "Бүгд");
   }
   if (shiftSel) {
@@ -382,6 +394,7 @@ window.clearOrderFilters = () => {
   ].forEach((id) => {
     const el = document.getElementById(id);
     if (!el) return;
+    // FIX: бүгдийг value="" болгосон тул clear үед шууд хоосон байхад "Бүгд" болж харагдана.
     el.value = "";
   });
   applyFilters();
@@ -392,6 +405,7 @@ window.applyFilters = () => {
   const cS = document.getElementById("search-code")?.value?.trim() || "";
   const rS = document.getElementById("search-role")?.value?.trim() || "";
 
+  // FIX: “Бүгд” сонголт value="" болсон тул энд бүгд зөв ажиллана
   const iF = document.getElementById("filter-item")?.value || "";
   const sF = document.getElementById("filter-status")?.value || "";
   const yF = document.getElementById("filter-year")?.value || "";
@@ -410,8 +424,10 @@ window.applyFilters = () => {
 
     const mI = !iF || String(o.item || "") === String(iF);
     const mS = !sF || String(o.status || "") === String(sF);
+
     const mY = !yF || (!isNaN(d) && String(d.getFullYear()) === String(yF));
     const mM = !mF || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === String(mF));
+
     const mP = !pF || String(o.place || "") === String(pF);
     const mD = !dF || String(o.department || "") === String(dF);
     const mSh = !shF || String(o.shift || "") === String(shF);
@@ -432,116 +448,71 @@ function renderOrders(orders) {
   // ✅ Зөвхөн өөрийн хүсэлтийг харуулах
   if (currentUser && currentUser.type !== "admin") {
     const myCode = String(currentUser.code || "").trim();
-    rows = rows.filter(o => String(o.code || "").trim() === myCode);
+    rows = rows.filter((o) => String(o.code || "").trim() === myCode);
   }
 
   if (!rows.length) {
-    list.innerHTML = `
-      <div class="row-item">
-        <div class="muted">Мэдээлэл олдсонгүй</div>
-      </div>
-    `;
+    list.innerHTML = `<div class="empty">Мэдээлэл олдсонгүй</div>`;
     return;
   }
 
-  // newest first
   const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
   list.innerHTML = sorted
     .map((o) => {
       const st = statusMeta(o.status);
 
-      // --- Columns content ---
-      // 1) Ажилтан
       const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
       const empId = esc(o.code || "");
 
       const empCell = `
-        <div class="cell">
-          <div class="cell-title">${empName || "—"}</div>
-          <div class="cell-sub">ID•${empId}</div>
+        <div class="cell-emp">
+          <div class="emp-name">${empName || "—"}</div>
+          <div class="emp-id">ID•${empId}</div>
         </div>
       `;
 
-      // 2) Газар, хэлтэс
-      const placeDeptCell = `
-        <div class="cell">
-          <div class="cell-title">${esc(o.place || "—")}</div>
-          <div class="cell-sub">${esc(o.department || "—")}</div>
-        </div>
-      `;
+      const placeDept = [o.place, o.department].filter(Boolean).join(" • ");
+      const role = o.role || "";
+      const left2 = `${esc(placeDept)}${placeDept && role ? " • " : ""}${esc(role)}`;
 
-      // 3) Албан тушаал
-      const roleCell = `
-        <div class="cell">
-          <div class="cell-title">${esc(o.role || "—")}</div>
-        </div>
-      `;
+      const item = esc(o.item || "—");
+      const size = esc(o.size || "—");
+      const qty = esc(o.quantity || o.qty || "—");
+      const date = esc(fmtDateOnly(o.requestedDate));
 
-      // 4) Бараа
-      const itemCell = `
-        <div class="cell">
-          <div class="cell-title">${esc(o.item || "—")}</div>
-          <div class="cell-sub">Размер: ${esc(o.size || "—")}</div>
-        </div>
-      `;
-
-      // 5) Тоо хэмжээ
-      const qtyCell = `
-        <div class="cell">
-          <div class="cell-title">${esc(o.quantity ?? 1)} ш</div>
-        </div>
-      `;
-
-      // 6) Огноо (он-сар-өдөр)
-      const dateCell = `
-        <div class="cell">
-          <div class="cell-title">${esc(fmtDateOnly(o.requestedDate) || "—")}</div>
-        </div>
-      `;
-
-      // 7) Төлөв
-      const statusCell = `
-        <div class="cell">
-          <span class="badge ${esc(st.cls)}">${esc(st.label)}</span>
-        </div>
-      `;
-
-      // 8) Үйлдэл (admin + pending үед л)
-      const isPending = String(o.status || "") === "Хүлээгдэж буй";
-      const canAct = currentUser?.type === "admin" && isPending;
-
-      const actionCell = canAct
-        ? `
-          <div class="cell">
-            <div class="actions">
-              <button class="btn btn-success btn-min" onclick="approveOrder('${esc(o.id)}')">ОЛГОХ</button>
-              <button class="btn btn-danger btn-min" onclick="rejectOrder('${esc(o.id)}')">ТАТГАЛЗАХ</button>
-            </div>
-          </div>
-        `
-        : `
-          <div class="cell">
-            <span class="badge st-decided">ШИЙДВЭРЛЭСЭН</span>
-          </div>
-        `;
+      const actions =
+        currentUser?.type === "admin"
+          ? `
+            <button class="btn sm success" onclick="approveOrder('${esc(o.id)}')">ЗӨВШӨӨРӨХ</button>
+            <button class="btn sm danger" onclick="rejectOrder('${esc(o.id)}')">ТАТГАЛЗАХ</button>
+          `
+          : `—`;
 
       return `
-        <div class="row-item row-orders-8">
-          ${empCell}
-          ${placeDeptCell}
-          ${roleCell}
-          ${itemCell}
-          ${qtyCell}
-          ${dateCell}
-          ${statusCell}
-          ${actionCell}
+        <div class="order-row">
+          <div class="order-col">${empCell}</div>
+          <div class="order-col">
+            <div class="subline">${left2}</div>
+          </div>
+          <div class="order-col">
+            <div class="item">${item}</div>
+            <div class="subline">${size} • ${qty}</div>
+          </div>
+          <div class="order-col">
+            <div class="date">${date}</div>
+          </div>
+          <div class="order-col">
+            <span class="status ${st.cls}">${esc(st.label)}</span>
+          </div>
+          <div class="order-col actions">
+            ${actions}
+          </div>
         </div>
       `;
     })
     .join("");
 }
-
 
 // ---------- Orders actions ----------
 window.approveOrder = async (id) => {
@@ -575,7 +546,6 @@ window.rejectOrder = async (id) => {
 // ---------- Request submit ----------
 window.submitRequest = async () => {
   if (!currentUser) return;
-
   const item = document.getElementById("req-item")?.value || "";
   const size = document.getElementById("req-size")?.value || "";
   const qty = parseInt(document.getElementById("req-qty")?.value || "1", 10) || 1;
@@ -589,7 +559,6 @@ window.submitRequest = async () => {
     if (!r.success) throw new Error(r.msg || "Хүсэлт илгээхэд алдаа гарлаа");
     popupOk("Амжилттай", "Хүсэлт амжилттай илгээгдлээ");
     await refreshData();
-    // keep user on request tab
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -601,7 +570,9 @@ window.submitRequest = async () => {
 function populateItemsFilter() {
   const sel = document.getElementById("items-filter");
   if (!sel) return;
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
+  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
+    String(a).localeCompare(String(b))
+  );
   setSelectOptions(sel, names, "Бүгд");
   sel.onchange = () => renderItemsList();
 }
@@ -620,11 +591,7 @@ function renderItemsList() {
   const rows = (allItems || []).filter((x) => !filterVal || String(x.name) === String(filterVal));
 
   if (!rows.length) {
-    list.innerHTML = `
-      <div class="row-item">
-        <div class="muted">Бараа олдсонгүй</div>
-      </div>
-    `;
+    list.innerHTML = `<div class="empty">Бараа олдсонгүй</div>`;
     return;
   }
 
@@ -634,22 +601,17 @@ function renderItemsList() {
     .map((it, idx) => {
       const locked = !!it.locked;
       const actions = `
-        <div class="actions">
-          <button class="btn btn-gray btn-min" ${locked ? "disabled" : ""} onclick="editItemPrompt('${esc(it.name)}')">ЗАСАХ</button>
-          <button class="btn btn-primary btn-min" onclick="showItemHistory('${esc(it.name)}')">ТҮҮХ</button>
-          <button class="btn btn-danger btn-min" ${locked ? "disabled" : ""} onclick="deleteItemConfirm('${esc(it.name)}')">УСТГАХ</button>
-        </div>
+        <button class="btn sm" onclick="editItemPrompt('${esc(it.name)}')" ${locked ? "disabled" : ""}>ЗАСАХ</button>
+        <button class="btn sm" onclick="showItemHistory('${esc(it.name)}')">ТҮҮХ</button>
+        <button class="btn sm danger" onclick="deleteItemConfirm('${esc(it.name)}')" ${locked ? "disabled" : ""}>УСТГАХ</button>
       `;
 
       return `
-        <div class="row-item">
-          <div class="cell"><div class="cell-title">${idx + 1}</div></div>
-          <div class="cell">
-            <div class="cell-title">${esc(it.name)}</div>
-            ${locked ? `<div class="cell-sub">Locked</div>` : ``}
-          </div>
-          <div class="cell"><div class="cell-title">${esc(it.sizes || "")}</div></div>
-          <div class="cell">${actions}</div>
+        <div class="row">
+          <div class="cell num">${idx + 1}</div>
+          <div class="cell">${esc(it.name)} ${locked ? `<span class="tag">Locked</span>` : ""}</div>
+          <div class="cell">${esc(it.sizes || "")}</div>
+          <div class="cell actions">${actions}</div>
         </div>
       `;
     })
@@ -679,15 +641,18 @@ window.addItem = async () => {
 window.editItemPrompt = (oldName) => {
   const it = allItems.find((x) => String(x.name) === String(oldName));
   if (!it) return;
-
   if (it.locked) return popupError("Анхаар", "Энэ бараагаар бүртгэл орсон тул засах боломжгүй.");
 
   const html = `
-    <div class="modal-text">Бараа засах</div>
-    <div class="form-grid-2">
-      <input id="edit-item-name" class="input" value="${esc(it.name)}"/>
-      <input id="edit-item-sizes" class="input" value="${esc(it.sizes || "")}"/>
-      <button class="btn btn-primary btn-min" onclick="saveItemEdit('${esc(it.name)}')">ХАДГАЛАХ</button>
+    <div class="form">
+      <label>Нэр</label>
+      <input id="edit-item-name" value="${esc(it.name)}" />
+      <label>Размер (таслалаар)</label>
+      <input id="edit-item-sizes" value="${esc(it.sizes || "")}" />
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Буцах</button>
+        <button class="btn success" onclick="saveItemEdit('${esc(oldName)}')">ХАДГАЛАХ</button>
+      </div>
     </div>
   `;
   openModal("Бараа засах", html);
@@ -720,12 +685,12 @@ window.deleteItemConfirm = (name) => {
   openModal(
     "Устгах уу?",
     `
-    <div class="modal-text"><b>${esc(name)}</b> барааг устгах уу?</div>
-    <div class="modal-actions">
-      <button class="btn btn-dark btn-min" onclick="closeModal()">Буцах</button>
-      <button class="btn btn-danger btn-min" onclick="deleteItem('${esc(name)}')">УСТГАХ</button>
-    </div>
-  `
+      <div class="modal-msg">${esc(name)} барааг устгах уу?</div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Буцах</button>
+        <button class="btn danger" onclick="deleteItem('${esc(name)}')">УСТГАХ</button>
+      </div>
+    `
   );
 };
 
@@ -753,24 +718,23 @@ window.showItemHistory = async (itemName) => {
     const rows = r.history || [];
     const body =
       rows.length === 0
-        ? `<div class="modal-text">Олголтын түүх байхгүй</div>`
+        ? `<div class="empty">Олголтын түүх байхгүй</div>`
         : `
-          <div class="hist-list">
+          <div class="hist">
             ${rows
               .slice()
               .reverse()
               .map(
                 (h) => `
-                <div class="hist-row">
-                  <div class="hist-top">${esc(h.code)} • ${esc(h.ovog)} ${esc(h.ner)}</div>
-                  <div class="hist-sub">${esc(fmtDateOnly(h.date))} • ${esc(h.size)} • ${esc(h.qty)}</div>
-                </div>
-              `
+                  <div class="hist-row">
+                    <div class="hist-title">${esc(h.code)} • ${esc(h.ovog)} ${esc(h.ner)}</div>
+                    <div class="hist-sub">${esc(fmtDateOnly(h.date))} • ${esc(h.size)} • ${esc(h.qty)}</div>
+                  </div>
+                `
               )
               .join("")}
           </div>
         `;
-
     openModal("Олголтын түүх", body);
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
@@ -783,7 +747,8 @@ window.showItemHistory = async (itemName) => {
 function setupEmployeeShiftOptions() {
   const sel = document.getElementById("emp-shift");
   if (!sel) return;
-  sel.innerHTML = SHIFT_OPTIONS.map((s) => `<option value="${esc(s)}">${esc(s)}</option>`).join("");
+  // SHIFT select-үүдэд ч value-тай option хэрэгтэй
+  setSelectOptions(sel, SHIFT_OPTIONS, null);
 }
 
 function renderEmployeesList() {
@@ -792,46 +757,32 @@ function renderEmployeesList() {
 
   const rows = allEmployees || [];
   if (!rows.length) {
-    list.innerHTML = `
-      <div class="row-item">
-        <div class="muted">Ажилтан олдсонгүй</div>
-      </div>
-    `;
+    list.innerHTML = `<div class="empty">Ажилтан олдсонгүй</div>`;
     return;
   }
 
-  // requirement: place, dept, role, shift should appear before name in a continuous line
   list.innerHTML = rows
     .slice()
     .sort((a, b) => String(a.code).localeCompare(String(b.code)))
     .map((u, idx) => {
       const locked = !!u.locked;
-      const infoLeft = `${esc(u.place || "")} • ${esc(u.department || "")} • ${esc(u.role || "")} • ${esc(
-        u.shift || ""
-      )}`.replace(/^ • | • $/g, "");
-
+      const infoLeft = `${esc(u.place || "")} • ${esc(u.department || "")} • ${esc(u.role || "")} • ${esc(u.shift || "")}`.replace(/^ • | • $/g, "");
       const nameLine = `${esc(u.code)} • ${esc(u.ovog || "")} ${esc(u.ner || "")}`.trim();
 
       const actions = `
-        <div class="actions">
-          <button class="btn btn-gray btn-min" ${locked ? "disabled" : ""} onclick="editEmployeePrompt('${esc(
-        u.code
-      )}')">ЗАСАХ</button>
-          <button class="btn btn-primary btn-min" onclick="showEmployeeHistory('${esc(u.code)}')">ТҮҮХ</button>
-          <button class="btn btn-danger btn-min" ${locked ? "disabled" : ""} onclick="deleteEmployeeConfirm('${esc(
-        u.code
-      )}')">УСТГАХ</button>
-        </div>
+        <button class="btn sm" onclick="editEmployeePrompt('${esc(u.code)}')" ${locked ? "disabled" : ""}>ЗАСАХ</button>
+        <button class="btn sm" onclick="showEmployeeHistory('${esc(u.code)}')">ТҮҮХ</button>
+        <button class="btn sm danger" onclick="deleteEmployeeConfirm('${esc(u.code)}')" ${locked ? "disabled" : ""}>УСТГАХ</button>
       `;
 
       return `
-        <div class="row-item">
-          <div class="cell"><div class="cell-title">${idx + 1}</div></div>
+        <div class="row">
+          <div class="cell num">${idx + 1}</div>
           <div class="cell">
-            <div class="cell-sub">${infoLeft}</div>
-            <div class="cell-title">${nameLine}</div>
+            <div class="subline">${infoLeft}</div>
+            <div class="title">${nameLine}</div>
           </div>
-          <div class="cell">${actions}</div>
+          <div class="cell actions">${actions}</div>
         </div>
       `;
     })
@@ -852,20 +803,9 @@ window.addEmployee = async () => {
 
   showLoading(true, "Нэмэж байна...");
   try {
-    const r = await apiPost({
-      action: "add_user",
-      code,
-      pass,
-      ner,
-      ovog,
-      role,
-      place,
-      department,
-      shift,
-    });
+    const r = await apiPost({ action: "add_user", code, pass, ner, ovog, role, place, department, shift });
     if (!r.success) throw new Error(r.msg || "Алдаа");
 
-    // clear fields
     ["emp-code", "emp-pass", "emp-ovog", "emp-ner", "emp-role", "emp-place", "emp-dept"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = "";
@@ -885,18 +825,31 @@ window.editEmployeePrompt = (code) => {
   if (!u) return;
   if (u.locked) return popupError("Анхаар", "Энэ ажилтнаар бүртгэл орсон тул засах боломжгүй.");
 
+  const shiftOptions = SHIFT_OPTIONS.map((s) => {
+    const selected = String(u.shift || "") === String(s) ? "selected" : "";
+    return `<option value="${esc(s)}" ${selected}>${esc(s)}</option>`;
+  }).join("");
+
   const html = `
-    <div class="form-grid-2">
-      <input id="edit-emp-pass" class="input" placeholder="Нууц үг (хоосон бол өөрчлөхгүй)"/>
-      <input id="edit-emp-ovog" class="input" value="${esc(u.ovog || "")}" placeholder="Овог"/>
-      <input id="edit-emp-ner" class="input" value="${esc(u.ner || "")}" placeholder="Нэр"/>
-      <input id="edit-emp-role" class="input" value="${esc(u.role || "")}" placeholder="Албан тушаал"/>
-      <input id="edit-emp-place" class="input" value="${esc(u.place || "")}" placeholder="Газар"/>
-      <input id="edit-emp-dept" class="input" value="${esc(u.department || "")}" placeholder="Хэлтэс"/>
-      <select id="edit-emp-shift" class="select">
-        ${SHIFT_OPTIONS.map((s) => `<option value="${esc(s)}" ${u.shift === s ? "selected" : ""}>${esc(s)}</option>`).join("")}
-      </select>
-      <button class="btn btn-primary btn-min" onclick="saveEmployeeEdit('${esc(u.code)}')">ХАДГАЛАХ</button>
+    <div class="form">
+      <label>Нууц үг (хоосон бол өөрчлөхгүй)</label>
+      <input id="edit-emp-pass" value="" />
+      <label>Овог</label>
+      <input id="edit-emp-ovog" value="${esc(u.ovog || "")}" />
+      <label>Нэр</label>
+      <input id="edit-emp-ner" value="${esc(u.ner || "")}" />
+      <label>Албан тушаал</label>
+      <input id="edit-emp-role" value="${esc(u.role || "")}" />
+      <label>Газар</label>
+      <input id="edit-emp-place" value="${esc(u.place || "")}" />
+      <label>Хэлтэс</label>
+      <input id="edit-emp-dept" value="${esc(u.department || "")}" />
+      <label>Ээлж</label>
+      <select id="edit-emp-shift">${shiftOptions}</select>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Буцах</button>
+        <button class="btn success" onclick="saveEmployeeEdit('${esc(u.code)}')">ХАДГАЛАХ</button>
+      </div>
     </div>
   `;
   openModal(`Ажилтан засах (${esc(u.code)})`, html);
@@ -915,19 +868,8 @@ window.saveEmployeeEdit = async (code) => {
 
   showLoading(true, "Хадгалж байна...");
   try {
-    const r = await apiPost({
-      action: "update_user",
-      code,
-      pass,
-      ner,
-      ovog,
-      role,
-      place,
-      department,
-      shift,
-    });
+    const r = await apiPost({ action: "update_user", code, pass, ner, ovog, role, place, department, shift });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-
     closeModal();
     await refreshData();
     showTab("employees", document.getElementById("nav-employees"));
@@ -946,12 +888,12 @@ window.deleteEmployeeConfirm = (code) => {
   openModal(
     "Устгах уу?",
     `
-    <div class="modal-text"><b>${esc(u.code)}</b> ажилтныг устгах уу?</div>
-    <div class="modal-actions">
-      <button class="btn btn-dark btn-min" onclick="closeModal()">Буцах</button>
-      <button class="btn btn-danger btn-min" onclick="deleteEmployee('${esc(u.code)}')">УСТГАХ</button>
-    </div>
-  `
+      <div class="modal-msg">${esc(u.code)} ажилтныг устгах уу?</div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Буцах</button>
+        <button class="btn danger" onclick="deleteEmployee('${esc(u.code)}')">УСТГАХ</button>
+      </div>
+    `
   );
 };
 
@@ -970,7 +912,7 @@ window.deleteEmployee = async (code) => {
   }
 };
 
-// Employee history (needs backend action get_user_history)
+// Employee history
 window.showEmployeeHistory = async (code) => {
   showLoading(true, "Түүх татаж байна...");
   try {
@@ -980,24 +922,23 @@ window.showEmployeeHistory = async (code) => {
     const rows = r.history || [];
     const body =
       rows.length === 0
-        ? `<div class="modal-text">Олголтын түүх байхгүй</div>`
+        ? `<div class="empty">Олголтын түүх байхгүй</div>`
         : `
-          <div class="hist-list">
+          <div class="hist">
             ${rows
               .slice()
               .reverse()
               .map(
                 (h) => `
-                <div class="hist-row">
-                  <div class="hist-top">${esc(fmtDateOnly(h.date))}</div>
-                  <div class="hist-sub">${esc(h.item)} • ${esc(h.size)} • ${esc(h.qty)}</div>
-                </div>
-              `
+                  <div class="hist-row">
+                    <div class="hist-title">${esc(fmtDateOnly(h.date))}</div>
+                    <div class="hist-sub">${esc(h.item)} • ${esc(h.size)} • ${esc(h.qty)}</div>
+                  </div>
+                `
               )
               .join("")}
           </div>
         `;
-
     openModal("Ажилтны олголтын түүх", body);
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
@@ -1009,7 +950,6 @@ window.showEmployeeHistory = async (code) => {
 // ---------- Password change ----------
 window.changePassword = async () => {
   if (!currentUser) return;
-
   const oldP = document.getElementById("old-pass")?.value?.trim() || "";
   const newP = document.getElementById("new-pass")?.value?.trim() || "";
   const newP2 = document.getElementById("new-pass-2")?.value?.trim() || "";
@@ -1035,7 +975,6 @@ window.changePassword = async () => {
 // ---------- Refresh ----------
 window.refreshData = async () => {
   if (!currentUser) return;
-
   showLoading(true, "Өгөгдөл татаж байна...");
   try {
     const r = await apiPost({ action: "get_all_data" });
@@ -1052,7 +991,6 @@ window.refreshData = async () => {
       allEmployees = [];
     }
 
-    // populate filters + dropdowns
     populateOrderItemFilter();
     populateStatusFilter();
     setupYearMonthFilters();
@@ -1061,7 +999,6 @@ window.refreshData = async () => {
     populateItemsFilter();
     setupEmployeeShiftOptions();
 
-    // render current tab
     const visibleTabId = document.querySelector(".tab-content:not(.hidden)")?.id || "tab-orders";
     if (visibleTabId === "tab-orders") applyFilters();
     if (visibleTabId === "tab-items") renderItemsList();
@@ -1075,99 +1012,18 @@ window.refreshData = async () => {
 
 // ---------- Init ----------
 function initApp() {
-  // always start at login state
   setAuthUIVisible(false);
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
   setupEmployeeShiftOptions();
 
-  // Enter key on login
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") window.login();
   });
 }
+
 window.onload = function () {
   initApp();
-  setupOrderFilters();    // ✅ шүүлтүүрийн event-үүдийг холбож өгнө
-  applyOrderFilters();    // ✅ эхний удаа шүүгээд render хийнэ
 };
-function setupOrderFilters() {
-  // Эдгээр ID-ууд чинь index.html дээр байвал шууд ажиллана
-  const ids = [
-    "f_status","f_item","f_year","f_month",
-    "f_place","f_department","f_shift",
-    "f_name","f_code","f_role"
-  ];
-
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("input", applyOrderFilters);
-    el.addEventListener("change", applyOrderFilters);
-  });
-
-  const clearBtn = document.getElementById("btn-clear-filters");
-  if (clearBtn) clearBtn.addEventListener("click", () => {
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (el.tagName === "SELECT") el.value = "Бүгд";
-      else el.value = "";
-    });
-    applyOrderFilters();
-  });
-}
-
-function applyOrderFilters() {
-  // эх дата: allOrders гэж үзье (чи өөр нэртэй бол хэлээрэй)
-  let filtered = allOrders ? allOrders.slice() : [];
-
-  // user бол зөвхөн өөрийн
-  if (currentUser && currentUser.type !== "admin") {
-    const myCode = String(currentUser.code || "").trim();
-    filtered = filtered.filter(o => String(o.code || "").trim() === myCode);
-  }
-
-  // Helper
-  const v = (id) => {
-    const el = document.getElementById(id);
-    return el ? String(el.value || "").trim() : "";
-  };
-  const contains = (a,b) => String(a||"").toLowerCase().includes(String(b||"").toLowerCase());
-
-  const st = v("f_status");
-  if (st && st !== "Бүгд") filtered = filtered.filter(o => String(o.status||"") === st);
-
-  const it = v("f_item");
-  if (it && it !== "Бүгд") filtered = filtered.filter(o => String(o.item||"") === it);
-
-  const yr = v("f_year");
-  if (yr && yr !== "Бүгд") filtered = filtered.filter(o => (new Date(o.requestedDate)).getFullYear() === Number(yr));
-
-  const mo = v("f_month");
-  if (mo && mo !== "Бүгд") filtered = filtered.filter(o => ((new Date(o.requestedDate)).getMonth()+1) === Number(mo));
-
-  const pl = v("f_place");
-  if (pl && pl !== "Бүгд") filtered = filtered.filter(o => String(o.place||"") === pl);
-
-  const dp = v("f_department");
-  if (dp && dp !== "Бүгд") filtered = filtered.filter(o => String(o.department||"") === dp);
-
-  const sh = v("f_shift");
-  if (sh && sh !== "Бүгд") filtered = filtered.filter(o => String(o.shift||"") === sh);
-
-  const nameQ = v("f_name");
-  if (nameQ) filtered = filtered.filter(o => contains(`${o.ovog||""} ${o.ner||""}`, nameQ));
-
-  const codeQ = v("f_code");
-  if (codeQ) filtered = filtered.filter(o => contains(o.code, codeQ));
-
-  const roleQ = v("f_role");
-  if (roleQ) filtered = filtered.filter(o => contains(o.role, roleQ));
-
-  // ✅ энд renderOrders чинь параметр авдаг бол: renderOrders(filtered)
-  // хэрэв renderOrders allOrders ашигладаг бол түр хадгалаад:
-  renderOrders(filtered);
-}
