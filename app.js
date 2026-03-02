@@ -444,6 +444,104 @@ function renderOrders(orders) {
     .map((o) => {
       const st = statusMeta(o.status);
 
+      // --- Columns content ---
+      // 1) Ажилтан
+      const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
+      const empId = esc(o.code || "");
+
+      const empCell = `
+        <div class="cell">
+          <div class="cell-title">${empName || "—"}</div>
+          <div class="cell-sub">ID•${empId}</div>
+        </div>
+      `;
+
+      // 2) Газар, хэлтэс
+      const placeDeptCell = `
+        <div class="cell">
+          <div class="cell-title">${esc(o.place || "—")}</div>
+          <div class="cell-sub">${esc(o.department || "—")}</div>
+        </div>
+      `;
+
+      // 3) Албан тушаал
+      const roleCell = `
+        <div class="cell">
+          <div class="cell-title">${esc(o.role || "—")}</div>
+        </div>
+      `;
+
+      // 4) Бараа
+      const itemCell = `
+        <div class="cell">
+          <div class="cell-title">${esc(o.item || "—")}</div>
+          <div class="cell-sub">Размер: ${esc(o.size || "—")}</div>
+        </div>
+      `;
+
+      // 5) Тоо хэмжээ
+      const qtyCell = `
+        <div class="cell">
+          <div class="cell-title">${esc(o.quantity ?? 1)} ш</div>
+        </div>
+      `;
+
+      // 6) Огноо (он-сар-өдөр)
+      const dateCell = `
+        <div class="cell">
+          <div class="cell-title">${esc(fmtDateOnly(o.requestedDate) || "—")}</div>
+        </div>
+      `;
+
+      // 7) Төлөв
+      const statusCell = `
+        <div class="cell">
+          <span class="badge ${esc(st.cls)}">${esc(st.label)}</span>
+        </div>
+      `;
+
+      // 8) Үйлдэл (admin + pending үед л)
+      const isPending = String(o.status || "") === "Хүлээгдэж буй";
+      const canAct = currentUser?.type === "admin" && isPending;
+
+      const actionCell = canAct
+        ? `
+          <div class="cell">
+            <div class="actions">
+              <button class="btn btn-success btn-min" onclick="approveOrder('${esc(o.id)}')">ОЛГОХ</button>
+              <button class="btn btn-danger btn-min" onclick="rejectOrder('${esc(o.id)}')">ТАТГАЛЗАХ</button>
+            </div>
+          </div>
+        `
+        : `
+          <div class="cell">
+            <div class="muted">/хэвээрээ/</div>
+          </div>
+        `;
+
+      return `
+        <div class="row-item row-orders-8">
+          ${empCell}
+          ${placeDeptCell}
+          ${roleCell}
+          ${itemCell}
+          ${qtyCell}
+          ${dateCell}
+          ${statusCell}
+          ${actionCell}
+        </div>
+      `;
+    })
+    .join("");
+}
+
+  // newest first
+  const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
+
+  list.innerHTML = sorted
+    .map((o) => {
+      const st = statusMeta(o.status);
+
       const empTop = `${esc(o.code || "")} • ${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
       const empSub = `${esc(o.role || "")} • ${esc(o.place || "")} • ${esc(o.department || "")} • ${esc(
         o.shift || ""
