@@ -242,7 +242,17 @@ window.refreshData = async () => {
 
     allOrders = r.orders || [];
     allItems = r.items || [];
-
+    
+// ===== SAFETY STUBS (avoid "is not defined") =====
+if (typeof setupOrderFilters !== "function") window.setupOrderFilters = () => {};
+if (typeof renderOrders !== "function") window.renderOrders = () => {
+  const el = document.getElementById("orders-list");
+  if (el) el.innerHTML = `<div class="row-item"><div>Orders UI function (renderOrders) олдсонгүй — app.js бүтэн биш байна.</div></div>`;
+};
+if (typeof renderItems !== "function") window.renderItems = () => {};
+if (typeof renderEmployees !== "function") window.renderEmployees = () => {};
+if (typeof setupRequestDropdowns !== "function") window.setupRequestDropdowns = () => {};
+    
     // Admin only employees
     if (currentUser?.type === "admin") {
       const ru = await apiPost({ action: "get_users" });
