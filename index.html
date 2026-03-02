@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <!-- Modal -->
+  <!-- Modal (generic - keep) -->
   <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-head">
@@ -81,87 +81,35 @@
   <!-- MAIN SCREEN -->
   <main id="main-screen" class="screen hidden">
 
-    <!-- ORDERS -->
+    <!-- ===========================
+         ORDERS (NEW: Requests list)
+         =========================== -->
     <section id="tab-orders" class="tab-content">
       <div class="page-head">
         <div class="page-title">ХҮСЭЛТИЙН ЖАГСААЛТ</div>
       </div>
 
-      <div class="filters card">
-        <div class="filter-grid">
-          <div class="field">
-            <div class="label">Төлөв</div>
-            <select id="filter-status" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Бараа</div>
-            <select id="filter-item" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Он</div>
-            <select id="filter-year" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Сар</div>
-            <select id="filter-month" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Газар</div>
-            <select id="filter-place" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Хэлтэс</div>
-            <select id="filter-dept" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Ээлж</div>
-            <select id="filter-shift" class="input"></select>
-          </div>
-
-          <div class="field">
-            <div class="label">Нэрээр хайх</div>
-            <input id="search-name" class="input" placeholder="Ж: Бат" />
-          </div>
-
-          <div class="field">
-            <div class="label">Кодоор хайх</div>
-            <input id="search-code" class="input" placeholder="Ж: 1000" />
-          </div>
-
-          <div class="field">
-            <div class="label">Албан тушаал</div>
-            <input id="search-role" class="input" placeholder="Ж: Механик" />
-          </div>
-        </div>
-
-        <div class="filter-actions">
-          <button class="btn" onclick="resetFilters()">ЦЭВЭРЛЭХ</button>
-        </div>
-      </div>
+      <!-- (Filters-ийг дараа нэмнэ. Одоохондоо жагсаалтаа төгс болгоё.) -->
 
       <div class="orders-box card">
-        <div class="orders-header">
+        <div class="orders-header" id="requests-header">
+          <div>REQUEST ID</div>
           <div>АЖИЛТАН</div>
           <div>ГАЗАР, ХЭЛТЭС</div>
-          <div>АЛБАН ТУШААЛ</div>
           <div>ЭЭЛЖ</div>
-          <div>БАРАА</div>
-          <div>ТОО ХЭМЖЭЭ</div>
-          <div>ОГНОО</div>
+          <div>БАРААНЫ ТОО</div>
           <div>ТӨЛӨВ</div>
-          <div>ҮЙЛДЭЛ</div>
+          <div>ОГНОО</div>
         </div>
-        <div id="orders-list" class="orders-list"></div>
+
+        <!-- app.js энд request мөрүүдийг render хийнэ -->
+        <div id="requests-list" class="orders-list"></div>
       </div>
     </section>
 
-    <!-- REQUEST -->
+    <!-- ===========================
+         REQUEST (NEW: Cart submit)
+         =========================== -->
     <section id="tab-request" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">ШИНЭ ХҮСЭЛТ</div>
@@ -169,26 +117,47 @@
 
       <div class="card">
         <div class="form">
-          <div class="label">Бараа</div>
-          <select id="req-item" class="input"></select>
 
-          <div class="label">Хэмжээ</div>
-          <select id="req-size" class="input"></select>
+          <div class="row">
+            <div class="grow">
+              <div class="label">Бараа</div>
+              <select id="req-item" class="input"></select>
+            </div>
 
-          <div class="label">Тоо</div>
-          <input id="req-qty" class="input" type="number" min="1" value="1" />
+            <div class="grow">
+              <div class="label">Хэмжээ</div>
+              <select id="req-size" class="input"></select>
+            </div>
 
-          <button class="btn primary full" onclick="submitOrder()">ИЛГЭЭХ</button>
+            <div class="grow">
+              <div class="label">Тоо</div>
+              <input id="req-qty" class="input" type="number" min="1" value="1" />
+            </div>
+
+            <div class="row-actions">
+              <button class="btn" onclick="addToCart()">➕ НЭМЭХ</button>
+            </div>
+          </div>
+
+          <div style="height:10px;"></div>
+
+          <div class="page-subtitle">СОНГОСОН БАРААНУУД</div>
+          <!-- app.js cart items энд render хийнэ -->
+          <div id="cart-list" class="items-list"></div>
+
+          <button class="btn primary full" onclick="submitMultiRequest()">ХҮСЭЛТ ИЛГЭЭХ</button>
         </div>
       </div>
 
-      <div class="card">
+      <div class="card" style="margin-top:12px;">
         <div class="page-subtitle">Миний олголтын түүх (Зөвшөөрсөн)</div>
         <div id="user-history" class="history-list"></div>
       </div>
     </section>
 
-    <!-- ITEMS -->
+    <!-- ===========================
+         ITEMS (unchanged)
+         =========================== -->
     <section id="tab-items" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
@@ -226,7 +195,9 @@
       </div>
     </section>
 
-    <!-- USERS -->
+    <!-- ===========================
+         USERS (unchanged)
+         =========================== -->
     <section id="tab-users" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
@@ -281,7 +252,9 @@
       </div>
     </section>
 
-    <!-- PASS -->
+    <!-- ===========================
+         PASS (unchanged)
+         =========================== -->
     <section id="tab-pass" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">НУУЦ ҮГ СОЛИХ</div>
