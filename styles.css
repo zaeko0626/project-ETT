@@ -292,6 +292,9 @@ a{ color:inherit; text-decoration:none; }
   font-weight: 900;
   text-transform: uppercase;
 }
+.orders-head{
+  grid-template-columns: 1.2fr 1.2fr 1fr 1.2fr .7fr .8fr .8fr 1fr;
+}
 .th{ display:flex; align-items:center; }
 .table-body{ padding: 8px 0; }
 .row-item{
@@ -454,3 +457,17 @@ a{ color:inherit; text-decoration:none; }
   color:#fff;
 }
 .btn-success:hover{ filter:brightness(.95); }
+
+
+/* ===== Status badge colors (used by app.js) ===== */
+.badge.st-approved{ background: var(--ok); color:#fff; }
+.badge.st-rejected{ background: var(--danger); color:#fff; }
+.badge.st-pending{ background: var(--warn); color:#111827; }
+.badge.st-decided{ background: #0f172a; color:#fff; }
+
+/* ===== Icon button variants ===== */
+.icon-btn{ color:#fff; background:#0f172a; }
+.icon-btn.danger{ background: var(--danger); }
+.icon-btn.danger:hover{ filter:brightness(.95); }
+
+.clear-slot{ display:flex; align-items:flex-end; justify-content:flex-end; }
