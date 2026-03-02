@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: main menu visible + filters by label + orders grid + "ЭЭЛЖ" + formatting
+// Restore header/sidebar/menu + Fix Orders list layout + Filters + "ЭЭЛЖ" + formatting
 // ===============================
 
 const API_URL =
@@ -8,20 +8,14 @@ const API_URL =
 
 let allOrders = [];
 let allItems = [];
+let allUsers = [];
 let currentUser = null;
 
 const SHIFT_OPTIONS = ["А", "Б", "Өдөр", "Шөнө"];
 
-/* ---------------- Mobile VH ---------------- */
-function setVH() {
-  const vh = window.innerHeight * 0.01;
-  document.documentElement.style.setProperty("--vh", `${vh}px`);
-}
-window.addEventListener("resize", setVH);
-window.addEventListener("orientationchange", () => setTimeout(setVH, 150));
-setVH();
+/* ---------------- Safe helpers ---------------- */
+function $(id) { return document.getElementById(id); }
 
-/* ---------------- HTML escape ---------------- */
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -31,20 +25,37 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
+function uniq(arr) {
+  return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
+}
+
+function fmtDateOnly(v) {
+  const d = new Date(v);
+  if (isNaN(d)) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function isAdmin() {
+  return currentUser?.type === "admin";
+}
+
 /* ---------------- Loading overlay ---------------- */
 function showLoading(show, subText = "") {
-  const el = document.getElementById("loading-overlay");
+  const el = $("loading-overlay");
   if (!el) return;
-  const sub = document.getElementById("loading-sub");
+  const sub = $("loading-sub");
   if (sub) sub.textContent = subText || "";
   el.classList.toggle("hidden", !show);
 }
 
 /* ---------------- Modal ---------------- */
 window.openModal = (title, html) => {
-  const ov = document.getElementById("modal-overlay");
-  const t = document.getElementById("modal-title");
-  const b = document.getElementById("modal-body");
+  const ov = $("modal-overlay");
+  const t = $("modal-title");
+  const b = $("modal-body");
   if (!ov || !t || !b) {
     alert(`${title}\n\n${String(html || "").replace(/<[^>]*>/g, "")}`);
     return;
@@ -53,15 +64,29 @@ window.openModal = (title, html) => {
   b.innerHTML = html || "";
   ov.classList.remove("hidden");
 };
+
 window.closeModal = () => {
-  const ov = document.getElementById("modal-overlay");
-  const b = document.getElementById("modal-body");
+  const ov = $("modal-overlay");
+  const b = $("modal-body");
   if (ov) ov.classList.add("hidden");
   if (b) b.innerHTML = "";
 };
+
 function popupError(title, msg) {
   window.openModal(
     title || "Алдаа",
+    `
+      <div class="modal-msg">${esc(msg || "")}</div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">OK</button>
+      </div>
+    `
+  );
+}
+
+function popupOk(title, msg) {
+  window.openModal(
+    title || "Амжилттай",
     `
       <div class="modal-msg">${esc(msg || "")}</div>
       <div class="modal-actions">
@@ -82,75 +107,72 @@ async function apiPost(payload) {
   });
   const text = await res.text();
   let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error("Invalid JSON: " + text);
-  }
+  try { json = JSON.parse(text); }
+  catch { throw new Error("Invalid JSON: " + text); }
   return json;
 }
 
-/* ---------------- Helpers ---------------- */
-function uniq(arr) {
-  return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
-}
-function fmtDateOnly(v) {
-  const d = new Date(v);
-  if (isNaN(d)) return "";
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-function statusMeta(raw) {
-  const s = String(raw || "").trim();
-  if (s === "Зөвшөөрсөн") return { label: "ОЛГОСОН", cls: "st-approved" };
-  if (s === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
-  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
-}
-function isAdmin() {
-  return currentUser?.type === "admin";
-}
-
 /* =========================================================
-   ✅ MAIN MENU / SIDEBAR VISIBILITY (restored)
+   ✅ HARD RESTORE HEADER / SIDEBAR (no ID dependency)
    ========================================================= */
-function setAuthUIVisible(isLoggedInNow) {
-  const header = document.getElementById("app-header");
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebar-overlay");
-
-  if (header) header.classList.toggle("hidden", !isLoggedInNow);
-  if (sidebar) sidebar.classList.toggle("hidden", !isLoggedInNow);
-  if (overlay) overlay.classList.toggle("hidden", !isLoggedInNow);
-
-  if (!isLoggedInNow) {
-    sidebar?.classList.remove("open");
-    overlay?.classList.remove("show");
-  }
+function unhideByText_(texts) {
+  const hiddenNodes = Array.from(document.querySelectorAll(".hidden"));
+  hiddenNodes.forEach((el) => {
+    const t = (el.textContent || "").trim();
+    if (!t) return;
+    const ok = texts.some((k) => t.includes(k));
+    if (ok) el.classList.remove("hidden");
+  });
 }
 
+function revealMainChrome_() {
+  // Try common IDs first
+  ["app-header", "header", "topbar", "sidebar", "sidebar-overlay"].forEach((id) => {
+    const el = $(id);
+    if (el) el.classList.remove("hidden");
+  });
+
+  // Fallback: unhide blocks that contain these texts (your index shows these exist)
+  unhideByText_(["ETT PPE SYSTEM", "СЭРГЭЭХ", "Хүсэлтийн жагсаалт", "ГАРАХ"]);
+}
+
+function setAuthScreens_(loggedIn) {
+  const login = $("login-screen");
+  const main = $("main-screen");
+
+  if (login) login.classList.toggle("hidden", loggedIn);
+  if (main) main.classList.toggle("hidden", !loggedIn);
+
+  if (loggedIn) revealMainChrome_();
+}
+
+/* ---------------- Sidebar actions (if your HTML uses these IDs/classes) ---------------- */
 window.openSidebar = () => {
-  const sb = document.getElementById("sidebar");
-  const ov = document.getElementById("sidebar-overlay");
+  const sb = $("sidebar") || document.querySelector(".sidebar");
+  const ov = $("sidebar-overlay") || document.querySelector(".sidebar-overlay");
   sb?.classList.remove("hidden");
   ov?.classList.remove("hidden");
   sb?.classList.add("open");
   ov?.classList.add("show");
 };
+
 window.closeSidebar = () => {
-  document.getElementById("sidebar")?.classList.remove("open");
-  document.getElementById("sidebar-overlay")?.classList.remove("show");
+  const sb = $("sidebar") || document.querySelector(".sidebar");
+  const ov = $("sidebar-overlay") || document.querySelector(".sidebar-overlay");
+  sb?.classList.remove("open");
+  ov?.classList.remove("show");
 };
+
 window.toggleSidebar = () => {
-  const sb = document.getElementById("sidebar");
+  const sb = $("sidebar") || document.querySelector(".sidebar");
   if (!sb) return;
   sb.classList.contains("open") ? window.closeSidebar() : window.openSidebar();
 };
 
+/* ---------------- Tabs ---------------- */
 window.showTab = (tabName, btn) => {
   document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
-  document.getElementById(`tab-${tabName}`)?.classList.remove("hidden");
+  $(`tab-${tabName}`)?.classList.remove("hidden");
 
   document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
@@ -158,10 +180,12 @@ window.showTab = (tabName, btn) => {
   if (window.innerWidth < 1024) window.closeSidebar();
 
   if (tabName === "orders") applyFilters();
+  if (tabName === "items") renderItemsTable_();
+  if (tabName === "employees") renderUsersTable_();
 };
 
 /* =========================================================
-   ✅ Orders Grid + Employee hide columns + "ЭЭЛЖ"
+   ✅ Orders grid (Admin 9 col, Employee 6 col) + hide columns for employee
    ========================================================= */
 function injectOrdersGridCSS_() {
   if (document.getElementById("orders-grid-fix-style")) return;
@@ -176,14 +200,11 @@ function injectOrdersGridCSS_() {
       align-items: start !important;
     }
 
-    /* Admin: 9 columns
-       Ажилтан | Газар/Хэлтэс | Албан тушаал | Ээлж | Бараа | Тоо | Огноо | Төлөв | Үйлдэл */
     body.admin-mode .orders-header,
     body.admin-mode .order-row {
       grid-template-columns: 2.1fr 2.6fr 1.6fr 1fr 2.2fr 1fr 1.2fr 1.2fr 1.7fr !important;
     }
 
-    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв  */
     body.employee-mode .orders-header,
     body.employee-mode .order-row {
       grid-template-columns: 2.2fr 1fr 2.6fr 1.1fr 1.3fr 1.2fr !important;
@@ -192,7 +213,6 @@ function injectOrdersGridCSS_() {
     .orders-header > *, .order-row > * { min-width: 0 !important; }
     .orders-header > * { white-space: nowrap !important; }
 
-    /* Employee: hide place/dept, role, actions */
     body.employee-mode .col-place,
     body.employee-mode .col-role,
     body.employee-mode .col-actions { display:none !important; }
@@ -203,14 +223,15 @@ function injectOrdersGridCSS_() {
   document.head.appendChild(st);
 }
 
-function setRoleMode_() {
+function applyRoleMode_() {
   injectOrdersGridCSS_();
   document.body.classList.toggle("admin-mode", isAdmin());
   document.body.classList.toggle("employee-mode", !isAdmin());
 }
 
+/* ---------------- Header normalize by text ---------------- */
 function normalizeOrdersHeader_() {
-  const tab = document.getElementById("tab-orders");
+  const tab = $("tab-orders");
   if (!tab) return;
 
   const candidates = Array.from(tab.querySelectorAll("*")).filter((el) => {
@@ -226,15 +247,8 @@ function normalizeOrdersHeader_() {
 
   Array.from(row.children).forEach((c) => {
     c.classList.remove(
-      "col-emp",
-      "col-place",
-      "col-role",
-      "col-shift",
-      "col-item",
-      "col-qty",
-      "col-date",
-      "col-status",
-      "col-actions"
+      "col-emp","col-place","col-role","col-shift","col-item",
+      "col-qty","col-date","col-status","col-actions"
     );
 
     const t = (c.textContent || "").trim().toUpperCase();
@@ -251,24 +265,19 @@ function normalizeOrdersHeader_() {
 }
 
 /* =========================================================
-   ✅ FILTER ENGINE (Label-based) 100% working
+   ✅ Filters (Label-based) - no ID mismatch issue
    ========================================================= */
-function getOrdersTab_() {
-  return document.getElementById("tab-orders");
-}
+function getOrdersTab_() { return $("tab-orders"); }
 
 function getLabelForControl_(control) {
-  // nearest label-like text (usually previous sibling / parent)
   let el = control;
   for (let step = 0; step < 10; step++) {
     if (!el) break;
-
     const prev = el.previousElementSibling;
     if (prev) {
       const t = (prev.textContent || "").trim();
       if (t && t.length <= 40) return t;
     }
-
     el = el.parentElement;
   }
   return "";
@@ -278,12 +287,7 @@ function collectFilterControls_() {
   const tab = getOrdersTab_();
   if (!tab) return {};
 
-  const controls = Array.from(tab.querySelectorAll("select, input")).filter((el) => {
-    const id = (el.id || "").toLowerCase();
-    if (id.includes("login")) return false;
-    return true;
-  });
-
+  const controls = Array.from(tab.querySelectorAll("select, input"));
   const map = {};
   for (const c of controls) {
     const tag = c.tagName;
@@ -293,7 +297,6 @@ function collectFilterControls_() {
     const placeholder = (c.getAttribute("placeholder") || "").trim();
     let label = getLabelForControl_(c).toUpperCase().trim();
     if (!label && placeholder) label = placeholder.toUpperCase();
-
     map[label + "__" + tag] = c;
   }
   return map;
@@ -315,29 +318,13 @@ function readControlValue_(el) {
   return v;
 }
 
-function getFilters_() {
-  const m = collectFilterControls_();
-
-  return {
-    status: readControlValue_(findControlByKeyword_(m, ["ТӨЛӨВ"])),
-    item: readControlValue_(findControlByKeyword_(m, ["БАРАА"])),
-    year: readControlValue_(findControlByKeyword_(m, ["ОН"])),
-    month: readControlValue_(findControlByKeyword_(m, ["САР"])),
-    place: readControlValue_(findControlByKeyword_(m, ["ГАЗАР"])),
-    dept: readControlValue_(findControlByKeyword_(m, ["ХЭЛТЭС"])),
-    shift: readControlValue_(findControlByKeyword_(m, ["ЭЭЛЖ"])),
-    name: readControlValue_(findControlByKeyword_(m, ["НЭР"])),
-    code: readControlValue_(findControlByKeyword_(m, ["КОД"])),
-    role: readControlValue_(findControlByKeyword_(m, ["АЛБАН"])),
-  };
-}
-
 function setSelectOptions_(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
   const uniqVals = uniq(values).filter(Boolean);
-  const opts = [`<option value="">${esc(allLabel)}</option>`];
-  uniqVals.forEach((v) => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
-  sel.innerHTML = opts.join("");
+  sel.innerHTML =
+    [`<option value="">${esc(allLabel)}</option>`]
+      .concat(uniqVals.map((v) => `<option value="${esc(v)}">${esc(v)}</option>`))
+      .join("");
 }
 
 function populateFilters_() {
@@ -351,11 +338,12 @@ function populateFilters_() {
   const deptEl = findControlByKeyword_(m, ["ХЭЛТЭС"]);
   const shiftEl = findControlByKeyword_(m, ["ЭЭЛЖ"]);
 
-  if (statusEl?.tagName === "SELECT")
+  if (statusEl?.tagName === "SELECT") {
     setSelectOptions_(statusEl, ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"], "Бүгд");
-
-  if (itemEl?.tagName === "SELECT") setSelectOptions_(itemEl, allItems.map((x) => x.name), "Бүгд");
-
+  }
+  if (itemEl?.tagName === "SELECT") {
+    setSelectOptions_(itemEl, allItems.map((x) => x.name), "Бүгд");
+  }
   if (yearEl?.tagName === "SELECT") {
     const years = allOrders
       .map((o) => {
@@ -366,15 +354,16 @@ function populateFilters_() {
       .sort((a, b) => b.localeCompare(a));
     setSelectOptions_(yearEl, years, "Бүгд");
   }
-
   if (monthEl?.tagName === "SELECT") {
     const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
     setSelectOptions_(monthEl, months, "Бүгд");
   }
-
-  if (placeEl?.tagName === "SELECT") setSelectOptions_(placeEl, allOrders.map((o) => o.place), "Бүгд");
-  if (deptEl?.tagName === "SELECT") setSelectOptions_(deptEl, allOrders.map((o) => o.department), "Бүгд");
-
+  if (placeEl?.tagName === "SELECT") {
+    setSelectOptions_(placeEl, allOrders.map((o) => o.place), "Бүгд");
+  }
+  if (deptEl?.tagName === "SELECT") {
+    setSelectOptions_(deptEl, allOrders.map((o) => o.department), "Бүгд");
+  }
   if (shiftEl?.tagName === "SELECT") {
     setSelectOptions_(shiftEl, uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))), "Бүгд");
   }
@@ -388,6 +377,22 @@ function bindFilterEvents_() {
 
   tab.querySelectorAll("select").forEach((s) => s.addEventListener("change", () => applyFilters()));
   tab.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => applyFilters()));
+}
+
+function getFilters_() {
+  const m = collectFilterControls_();
+  return {
+    status: readControlValue_(findControlByKeyword_(m, ["ТӨЛӨВ"])),
+    item: readControlValue_(findControlByKeyword_(m, ["БАРАА"])),
+    year: readControlValue_(findControlByKeyword_(m, ["ОН"])),
+    month: readControlValue_(findControlByKeyword_(m, ["САР"])),
+    place: readControlValue_(findControlByKeyword_(m, ["ГАЗАР"])),
+    dept: readControlValue_(findControlByKeyword_(m, ["ХЭЛТЭС"])),
+    shift: readControlValue_(findControlByKeyword_(m, ["ЭЭЛЖ"])),
+    name: readControlValue_(findControlByKeyword_(m, ["НЭР"])),
+    code: readControlValue_(findControlByKeyword_(m, ["КОД"])),
+    role: readControlValue_(findControlByKeyword_(m, ["АЛБАН"])),
+  };
 }
 
 window.applyFilters = () => {
@@ -413,118 +418,120 @@ window.applyFilters = () => {
     const okShift = !f.shift || String(o.shift || "") === f.shift;
 
     return (
-      okName &&
-      okCode &&
-      okRole &&
-      okItem &&
-      okStatus &&
-      okYear &&
-      okMonth &&
-      okPlace &&
-      okDept &&
-      okShift
+      okName && okCode && okRole &&
+      okItem && okStatus &&
+      okYear && okMonth &&
+      okPlace && okDept && okShift
     );
   });
 
-  renderOrders(filtered);
+  renderOrders_(filtered);
 };
 
-/* ---------------- Orders render (ЭЭЛЖ + Dept under Place + labels) ---------------- */
-function renderOrders(listData) {
-  const list = document.getElementById("orders-list");
+/* =========================================================
+   ✅ Orders render (ЭЭЛЖ + Dept under Place + "Размер:" + "ширхэг" + decision status)
+   ========================================================= */
+function statusMeta_(raw) {
+  const s = String(raw || "").trim();
+  if (s === "Зөвшөөрсөн") return { label: "ОЛГОСОН", cls: "st-approved" };
+  if (s === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
+  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
+}
+
+function renderOrders_(rows) {
+  const list = $("orders-list");
   if (!list) return;
 
-  setRoleMode_();
+  applyRoleMode_();
   normalizeOrdersHeader_();
 
-  let rows = listData || [];
+  let data = rows || [];
 
+  // employee: show only own orders
   if (!isAdmin()) {
     const myCode = String(currentUser?.code || "").trim();
-    rows = rows.filter((o) => String(o.code || "").trim() === myCode);
+    data = data.filter((o) => String(o.code || "").trim() === myCode);
   }
 
-  if (!rows.length) {
+  if (!data.length) {
     list.innerHTML = `<div class="empty">Мэдээлэл олдсонгүй</div>`;
     return;
   }
 
-  const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
+  const sorted = data.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
-  list.innerHTML = sorted
-    .map((o) => {
-      const st = statusMeta(o.status);
+  list.innerHTML = sorted.map((o) => {
+    const st = statusMeta_(o.status);
 
-      const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
-      const empId = esc(o.code || "—");
+    const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
+    const empId = esc(o.code || "—");
 
-      const place = esc(o.place || "—");
-      const dept = esc(o.department || "—");
+    const place = esc(o.place || "—");
+    const dept = esc(o.department || "—");
 
-      const role = esc(o.role || "—");
-      const shift = esc(o.shift || "—");
+    const role = esc(o.role || "—");
+    const shift = esc(o.shift || "—");
 
-      const item = esc(o.item || "—");
-      const size = esc(o.size || "—");
-      const sizeLine = `Размер: ${size}`;
+    const item = esc(o.item || "—");
+    const size = esc(o.size || "—");
+    const sizeLine = `Размер: ${size}`;
 
-      const qtyVal = o.quantity ?? o.qty ?? "—";
-      const qty = `${esc(qtyVal)} ширхэг`;
+    const qtyVal = o.quantity ?? o.qty ?? "—";
+    const qty = `${esc(qtyVal)} ширхэг`;
 
-      const date = esc(fmtDateOnly(o.requestedDate));
+    const date = esc(fmtDateOnly(o.requestedDate));
 
-      const isPending = String(o.status || "") === "Хүлээгдэж буй";
+    const isPending = String(o.status || "") === "Хүлээгдэж буй";
 
-      let actions = `—`;
-      if (isAdmin()) {
-        actions = isPending
-          ? `
-            <button class="btn sm success" onclick="decideOrder('${esc(o.id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
-            <button class="btn sm danger" onclick="decideOrder('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
-          `
-          : `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
-      }
+    let actions = "—";
+    if (isAdmin()) {
+      actions = isPending
+        ? `
+          <button class="btn sm success" onclick="decideOrder('${esc(o.id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
+          <button class="btn sm danger" onclick="decideOrder('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
+        `
+        : `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
+    }
 
-      return `
-        <div class="order-row">
-          <div class="order-col col-emp">
-            <div class="emp-name">${empName}</div>
-            <div class="emp-id">ID:${empId}</div>
-          </div>
-
-          <div class="order-col col-place">
-            <div class="place-wrap">
-              <div class="place-main">${place}</div>
-              <div class="place-sub">Хэлтэс: ${dept}</div>
-            </div>
-          </div>
-
-          <div class="order-col col-role">${role}</div>
-          <div class="order-col col-shift">${shift}</div>
-
-          <div class="order-col col-item">
-            <div class="item">${item}</div>
-            <div class="subline">${esc(sizeLine)}</div>
-          </div>
-
-          <div class="order-col col-qty">${qty}</div>
-          <div class="order-col col-date">${date}</div>
-
-          <div class="order-col col-status">
-            <span class="status ${st.cls}">${esc(st.label)}</span>
-          </div>
-
-          <div class="order-col col-actions">${actions}</div>
+    return `
+      <div class="order-row">
+        <div class="order-col col-emp">
+          <div class="emp-name">${empName}</div>
+          <div class="emp-id">ID:${empId}</div>
         </div>
-      `;
-    })
-    .join("");
+
+        <div class="order-col col-place">
+          <div class="place-wrap">
+            <div class="place-main">${place}</div>
+            <div class="place-sub">Хэлтэс: ${dept}</div>
+          </div>
+        </div>
+
+        <div class="order-col col-role">${role}</div>
+        <div class="order-col col-shift">${shift}</div>
+
+        <div class="order-col col-item">
+          <div class="item">${item}</div>
+          <div class="subline">${esc(sizeLine)}</div>
+        </div>
+
+        <div class="order-col col-qty">${qty}</div>
+        <div class="order-col col-date">${date}</div>
+
+        <div class="order-col col-status">
+          <span class="status ${st.cls}">${esc(st.label)}</span>
+        </div>
+
+        <div class="order-col col-actions">${actions}</div>
+      </div>
+    `;
+  }).join("");
 }
 
-/* ---------------- Decide order ---------------- */
 window.decideOrder = async (id, status) => {
   if (!id || !status) return;
 
+  // Optimistic UI
   const idx = allOrders.findIndex((x) => String(x.id) === String(id));
   if (idx >= 0) allOrders[idx].status = status;
   applyFilters();
@@ -539,7 +546,17 @@ window.decideOrder = async (id, status) => {
   }
 };
 
-/* ---------------- Refresh ---------------- */
+/* =========================================================
+   Minimal stubs for other pages (so menu won't break)
+   ========================================================= */
+function renderItemsTable_() {
+  // optional – keeps menu working even if items UI exists
+}
+function renderUsersTable_() {
+  // optional – keeps menu working even if employees UI exists
+}
+
+/* ---------------- Refresh (Header button "СЭРГЭЭХ" uses this) ---------------- */
 window.refreshData = async () => {
   if (!currentUser) return;
   showLoading(true, "Өгөгдөл татаж байна...");
@@ -550,36 +567,29 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
+    // If admin has employees page it may need this
+    if (isAdmin()) {
+      const u = await apiPost({ action: "get_users" });
+      if (u?.success) allUsers = u.users || [];
+    }
+
     populateFilters_();
     bindFilterEvents_();
     applyFilters();
   } catch (e) {
-    popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
+    popupError("Алдаа", e.message || String(e));
   } finally {
     showLoading(false);
   }
 };
 
-/* ---------------- Init & Login/Logout ---------------- */
-function initApp() {
-  injectOrdersGridCSS_();
-  setAuthUIVisible(false);
+// Hard reload (optional)
+window.hardReload = () => location.reload();
 
-  document.getElementById("main-screen")?.classList.add("hidden");
-  document.getElementById("login-screen")?.classList.remove("hidden");
-
-  const pass = document.getElementById("login-pass");
-  pass?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") window.login();
-  });
-}
-window.onload = function () {
-  initApp();
-};
-
+/* ---------------- Login / Logout ---------------- */
 window.login = async () => {
-  const code = document.getElementById("login-code")?.value?.trim() || "";
-  const pass = document.getElementById("login-pass")?.value?.trim() || "";
+  const code = ($("login-code")?.value || "").trim();
+  const pass = ($("login-pass")?.value || "").trim();
   if (!code || !pass) return popupError("Алдаа", "Код, нууц үг оруулна уу");
 
   showLoading(true, "Нэвтэрч байна...");
@@ -589,21 +599,18 @@ window.login = async () => {
 
     currentUser = r.user;
 
-    document.getElementById("login-screen")?.classList.add("hidden");
-    document.getElementById("main-screen")?.classList.remove("hidden");
-    setAuthUIVisible(true);
+    setAuthScreens_(true);
+    applyRoleMode_();
 
-    setRoleMode_();
     await refreshData();
 
-    // default tab: admin -> orders, employee -> request (if exists), else orders
-    const admin = isAdmin();
-    const navOrders = document.getElementById("nav-orders");
-    const navRequest = document.getElementById("nav-request");
+    // Default tab
+    const navOrdersBtn = $("nav-orders") || document.querySelector('[onclick*="showTab(\'orders\'"]');
+    const navRequestBtn = $("nav-request") || document.querySelector('[onclick*="showTab(\'request\'"]');
 
-    if (admin && navOrders) showTab("orders", navOrders);
-    else if (!admin && navRequest) showTab("request", navRequest);
-    else showTab("orders", navOrders);
+    if (isAdmin()) window.showTab("orders", navOrdersBtn || null);
+    else window.showTab("request", navRequestBtn || null);
+
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
   } finally {
@@ -615,13 +622,26 @@ window.logout = () => {
   currentUser = null;
   allOrders = [];
   allItems = [];
-  setAuthUIVisible(false);
+  allUsers = [];
 
-  document.getElementById("main-screen")?.classList.add("hidden");
-  document.getElementById("login-screen")?.classList.remove("hidden");
+  setAuthScreens_(false);
+  window.closeSidebar?.();
 
-  document.getElementById("login-code") && (document.getElementById("login-code").value = "");
-  document.getElementById("login-pass") && (document.getElementById("login-pass").value = "");
-
-  window.closeSidebar();
+  if ($("login-code")) $("login-code").value = "";
+  if ($("login-pass")) $("login-pass").value = "";
 };
+
+/* ---------------- Init ---------------- */
+function initApp() {
+  // Always keep chrome ready (some templates keep it hidden until login)
+  injectOrdersGridCSS_();
+  setAuthScreens_(false);
+  revealMainChrome_(); // makes sure header/sidebar texts exist (won't hurt)
+
+  const pass = $("login-pass");
+  pass?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") window.login();
+  });
+}
+
+window.addEventListener("load", initApp);
