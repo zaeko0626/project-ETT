@@ -535,54 +535,6 @@ function renderOrders(orders) {
     .join("");
 }
 
-  // newest first
-  const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
-
-  list.innerHTML = sorted
-    .map((o) => {
-      const st = statusMeta(o.status);
-
-      const empTop = `${esc(o.code || "")} • ${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim();
-      const empSub = `${esc(o.role || "")} • ${esc(o.place || "")} • ${esc(o.department || "")} • ${esc(
-        o.shift || ""
-      )}`.replace(/^ • | • $/g, "");
-
-      const itemBlock = `
-        <div class="cell-title">${esc(o.item || "")}</div>
-        <div class="cell-sub">Размер: ${esc(o.size || "")}</div>
-      `;
-
-      const qtyBlock = `<div class="cell-title">${esc(o.quantity ?? 1)}</div>`;
-      const dateBlock = `<div class="cell-title">${esc(fmtDateOnly(o.requestedDate))}</div>`;
-
-      const isPending = String(o.status || "") === "Хүлээгдэж буй";
-      const canAct = currentUser?.type === "admin" && isPending;
-
-      const actionHtml = canAct
-        ? `
-          <div class="actions">
-            <button class="btn btn-success btn-min" onclick="approveOrder('${esc(o.id)}')">ОЛГОХ</button>
-            <button class="btn btn-danger btn-min" onclick="rejectOrder('${esc(o.id)}')">ТАТГАЛЗАХ</button>
-          </div>
-        `
-        : `<div class="badge ${esc(st.cls)}">ШИЙДВЭРЛЭСЭН</div>`;
-
-      return `
-        <div class="row-item">
-          <div class="cell">
-            <div class="cell-title">${empTop}</div>
-            <div class="cell-sub">${empSub}</div>
-          </div>
-          <div class="cell">${itemBlock}</div>
-          <div class="cell">${qtyBlock}</div>
-          <div class="cell">${dateBlock}</div>
-          <div class="cell"><span class="badge ${esc(st.cls)}">${esc(st.label)}</span></div>
-          <div class="cell">${actionHtml}</div>
-        </div>
-      `;
-    })
-    .join("");
-}
 
 // ---------- Orders actions ----------
 window.approveOrder = async (id) => {
