@@ -11,6 +11,9 @@
   --warn:#fbbf24;
   --radius:14px;
   --shadow: 0 12px 30px rgba(0,0,0,.35);
+
+  /* ✅ parallel болгоход хэрэгтэй нийтлэг өндөр */
+  --field-h: 44px;
 }
 
 *{box-sizing:border-box}
@@ -18,19 +21,15 @@ html,body{height:100%}
 body{
   margin:0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
-  background: radial-gradient(1200px 600px at 10% -10%, rgba(79,124,255,.25), transparent 60%),
-              radial-gradient(900px 450px at 90% 0%, rgba(54,211,153,.18), transparent 55%),
-              var(--bg);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(79,124,255,.25), transparent 60%),
+    radial-gradient(900px 450px at 90% 0%, rgba(54,211,153,.18), transparent 55%),
+    var(--bg);
   color:var(--text);
 }
 
 .hidden{display:none !important}
-
-.screen{
-  padding: 18px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+.screen{ padding: 18px; max-width: 1200px; margin: 0 auto; }
 
 .header{
   position: sticky;
@@ -48,7 +47,6 @@ body{
 .brand{display:flex; flex-direction:column; min-width:0}
 .brand-title{font-weight:800; letter-spacing:.6px}
 .brand-sub{color:var(--muted); font-size:12px}
-
 .header-actions{margin-left:auto; display:flex; gap:10px}
 
 .icon-btn{
@@ -90,6 +88,8 @@ body{
 
 .form{display:flex; flex-direction:column; gap:10px; margin-top:12px}
 .label{font-size:12px; color:var(--muted)}
+
+/* ✅ input/select/field-үүдийг бүгдийг ижил өндөртэй, параллель болгоно */
 .input{
   width:100%;
   border:1px solid var(--line);
@@ -98,20 +98,47 @@ body{
   border-radius: 12px;
   padding: 10px 12px;
   outline:none;
+
+  height: var(--field-h);
+  line-height: calc(var(--field-h) - 2px);
 }
 .input:focus{border-color: rgba(79,124,255,.65)}
+select.input{appearance:auto}
+input.input{appearance:none}
 
+/* ✅ Row layout – “ажилтан нэмэх” / filter box-ууд яг нэг мөрөнд параллель харагдана */
+.row{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+
+  /* өмнө нь align-items байгаагүй — энэ нь параллель биш болгодог */
+  align-items: stretch;
+}
+
+/* grow дотор label + input босоо тогтмол болгох */
+.grow{
+  flex:1 1 220px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width: 220px;
+}
+
+/* action хэсэг доошоо тэгшлэх */
+.row-actions{
+  display:flex;
+  align-items: end;
+  gap:10px;
+}
+
+/* Page */
 .page-head{display:flex; align-items:end; justify-content:space-between; margin: 6px 0 12px}
 .page-title{font-size:20px; font-weight:900}
 .page-subtitle{font-size:14px; font-weight:700; margin-bottom:10px}
 
-.sidebar-overlay{
-  position: fixed;
-  inset:0;
-  background: rgba(0,0,0,.35);
-  z-index: 60;
-}
-
+/* Sidebar */
+.sidebar-overlay{ position: fixed; inset:0; background: rgba(0,0,0,.35); z-index: 60; }
 .sidebar{
   position: fixed;
   top: 0;
@@ -128,7 +155,6 @@ body{
 .sidebar.open{transform: translateX(0)}
 .sidebar-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
 .sidebar-title{font-weight:900; letter-spacing:.5px}
-
 .nav{display:flex; flex-direction:column; gap:10px}
 .nav-btn{
   text-align:left;
@@ -141,6 +167,7 @@ body{
 }
 .nav-btn.active{border-color: rgba(79,124,255,.6); background: rgba(79,124,255,.12)}
 
+/* Filters grid (if any older screen uses it) */
 .filters .filter-grid{
   display:grid;
   grid-template-columns: repeat(5, minmax(0,1fr));
@@ -151,27 +178,52 @@ body{
 }
 .filter-actions{display:flex; justify-content:flex-end; margin-top:10px}
 
+/* Orders list */
 .orders-box{padding:0}
+
+/* ✅ header row + data row параллель болгох (vertical align төв) */
 .orders-header{
   padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   font-size: 12px;
   color: var(--muted);
   font-weight: 800;
+
+  /* grid header-д туслана (requests-header ашигладаг үед) */
+  min-height: 54px;
+  display:flex;
+  align-items:center;
 }
+
 .orders-list{padding: 10px 14px}
 
-.order-row{
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255,255,255,.06);
-}
+.order-row{ padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
 .order-row:last-child{border-bottom:none}
 
+/* ✅ app.js grid (#requests-header, .request-row) дээрх доторх контентыг төв тэгшилнэ */
+#requests-header,
+.request-row{
+  align-items: center !important;
+}
+#requests-header > div,
+.request-row > div{
+  min-height: 38px;
+  display:flex;
+  align-items:center;
+}
+.request-row{
+  /* мөрүүдийн өндөр жигд */
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* text blocks */
 .emp-name{font-weight:800}
 .emp-id{color:var(--muted); font-size:12px; margin-top:2px}
 .place-main{font-weight:800}
 .place-sub{color:var(--muted); font-size:12px; margin-top:2px}
 
+/* chips */
 .status{
   display:inline-flex;
   padding: 6px 10px;
@@ -194,10 +246,7 @@ body{
   font-weight:800;
 }
 
-.row{display:flex; gap:10px; flex-wrap:wrap}
-.grow{flex:1 1 220px}
-.row-actions{display:flex; align-items:end; gap:10px}
-
+/* lists */
 .items-list,.users-list,.history-list{display:flex; flex-direction:column; gap:10px}
 .item-card,.user-card,.hist-card{
   border:1px solid rgba(255,255,255,.10);
@@ -205,10 +254,12 @@ body{
   border-radius: 14px;
   padding: 12px;
 }
+
 .kv{display:flex; gap:10px; flex-wrap:wrap}
 .kv .k{color:var(--muted); font-size:12px}
 .kv .v{font-weight:800}
 
+/* overlays */
 .overlay{
   position: fixed;
   inset:0;
@@ -232,6 +283,7 @@ body{
 .overlay-title{font-weight:900; margin-top:6px}
 .overlay-sub{color:var(--muted); margin-top:6px}
 
+/* modal */
 .modal-overlay{
   position: fixed;
   inset:0;
