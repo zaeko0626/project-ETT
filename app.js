@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: Orders grid columns + add "ЭЭЛЖ" column + dept under place + labels "Размер:" and "ширхэг"
+// FIX: Filters work by LABEL (no ID dependency) + keep previous UI fixes
 // ===============================
 
 const API_URL =
@@ -91,6 +91,9 @@ async function apiPost(payload) {
 }
 
 /* ---------------- Helpers ---------------- */
+function uniq(arr) {
+  return Array.from(new Set((arr || []).filter((x) => x != null && x !== "")));
+}
 function fmtDateOnly(v) {
   const d = new Date(v);
   if (isNaN(d)) return "";
@@ -109,7 +112,7 @@ function isAdmin() {
   return currentUser?.type === "admin";
 }
 
-/* ---------------- CSS inject: Orders Grid (now 9 columns with ЭЭЛЖ) ---------------- */
+/* ---------------- CSS inject: Orders Grid (9 columns with ЭЭЛЖ) ---------------- */
 function injectOrdersGridCSS_() {
   if (document.getElementById("orders-grid-fix-style")) return;
 
@@ -123,36 +126,27 @@ function injectOrdersGridCSS_() {
       align-items: start !important;
     }
 
-    /* Admin: 9 columns
-       Ажилтан | Газар/Хэлтэс | Албан тушаал | Ээлж | Бараа | Тоо | Огноо | Төлөв | Үйлдэл */
+    /* Admin: 9 columns */
     body.admin-mode .orders-header,
     body.admin-mode .order-row {
       grid-template-columns: 2.1fr 2.6fr 1.6fr 1fr 2.2fr 1fr 1.2fr 1.2fr 1.7fr !important;
     }
 
-    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв  (6 columns) */
+    /* Employee: show only Ажилтан | Ээлж | Бараа | Тоо | Огноо | Төлөв (6 columns) */
     body.employee-mode .orders-header,
     body.employee-mode .order-row {
       grid-template-columns: 2.2fr 1fr 2.6fr 1.1fr 1.3fr 1.2fr !important;
     }
 
-    /* Prevent squeezing/overflow */
     .orders-header > *, .order-row > * { min-width: 0 !important; }
-
-    /* Employee: hide place/dept, role, actions */
     body.employee-mode .col-place,
     body.employee-mode .col-role,
     body.employee-mode .col-actions { display:none !important; }
 
-    /* Header nicer */
     .orders-header > * { white-space: nowrap !important; }
 
-    /* Dept under place styling */
     .place-wrap .place-main { font-weight: 600; }
     .place-wrap .place-sub { opacity: .75; font-size: 12px; margin-top: 2px; }
-
-    /* Tight text */
-    .order-row .subline { overflow: hidden; text-overflow: ellipsis; }
   `;
   document.head.appendChild(st);
 }
@@ -163,7 +157,7 @@ function setRoleMode_() {
   document.body.classList.toggle("employee-mode", !isAdmin());
 }
 
-/* ---------------- Header cell class normalize (including ЭЭЛЖ) ---------------- */
+/* ---------------- Header normalize (including ЭЭЛЖ) ---------------- */
 function normalizeOrdersHeader_() {
   const tab = document.getElementById("tab-orders");
   if (!tab) return;
@@ -208,57 +202,208 @@ function normalizeOrdersHeader_() {
   });
 }
 
-/* ---------------- Filters bind (unchanged behavior) ---------------- */
-function bindOrderFilterEvents_() {
-  const tab = document.getElementById("tab-orders");
+/* =======================================================================
+   ✅ FILTER ENGINE (Label-based, no ID dependency)
+   ======================================================================= */
+
+function getOrdersTab_() {
+  return document.getElementById("tab-orders");
+}
+
+function getLabelForControl_(control) {
+  // Heuristic: find nearest previous sibling that contains label-like text
+  let el = control;
+  for (let step = 0; step < 8; step++) {
+    if (!el) break;
+    const prev = el.previousElementSibling;
+    if (prev) {
+      const t = (prev.textContent || "").trim();
+      if (t && t.length <= 30) return t;
+    }
+    el = el.parentElement;
+    if (!el) break;
+    const t2 = (el.textContent || "").trim();
+    // not reliable, skip
+  }
+  return "";
+}
+
+function collectFilterControls_() {
+  const tab = getOrdersTab_();
+  if (!tab) return {};
+
+  const controls = Array.from(tab.querySelectorAll("select, input")).filter((el) => {
+    // exclude login fields if they exist in DOM (but usually not inside tab-orders)
+    const id = (el.id || "").toLowerCase();
+    if (id.includes("login")) return false;
+    return true;
+  });
+
+  const map = {};
+  for (const c of controls) {
+    const tag = c.tagName;
+    const type = (c.getAttribute("type") || "").toLowerCase();
+    if (tag === "INPUT" && type && !["text", "search", ""].includes(type)) continue;
+
+    const placeholder = (c.getAttribute("placeholder") || "").trim();
+    let label = getLabelForControl_(c).toUpperCase().trim();
+
+    // Some UIs use placeholder rather than label for text fields
+    if (!label && placeholder) label = placeholder.toUpperCase();
+
+    // store by label keywords (we keep best match later)
+    map[`${label}__${tag}`] = c;
+  }
+  return map;
+}
+
+function findControlByKeyword_(controlsMap, keywords) {
+  const keys = Object.keys(controlsMap);
+  for (const k of keys) {
+    const upper = k.toUpperCase();
+    if (keywords.some((kw) => upper.includes(kw))) return controlsMap[k];
+  }
+  return null;
+}
+
+function readControlValue_(el) {
+  if (!el) return "";
+  const v = (el.value ?? "").toString().trim();
+  // treat "Бүгд" as empty
+  if (v === "Бүгд" || v === "БҮГД") return "";
+  return v;
+}
+
+function getFilters_() {
+  const m = collectFilterControls_();
+
+  const statusEl = findControlByKeyword_(m, ["ТӨЛӨВ"]);
+  const itemEl = findControlByKeyword_(m, ["БАРАА"]);
+  const yearEl = findControlByKeyword_(m, ["ОН"]);
+  const monthEl = findControlByKeyword_(m, ["САР"]);
+  const placeEl = findControlByKeyword_(m, ["ГАЗАР"]);
+  const deptEl = findControlByKeyword_(m, ["ХЭЛТЭС"]);
+  const shiftEl = findControlByKeyword_(m, ["ЭЭЛЖ"]);
+  const nameEl = findControlByKeyword_(m, ["НЭР"]);
+  const codeEl = findControlByKeyword_(m, ["КОД"]);
+  const roleEl = findControlByKeyword_(m, ["АЛБАН"]);
+
+  return {
+    status: readControlValue_(statusEl),
+    item: readControlValue_(itemEl),
+    year: readControlValue_(yearEl),
+    month: readControlValue_(monthEl),
+    place: readControlValue_(placeEl),
+    dept: readControlValue_(deptEl),
+    shift: readControlValue_(shiftEl),
+    name: readControlValue_(nameEl),
+    code: readControlValue_(codeEl),
+    role: readControlValue_(roleEl),
+  };
+}
+
+function setSelectOptions_(sel, values, allLabel = "Бүгд") {
+  if (!sel) return;
+  const uniqVals = uniq(values).filter(Boolean);
+  const opts = [];
+  opts.push(`<option value="">${esc(allLabel)}</option>`);
+  uniqVals.forEach((v) => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
+  sel.innerHTML = opts.join("");
+}
+
+function populateFilters_() {
+  const m = collectFilterControls_();
+
+  const statusEl = findControlByKeyword_(m, ["ТӨЛӨВ"]);
+  const itemEl = findControlByKeyword_(m, ["БАРАА"]);
+  const yearEl = findControlByKeyword_(m, ["ОН"]);
+  const monthEl = findControlByKeyword_(m, ["САР"]);
+  const placeEl = findControlByKeyword_(m, ["ГАЗАР"]);
+  const deptEl = findControlByKeyword_(m, ["ХЭЛТЭС"]);
+  const shiftEl = findControlByKeyword_(m, ["ЭЭЛЖ"]);
+
+  if (statusEl && statusEl.tagName === "SELECT") {
+    setSelectOptions_(statusEl, ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"], "Бүгд");
+  }
+  if (itemEl && itemEl.tagName === "SELECT") {
+    setSelectOptions_(itemEl, allItems.map((x) => x.name), "Бүгд");
+  }
+  if (yearEl && yearEl.tagName === "SELECT") {
+    const years = allOrders
+      .map((o) => {
+        const d = new Date(o.requestedDate);
+        return isNaN(d) ? "" : String(d.getFullYear());
+      })
+      .filter(Boolean);
+    setSelectOptions_(yearEl, years.sort((a, b) => b.localeCompare(a)), "Бүгд");
+  }
+  if (monthEl && monthEl.tagName === "SELECT") {
+    const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
+    setSelectOptions_(monthEl, months, "Бүгд");
+  }
+  if (placeEl && placeEl.tagName === "SELECT") {
+    setSelectOptions_(placeEl, allOrders.map((o) => o.place), "Бүгд");
+  }
+  if (deptEl && deptEl.tagName === "SELECT") {
+    setSelectOptions_(deptEl, allOrders.map((o) => o.department), "Бүгд");
+  }
+  if (shiftEl && shiftEl.tagName === "SELECT") {
+    setSelectOptions_(shiftEl, uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))), "Бүгд");
+  }
+}
+
+function bindFilterEvents_() {
+  const tab = getOrdersTab_();
   if (!tab) return;
+
+  // Remove double binding by using once flag
+  if (tab.dataset.filtersBound === "1") return;
+  tab.dataset.filtersBound = "1";
+
   tab.querySelectorAll("select").forEach((s) => s.addEventListener("change", () => applyFilters()));
   tab.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => applyFilters()));
 }
 
-function readFilter_(id) {
-  const el = document.getElementById(id);
-  return el ? (el.value || "") : "";
-}
-
 window.applyFilters = () => {
-  const statusF = readFilter_("filter-status");
-  const itemF = readFilter_("filter-item");
-  const yearF = readFilter_("filter-year");
-  const monthF = readFilter_("filter-month");
-  const placeF = readFilter_("filter-place");
-  const deptF = readFilter_("filter-dept");
-  const shiftF = readFilter_("filter-shift");
-  const nameS = readFilter_("search-name");
-  const codeS = readFilter_("search-code");
-  const roleS = readFilter_("search-role");
+  const f = getFilters_();
 
   const filtered = (allOrders || []).filter((o) => {
     const d = new Date(o.requestedDate);
     const fullName = `${o.ovog || ""} ${o.ner || ""}`.toLowerCase();
 
-    const mName = !nameS || fullName.includes(String(nameS).toLowerCase());
-    const mCode = !codeS || String(o.code || "").includes(String(codeS));
-    const mRole = !roleS || String(o.role || "").toLowerCase().includes(String(roleS).toLowerCase());
+    const okName = !f.name || fullName.includes(f.name.toLowerCase());
+    const okCode = !f.code || String(o.code || "").includes(f.code);
+    const okRole = !f.role || String(o.role || "").toLowerCase().includes(f.role.toLowerCase());
 
-    const mItem = !itemF || String(o.item || "") === String(itemF);
-    const mStatus = !statusF || String(o.status || "") === String(statusF);
+    const okItem = !f.item || String(o.item || "") === f.item;
+    const okStatus = !f.status || String(o.status || "") === f.status;
 
-    const mYear = !yearF || (!isNaN(d) && String(d.getFullYear()) === String(yearF));
-    const mMonth =
-      !monthF || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === String(monthF));
+    const okYear = !f.year || (!isNaN(d) && String(d.getFullYear()) === f.year);
+    const okMonth =
+      !f.month || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === f.month);
 
-    const mPlace = !placeF || String(o.place || "") === String(placeF);
-    const mDept = !deptF || String(o.department || "") === String(deptF);
-    const mShift = !shiftF || String(o.shift || "") === String(shiftF);
+    const okPlace = !f.place || String(o.place || "") === f.place;
+    const okDept = !f.dept || String(o.department || "") === f.dept;
+    const okShift = !f.shift || String(o.shift || "") === f.shift;
 
-    return mName && mCode && mRole && mItem && mStatus && mYear && mMonth && mPlace && mDept && mShift;
+    return (
+      okName &&
+      okCode &&
+      okRole &&
+      okItem &&
+      okStatus &&
+      okYear &&
+      okMonth &&
+      okPlace &&
+      okDept &&
+      okShift
+    );
   });
 
   renderOrders(filtered);
 };
 
-/* ---------------- Orders render (9 columns, plus requested text changes) ---------------- */
+/* ---------------- Orders render (ЭЭЛЖ + Dept under Place + labels) ---------------- */
 function renderOrders(listData) {
   const list = document.getElementById("orders-list");
   if (!list) return;
@@ -268,7 +413,6 @@ function renderOrders(listData) {
 
   let rows = listData || [];
 
-  // employee sees only own
   if (!isAdmin()) {
     const myCode = String(currentUser?.code || "").trim();
     rows = rows.filter((o) => String(o.code || "").trim() === myCode);
@@ -288,7 +432,6 @@ function renderOrders(listData) {
       const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
       const empId = esc(o.code || "—");
 
-      // ✅ Place + Dept separate, dept under place like ID
       const place = esc(o.place || "—");
       const dept = esc(o.department || "—");
 
@@ -296,19 +439,16 @@ function renderOrders(listData) {
       const shift = esc(o.shift || "—");
 
       const item = esc(o.item || "—");
-
-      // ✅ Size label: "Размер:"
       const size = esc(o.size || "—");
       const sizeLine = `Размер: ${size}`;
 
-      // ✅ Qty suffix: "ширхэг"
       const qtyVal = o.quantity ?? o.qty ?? "—";
       const qty = `${esc(qtyVal)} ширхэг`;
 
       const date = esc(fmtDateOnly(o.requestedDate));
 
-      // actions only for admin pending
       const isPending = String(o.status || "") === "Хүлээгдэж буй";
+
       let actions = `—`;
       if (isAdmin()) {
         actions = isPending
@@ -333,34 +473,24 @@ function renderOrders(listData) {
             </div>
           </div>
 
-          <div class="order-col col-role">
-            ${role}
-          </div>
+          <div class="order-col col-role">${role}</div>
 
-          <div class="order-col col-shift">
-            ${shift}
-          </div>
+          <div class="order-col col-shift">${shift}</div>
 
           <div class="order-col col-item">
             <div class="item">${item}</div>
             <div class="subline">${esc(sizeLine)}</div>
           </div>
 
-          <div class="order-col col-qty">
-            ${qty}
-          </div>
+          <div class="order-col col-qty">${qty}</div>
 
-          <div class="order-col col-date">
-            ${date}
-          </div>
+          <div class="order-col col-date">${date}</div>
 
           <div class="order-col col-status">
             <span class="status ${st.cls}">${esc(st.label)}</span>
           </div>
 
-          <div class="order-col col-actions">
-            ${actions}
-          </div>
+          <div class="order-col col-actions">${actions}</div>
         </div>
       `;
     })
@@ -397,7 +527,10 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
-    bindOrderFilterEvents_();
+    // ✅ filters: populate + bind + apply
+    populateFilters_();
+    bindFilterEvents_();
+
     applyFilters();
   } catch (e) {
     popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
@@ -406,10 +539,11 @@ window.refreshData = async () => {
   }
 };
 
-/* ---------------- Init ---------------- */
+/* ---------------- Init & Login ---------------- */
 function initApp() {
   injectOrdersGridCSS_();
-  bindOrderFilterEvents_();
+  // filters bind may run after login, but safe
+  bindFilterEvents_();
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
@@ -420,7 +554,6 @@ window.onload = function () {
   initApp();
 };
 
-/* ---------------- Login (minimal) ---------------- */
 window.login = async () => {
   const code = document.getElementById("login-code")?.value?.trim() || "";
   const pass = document.getElementById("login-pass")?.value?.trim() || "";
