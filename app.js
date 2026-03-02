@@ -1,6 +1,6 @@
 // ===============================
 // ETT PPE System - app.js
-// FIX: Orders table columns + decision buttons + employee column hide + filters working
+// FIX: Orders header equal spacing + employee rows fill box (grid override)
 // ===============================
 
 const API_URL =
@@ -93,7 +93,6 @@ async function apiPost(payload) {
     cache: "no-store",
     redirect: "follow",
   });
-
   const text = await res.text();
   let json;
   try {
@@ -126,6 +125,109 @@ function isAdmin() {
   return currentUser?.type === "admin";
 }
 
+/* ---------------- Inject CSS for Orders Grid (NO need to edit styles.css) ---------------- */
+function injectOrdersGridCSS_() {
+  if (document.getElementById("orders-grid-fix-style")) return;
+
+  const st = document.createElement("style");
+  st.id = "orders-grid-fix-style";
+  st.textContent = `
+    /* Header + rows = grid, equal spacing */
+    .orders-header, .order-row {
+      display: grid !important;
+      width: 100% !important;
+      column-gap: 18px !important;
+      align-items: start !important;
+    }
+    /* Admin (8 columns) */
+    body.admin-mode .orders-header,
+    body.admin-mode .order-row {
+      grid-template-columns: 2.2fr 2.6fr 1.6fr 2.2fr 1fr 1.2fr 1.2fr 1.6fr !important;
+    }
+
+    /* Employee (only needed columns) => fill box */
+    body.employee-mode .orders-header,
+    body.employee-mode .order-row {
+      grid-template-columns: 2.4fr 2.4fr 1fr 1.2fr 1.2fr !important;
+    }
+
+    /* Prevent squeezing/overflow */
+    .orders-header > *, .order-row > * {
+      min-width: 0 !important;
+    }
+
+    /* Hide columns for employee view */
+    body.employee-mode .col-place,
+    body.employee-mode .col-role,
+    body.employee-mode .col-actions {
+      display: none !important;
+    }
+
+    /* Make header items align nicely */
+    .orders-header > * {
+      white-space: nowrap !important;
+    }
+
+    /* Row content wrap nicely */
+    .order-row .subline {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  `;
+  document.head.appendChild(st);
+}
+
+function setRoleMode_() {
+  injectOrdersGridCSS_();
+  document.body.classList.toggle("admin-mode", isAdmin());
+  document.body.classList.toggle("employee-mode", !isAdmin());
+}
+
+/* ---------------- Make header cells get correct col-* classes by TEXT ---------------- */
+function normalizeOrdersHeader_() {
+  const tab = document.getElementById("tab-orders");
+  if (!tab) return;
+
+  // Find the header row by locating an element whose text is "АЖИЛТАН"
+  const candidates = Array.from(tab.querySelectorAll("*")).filter((el) => {
+    const t = (el.textContent || "").trim().toUpperCase();
+    return t === "АЖИЛТАН";
+  });
+
+  if (!candidates.length) return;
+
+  const headerCell = candidates[0];
+  const row = headerCell.parentElement;
+  if (!row) return;
+
+  row.classList.add("orders-header");
+
+  const children = Array.from(row.children);
+  children.forEach((c) => {
+    c.classList.remove(
+      "col-emp",
+      "col-place",
+      "col-role",
+      "col-item",
+      "col-qty",
+      "col-date",
+      "col-status",
+      "col-actions"
+    );
+
+    const t = (c.textContent || "").trim().toUpperCase();
+
+    if (t.includes("АЖИЛТАН")) c.classList.add("col-emp");
+    else if (t.includes("ГАЗАР") || t.includes("ХЭЛТЭС")) c.classList.add("col-place");
+    else if (t.includes("АЛБАН")) c.classList.add("col-role");
+    else if (t === "БАРАА") c.classList.add("col-item");
+    else if (t.includes("ТОО")) c.classList.add("col-qty");
+    else if (t.includes("ОГНОО")) c.classList.add("col-date");
+    else if (t.includes("ТӨЛӨВ")) c.classList.add("col-status");
+    else if (t.includes("ҮЙЛДЭЛ")) c.classList.add("col-actions");
+  });
+}
+
 /* ---------------- Select options ---------------- */
 function setSelectOptions(sel, values, allLabel = "Бүгд") {
   if (!sel) return;
@@ -137,31 +239,6 @@ function setSelectOptions(sel, values, allLabel = "Бүгд") {
     html.push(`<option value="${esc(vv)}">${esc(vv)}</option>`);
   });
   sel.innerHTML = html.join("");
-}
-
-/* ---------------- Employee column hide (no CSS edit, injected) ---------------- */
-function applyRoleViewCSS_() {
-  // нэг л удаа style нэмнэ
-  if (document.getElementById("role-view-style")) return;
-
-  const st = document.createElement("style");
-  st.id = "role-view-style";
-  st.textContent = `
-    /* employee mode: hide Place/Dept + Role + Actions */
-    body.employee-mode .orders-header .col-place,
-    body.employee-mode .orders-header .col-role,
-    body.employee-mode .orders-header .col-actions { display:none !important; }
-
-    body.employee-mode .order-row .col-place,
-    body.employee-mode .order-row .col-role,
-    body.employee-mode .order-row .col-actions { display:none !important; }
-  `;
-  document.head.appendChild(st);
-}
-
-function setRoleMode_() {
-  applyRoleViewCSS_();
-  document.body.classList.toggle("employee-mode", !isAdmin());
 }
 
 /* ---------------- UI visibility ---------------- */
@@ -182,18 +259,14 @@ function setAuthUIVisible(isLoggedInNow) {
 
 /* ---------------- Sidebar ---------------- */
 window.openSidebar = () => {
-  const sb = document.getElementById("sidebar");
-  const ov = document.getElementById("sidebar-overlay");
-  sb?.classList.remove("hidden");
-  ov?.classList.remove("hidden");
-  sb?.classList.add("open");
-  ov?.classList.add("show");
+  document.getElementById("sidebar")?.classList.remove("hidden");
+  document.getElementById("sidebar-overlay")?.classList.remove("hidden");
+  document.getElementById("sidebar")?.classList.add("open");
+  document.getElementById("sidebar-overlay")?.classList.add("show");
 };
 window.closeSidebar = () => {
-  const sb = document.getElementById("sidebar");
-  const ov = document.getElementById("sidebar-overlay");
-  sb?.classList.remove("open");
-  ov?.classList.remove("show");
+  document.getElementById("sidebar")?.classList.remove("open");
+  document.getElementById("sidebar-overlay")?.classList.remove("show");
 };
 window.toggleSidebar = () => {
   const sb = document.getElementById("sidebar");
@@ -212,10 +285,6 @@ window.showTab = (tabName, btn) => {
   if (window.innerWidth < 1024) window.closeSidebar();
 
   if (tabName === "orders") applyFilters();
-  if (tabName === "request") {
-    populateRequestItemSize();
-    bindRequestSendButton_();
-  }
 };
 
 /* ---------------- Login / Logout ---------------- */
@@ -237,7 +306,6 @@ window.login = async () => {
 
     setRoleMode_();
 
-    // nav hide/show
     const admin = isAdmin();
     document.getElementById("nav-items")?.classList.toggle("hidden", !admin);
     document.getElementById("nav-employees")?.classList.toggle("hidden", !admin);
@@ -245,7 +313,6 @@ window.login = async () => {
 
     await refreshData();
 
-    // default tab
     if (admin) showTab("orders", document.getElementById("nav-orders"));
     else showTab("request", document.getElementById("nav-request"));
   } catch (e) {
@@ -273,290 +340,70 @@ window.logout = () => {
   window.closeSidebar();
 };
 
-/* ---------------- Request dropdowns ---------------- */
-function populateRequestItemSize() {
-  const itemSel = document.getElementById("req-item");
-  const sizeSel = document.getElementById("req-size");
-  if (!itemSel || !sizeSel) return;
-
-  const names = uniq(allItems.map((it) => it.name)).sort((a, b) =>
-    String(a).localeCompare(String(b))
-  );
-  setSelectOptions(itemSel, names, "Сонгох...");
-
-  function fillSizesForItem(name) {
-    const found = allItems.find((x) => String(x.name) === String(name));
-    const sizes = String(found?.sizes || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    setSelectOptions(sizeSel, sizes, "Сонгох...");
-  }
-
-  fillSizesForItem(itemSel.value);
-  itemSel.onchange = () => fillSizesForItem(itemSel.value);
-}
-
-window.submitRequest = async () => {
-  if (!currentUser) return;
-
-  const item = document.getElementById("req-item")?.value || "";
-  const size = document.getElementById("req-size")?.value || "";
-  let qty = parseInt(document.getElementById("req-qty")?.value || "1", 10);
-  if (!qty || qty < 1) qty = 1;
-
-  if (!item) return popupError("Алдаа", "Бараа сонгоно уу");
-  if (!size) return popupError("Алдаа", "Хэмжээ сонгоно уу");
-
-  showLoading(true, "Хүсэлт илгээж байна...");
-  try {
-    const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
-    if (!r.success) throw new Error(r.msg || "Хүсэлт илгээхэд алдаа гарлаа");
-
-    popupOk("Амжилттай", "Хүсэлт амжилттай илгээгдлээ");
-    const q = document.getElementById("req-qty");
-    if (q) q.value = "1";
-
-    await refreshData();
-  } catch (e) {
-    popupError("Алдаа", e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-// Хэрвээ HTML дээр onclick тавиагүй бол “ИЛГЭЭХ” товчийг автоматаар холбож өгнө
-function bindRequestSendButton_() {
-  const tab = document.getElementById("tab-request");
-  if (!tab) return;
-  const btns = tab.querySelectorAll("button");
-  for (const b of btns) {
-    const txt = (b.textContent || "").trim();
-    if (txt === "ИЛГЭЭХ") {
-      b.onclick = () => window.submitRequest();
-      break;
-    }
-  }
-}
-
-/* ---------------- Orders filters populate ---------------- */
-function populateOrderFilters_() {
-  // эдгээр ID-ууд танайд байвал шууд бөглөнө
-  const itemSel = document.getElementById("filter-item");
-  const statusSel = document.getElementById("filter-status");
-  const yearSel = document.getElementById("filter-year");
-  const monthSel = document.getElementById("filter-month");
-  const placeSel = document.getElementById("filter-place");
-  const deptSel = document.getElementById("filter-dept");
-  const shiftSel = document.getElementById("filter-shift");
-
-  if (itemSel) {
-    const names = uniq(allItems.map((it) => it.name)).sort((a, b) => String(a).localeCompare(String(b)));
-    setSelectOptions(itemSel, names, "Бүгд");
-  }
-  if (statusSel) {
-    const base = ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"];
-    const sts = uniq(base.concat(allOrders.map((o) => o.status).filter(Boolean))).filter(Boolean);
-    setSelectOptions(statusSel, sts, "Бүгд");
-  }
-  if (yearSel) {
-    const years = new Set();
-    allOrders.forEach((o) => {
-      const d = new Date(o.requestedDate);
-      if (!isNaN(d)) years.add(String(d.getFullYear()));
-    });
-    const yearsArr = Array.from(years).sort((a, b) => b.localeCompare(a));
-    setSelectOptions(yearSel, yearsArr, "Бүгд");
-  }
-  if (monthSel) {
-    const monthsArr = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
-    setSelectOptions(monthSel, monthsArr, "Бүгд");
-  }
-  if (placeSel) {
-    const places = uniq(allOrders.map((o) => o.place)).sort((a, b) => String(a).localeCompare(String(b)));
-    setSelectOptions(placeSel, places, "Бүгд");
-  }
-  if (deptSel) {
-    const depts = uniq(allOrders.map((o) => o.department)).sort((a, b) => String(a).localeCompare(String(b)));
-    setSelectOptions(deptSel, depts, "Бүгд");
-  }
-  if (shiftSel) {
-    const shifts = uniq(SHIFT_OPTIONS.concat(allOrders.map((o) => o.shift))).filter(Boolean);
-    setSelectOptions(shiftSel, shifts, "Бүгд");
-  }
-}
-
-/* ---------------- Orders filters bind (ID зөрсөн ч ажиллах auto bind) ---------------- */
+/* ---------------- Filters (keep simple) ---------------- */
 function bindOrderFilterEvents_() {
   const tab = document.getElementById("tab-orders");
   if (!tab) return;
 
-  // 1) ID таарвал шууд bind
-  const ids = [
-    "filter-status",
-    "filter-item",
-    "filter-year",
-    "filter-month",
-    "filter-place",
-    "filter-dept",
-    "filter-shift",
-    "search-name",
-    "search-code",
-    "search-role",
-  ];
-  ids.forEach((id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const isInput = el.tagName === "INPUT";
-    if (isInput) el.oninput = () => applyFilters();
-    else el.onchange = () => applyFilters();
-  });
-
-  // 2) ID зөрсөн байж магадгүй тул tab-orders доторх бүх select/input дээр bind
-  //    (login input-ууд биш, зөвхөн orders tab доторх)
-  tab.querySelectorAll("select").forEach((s) => {
-    s.addEventListener("change", () => applyFilters());
-  });
-  tab.querySelectorAll("input").forEach((i) => {
-    i.addEventListener("input", () => applyFilters());
-  });
+  // bind all inputs/selects inside orders tab
+  tab.querySelectorAll("select").forEach((s) => s.addEventListener("change", () => applyFilters()));
+  tab.querySelectorAll("input").forEach((i) => i.addEventListener("input", () => applyFilters()));
 }
 
-window.clearOrderFilters = () => {
-  const tab = document.getElementById("tab-orders");
-  if (!tab) return;
-
-  // ID таарсанууд
-  [
-    "filter-status",
-    "filter-item",
-    "filter-year",
-    "filter-month",
-    "filter-place",
-    "filter-dept",
-    "filter-shift",
-    "search-name",
-    "search-code",
-    "search-role",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-
-  // таб доторх бусад input/select-уудыг ч clear (хэрэв ID өөр бол)
-  tab.querySelectorAll("select").forEach((s) => (s.value = ""));
-  tab.querySelectorAll("input").forEach((i) => (i.value = ""));
-
-  applyFilters();
-};
-
-/* ---------------- Read filter values (fallback) ---------------- */
-function getFilterValue_(id, fallbackSelectors = []) {
-  const direct = document.getElementById(id);
-  if (direct) return direct.value || "";
-
-  const tab = document.getElementById("tab-orders");
-  if (!tab) return "";
-
-  // fallbackSelectors: array of functions returning element or selector strings
-  for (const sel of fallbackSelectors) {
-    try {
-      if (typeof sel === "string") {
-        const el = tab.querySelector(sel);
-        if (el && "value" in el) return el.value || "";
-      } else if (typeof sel === "function") {
-        const el = sel(tab);
-        if (el && "value" in el) return el.value || "";
-      }
-    } catch (_) {}
-  }
-  return "";
+function readFilter_(id) {
+  const el = document.getElementById(id);
+  return el ? (el.value || "") : "";
 }
 
 window.applyFilters = () => {
-  const tab = document.getElementById("tab-orders");
-  if (!tab) return;
-
-  // ID таарах үед
-  const nS = getFilterValue_("search-name");
-  const cS = getFilterValue_("search-code");
-  const rS = getFilterValue_("search-role");
-
-  const iF = getFilterValue_("filter-item");
-  const sF = getFilterValue_("filter-status");
-  const yF = getFilterValue_("filter-year");
-  const mF = getFilterValue_("filter-month");
-  const pF = getFilterValue_("filter-place");
-  const dF = getFilterValue_("filter-dept");
-  const shF = getFilterValue_("filter-shift");
+  // filters by IDs (if exist). If not, it will just show all.
+  const statusF = readFilter_("filter-status");
+  const itemF = readFilter_("filter-item");
+  const yearF = readFilter_("filter-year");
+  const monthF = readFilter_("filter-month");
+  const placeF = readFilter_("filter-place");
+  const deptF = readFilter_("filter-dept");
+  const shiftF = readFilter_("filter-shift");
+  const nameS = readFilter_("search-name");
+  const codeS = readFilter_("search-code");
+  const roleS = readFilter_("search-role");
 
   const filtered = (allOrders || []).filter((o) => {
     const d = new Date(o.requestedDate);
     const fullName = `${o.ovog || ""} ${o.ner || ""}`.toLowerCase();
 
-    const mN = !nS || fullName.includes(String(nS).toLowerCase());
-    const mC = !cS || String(o.code || "").includes(String(cS));
-    const mR = !rS || String(o.role || "").toLowerCase().includes(String(rS).toLowerCase());
+    const mName = !nameS || fullName.includes(String(nameS).toLowerCase());
+    const mCode = !codeS || String(o.code || "").includes(String(codeS));
+    const mRole = !roleS || String(o.role || "").toLowerCase().includes(String(roleS).toLowerCase());
 
-    const mI = !iF || String(o.item || "") === String(iF);
-    const mS = !sF || String(o.status || "") === String(sF);
+    const mItem = !itemF || String(o.item || "") === String(itemF);
+    const mStatus = !statusF || String(o.status || "") === String(statusF);
 
-    const mY = !yF || (!isNaN(d) && String(d.getFullYear()) === String(yF));
-    const mM = !mF || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === String(mF));
+    const mYear = !yearF || (!isNaN(d) && String(d.getFullYear()) === String(yearF));
+    const mMonth =
+      !monthF || (!isNaN(d) && String(d.getMonth() + 1).padStart(2, "0") === String(monthF));
 
-    const mP = !pF || String(o.place || "") === String(pF);
-    const mD = !dF || String(o.department || "") === String(dF);
-    const mSh = !shF || String(o.shift || "") === String(shF);
+    const mPlace = !placeF || String(o.place || "") === String(placeF);
+    const mDept = !deptF || String(o.department || "") === String(deptF);
+    const mShift = !shiftF || String(o.shift || "") === String(shiftF);
 
-    return mN && mC && mR && mI && mS && mY && mM && mP && mD && mSh;
+    return mName && mCode && mRole && mItem && mStatus && mYear && mMonth && mPlace && mDept && mShift;
   });
 
   renderOrders(filtered);
 };
 
-/* ---------------- Orders render (8 columns EXACT by header) ---------------- */
-function ensureOrdersHeaderClasses_() {
-  // header дээрх 8 баганын class-уудыг нэг удаа тааруулж өгнө (CSS өөрчлөхгүй)
-  // index.html дээр header текстүүд байгаа тул тэдний байрлалд class өгнө
-  const tab = document.getElementById("tab-orders");
-  if (!tab) return;
-
-  // header container-ийг хайна: ихэнхдээ .orders-header эсвэл нэг row байдаг
-  // Бид текстээр нь олж болно
-  const headers = Array.from(tab.querySelectorAll("*")).filter((el) => {
-    const t = (el.textContent || "").trim();
-    return t === "АЖИЛТАН";
-  });
-
-  if (!headers.length) return;
-
-  // "АЖИЛТАН" тексттэй элементээс нэг мөрний parent-ийг авна
-  const first = headers[0];
-  const row = first.parentElement;
-  if (!row) return;
-
-  row.classList.add("orders-header");
-
-  // row доторх header cell-үүдийг авна
-  const cells = Array.from(row.children);
-  // Хэрэв яг 8 биш бол оролдохгүй (нураахгүй)
-  if (cells.length < 8) return;
-
-  // дараалал: Ажилтан / Газар, хэлтэс / Албан тушаал / Бараа / Тоо хэмжээ / Огноо / Төлөв / Үйлдэл
-  const cls = ["col-emp", "col-place", "col-role", "col-item", "col-qty", "col-date", "col-status", "col-actions"];
-  for (let i = 0; i < 8; i++) cells[i].classList.add(cls[i]);
-}
-
+/* ---------------- Orders render (always grid, fill box) ---------------- */
 function renderOrders(listData) {
   const list = document.getElementById("orders-list");
   if (!list) return;
 
-  ensureOrdersHeaderClasses_();
-  setRoleMode_(); // employee/admin mode apply
+  setRoleMode_();
+  normalizeOrdersHeader_();
 
   let rows = listData || [];
 
-  // ажилтан бол зөвхөн өөрийн хүсэлтийг харах
+  // employee sees only own
   if (!isAdmin()) {
     const myCode = String(currentUser?.code || "").trim();
     rows = rows.filter((o) => String(o.code || "").trim() === myCode);
@@ -569,7 +416,6 @@ function renderOrders(listData) {
 
   const sorted = rows.slice().sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
-  // ✅ мөр бүр 8 баганатай
   list.innerHTML = sorted
     .map((o) => {
       const st = statusMeta(o.status);
@@ -585,22 +431,16 @@ function renderOrders(listData) {
       const qty = esc(o.quantity || o.qty || "—");
       const date = esc(fmtDateOnly(o.requestedDate));
 
-      // ✅ товч зөвхөн “Хүлээгдэж буй” үед харагдана
       const isPending = String(o.status || "") === "Хүлээгдэж буй";
 
       let actions = `—`;
       if (isAdmin()) {
-        if (isPending) {
-          actions = `
+        actions = isPending
+          ? `
             <button class="btn sm success" onclick="decideOrder('${esc(o.id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
             <button class="btn sm danger" onclick="decideOrder('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
-          `;
-        } else {
-          actions = `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
-        }
-      } else {
-        // ажилтанд үйлдэл хэрэггүй (нуусан ч — үлдээнэ)
-        actions = `—`;
+          `
+          : `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
       }
 
       return `
@@ -644,24 +484,21 @@ function renderOrders(listData) {
     .join("");
 }
 
-/* ---------------- Decide order (button -> remove immediately) ---------------- */
+/* ---------------- Decide order ---------------- */
 window.decideOrder = async (id, status) => {
   if (!id || !status) return;
 
-  // UI-г шууд шинэчилж “Шийдвэрлэсэн” болгоно (сервер хүлээхгүй)
+  // Optimistic UI
   const idx = allOrders.findIndex((x) => String(x.id) === String(id));
   if (idx >= 0) allOrders[idx].status = status;
-
-  applyFilters(); // шууд refresh
+  applyFilters();
 
   try {
     const r = await apiPost({ action: "update_status", id, status });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-    // серверийн алдаа байхгүй бол дахин татаж баталгаажуулна
     await refreshData();
   } catch (e) {
     popupError("Алдаа", e.message || String(e));
-    // алдаа гарвал датагаа буцааж татах
     await refreshData();
   }
 };
@@ -677,19 +514,7 @@ window.refreshData = async () => {
     allOrders = r.orders || [];
     allItems = r.items || [];
 
-    if (isAdmin()) {
-      const u = await apiPost({ action: "get_users" });
-      allEmployees = u.success ? (u.users || []) : [];
-    } else {
-      allEmployees = [];
-    }
-
-    populateOrderFilters_();
     bindOrderFilterEvents_();
-
-    populateRequestItemSize();
-    bindRequestSendButton_();
-
     applyFilters();
   } catch (e) {
     popupError("Өгөгдөл татахад алдаа гарлаа.", e.message || String(e));
@@ -704,9 +529,7 @@ function initApp() {
   document.getElementById("main-screen")?.classList.add("hidden");
   document.getElementById("login-screen")?.classList.remove("hidden");
 
-  // filters & request button bind (login-оос өмнө ч бэлтгэнэ)
-  bindOrderFilterEvents_();
-  bindRequestSendButton_();
+  injectOrdersGridCSS_();
 
   const pass = document.getElementById("login-pass");
   pass?.addEventListener("keydown", (e) => {
