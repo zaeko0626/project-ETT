@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <!-- Modal (generic - keep) -->
+  <!-- Modal -->
   <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
     <div class="modal-card" onclick="event.stopPropagation()">
       <div class="modal-head">
@@ -37,7 +37,7 @@
     </div>
     <div class="header-actions">
       <button class="btn" onclick="refreshData()">СЭРГЭЭХ</button>
-      <button class="btn danger" onclick="logout()">ГАРАХ</button>
+      <!-- ✅ logout moved to sidebar bottom -->
     </div>
   </header>
 
@@ -50,12 +50,22 @@
       <button class="icon-btn" onclick="closeSidebar()">✕</button>
     </div>
 
+    <!-- ✅ User info -->
+    <div id="sidebar-userinfo" class="sidebar-userinfo">
+      — 
+    </div>
+
     <div class="nav">
-      <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">Хүсэлтийн жагсаалт</button>
-      <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">Хүсэлт гаргах</button>
+      <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">Захиалгын жагсаалт</button>
+      <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">Захиалга гаргах</button>
       <button id="nav-items" class="nav-btn" onclick="showTab('items', this)">Барааны мэдээлэл</button>
       <button id="nav-users" class="nav-btn" onclick="showTab('users', this)">Ажилтны мэдээлэл</button>
       <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">Нууц үг</button>
+    </div>
+
+    <!-- ✅ Logout at bottom -->
+    <div class="sidebar-bottom">
+      <button id="btn-logout" class="btn danger full" onclick="logout()">ГАРАХ</button>
     </div>
   </aside>
 
@@ -81,15 +91,13 @@
   <!-- MAIN SCREEN -->
   <main id="main-screen" class="screen hidden">
 
-    <!-- ===========================
-         ORDERS (Requests list)
-         =========================== -->
+    <!-- ORDERS -->
     <section id="tab-orders" class="tab-content">
       <div class="page-head">
-        <div class="page-title">ХҮСЭЛТИЙН ЖАГСААЛТ</div>
+        <div class="page-title">ЗАХИАЛГЫН ЖАГСААЛТ</div>
       </div>
 
-      <!-- ✅ Filters (буцааж нэмэв) -->
+      <!-- Filters (admin: full, employee: limited via JS hide/show) -->
       <div class="card" id="orders-filters">
         <div class="row" style="gap:12px; flex-wrap:wrap;">
           <div class="grow">
@@ -107,32 +115,39 @@
             <select id="f-month" class="input"></select>
           </div>
 
-          <div class="grow">
+          <!-- ✅ employee-only useful, admin also ok -->
+          <div class="grow" id="f-item-wrap">
+            <div class="label">Бараа</div>
+            <select id="f-item" class="input"></select>
+          </div>
+
+          <!-- Admin-only filters -->
+          <div class="grow admin-only" id="f-shift-wrap">
             <div class="label">Ээлж</div>
             <select id="f-shift" class="input"></select>
           </div>
 
-          <div class="grow">
+          <div class="grow admin-only" id="f-place-wrap">
             <div class="label">Газар</div>
             <select id="f-place" class="input"></select>
           </div>
 
-          <div class="grow">
+          <div class="grow admin-only" id="f-dept-wrap">
             <div class="label">Хэлтэс</div>
             <select id="f-dept" class="input"></select>
           </div>
 
-          <div class="grow">
+          <div class="grow admin-only" id="f-role-wrap">
             <div class="label">Албан тушаал</div>
             <input id="f-role" class="input" placeholder="Ж: Машинист" />
           </div>
 
-          <div class="grow">
+          <div class="grow admin-only" id="f-name-wrap">
             <div class="label">Нэрээр хайх</div>
             <input id="f-name" class="input" placeholder="Ж: Бат" />
           </div>
 
-          <div class="grow">
+          <div class="grow admin-only" id="f-code-wrap">
             <div class="label">Кодоор хайх</div>
             <input id="f-code" class="input" placeholder="Ж: 12345" />
           </div>
@@ -146,31 +161,20 @@
 
       <div class="orders-box card">
         <div class="orders-header" id="requests-header">
-          <div>REQUEST ID</div>
-          <div>АЖИЛТАН</div>
-          <div>ГАЗАР, ХЭЛТЭС</div>
-          <div>ЭЭЛЖ</div>
-          <div>БАРААНЫ ТОО</div>
-          <div>ТӨЛӨВ</div>
-          <div>ОГНОО</div>
+          <!-- JS will set header columns by role -->
         </div>
-
-        <!-- app.js энд request мөрүүдийг render хийнэ -->
         <div id="requests-list" class="orders-list"></div>
       </div>
     </section>
 
-    <!-- ===========================
-         REQUEST (Cart submit)
-         =========================== -->
+    <!-- REQUEST (employee only; admin hidden by JS) -->
     <section id="tab-request" class="tab-content hidden">
       <div class="page-head">
-        <div class="page-title">ШИНЭ ХҮСЭЛТ</div>
+        <div class="page-title">ШИНЭ ЗАХИАЛГА</div>
       </div>
 
       <div class="card">
         <div class="form">
-
           <div class="row">
             <div class="grow">
               <div class="label">Бараа</div>
@@ -193,12 +197,10 @@
           </div>
 
           <div style="height:10px;"></div>
-
           <div class="page-subtitle">СОНГОСОН БАРААНУУД</div>
-          <!-- app.js cart items энд render хийнэ -->
           <div id="cart-list" class="items-list"></div>
 
-          <button class="btn primary full" onclick="submitMultiRequest()">ХҮСЭЛТ ИЛГЭЭХ</button>
+          <button class="btn primary full" onclick="submitMultiRequest()">ЗАХИАЛГА ИЛГЭЭХ</button>
         </div>
       </div>
 
@@ -208,9 +210,7 @@
       </div>
     </section>
 
-    <!-- ===========================
-         ITEMS (unchanged)
-         =========================== -->
+    <!-- ITEMS (admin only; employee hidden by JS + app.js already blocks) -->
     <section id="tab-items" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
@@ -248,9 +248,7 @@
       </div>
     </section>
 
-    <!-- ===========================
-         USERS (unchanged)
-         =========================== -->
+    <!-- USERS (admin only) -->
     <section id="tab-users" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
@@ -305,9 +303,7 @@
       </div>
     </section>
 
-    <!-- ===========================
-         PASS (unchanged)
-         =========================== -->
+    <!-- PASS -->
     <section id="tab-pass" class="tab-content hidden">
       <div class="page-head">
         <div class="page-title">НУУЦ ҮГ СОЛИХ</div>
