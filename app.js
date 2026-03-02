@@ -427,7 +427,14 @@ function renderOrders(orders) {
   const list = document.getElementById("orders-list");
   if (!list) return;
 
-  const rows = orders || [];
+  let rows = orders || [];
+
+  // ✅ Зөвхөн өөрийн хүсэлтийг харуулах
+  if (currentUser && currentUser.type !== "admin") {
+    const myCode = String(currentUser.code || "").trim();
+    rows = rows.filter(o => String(o.code || "").trim() === myCode);
+  }
+
   if (!rows.length) {
     list.innerHTML = `
       <div class="row-item">
@@ -1082,3 +1089,4 @@ function initApp() {
   });
 }
 window.onload = initApp;
+
