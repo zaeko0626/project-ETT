@@ -126,6 +126,9 @@ function unhideByText_(texts) {
 }
 
 function revealMainChrome_() {
+  // Nothing here.
+  // Chrome (header/sidebar) will only be shown after login.
+}
   // Try common IDs first
   ["app-header", "header", "topbar", "sidebar", "sidebar-overlay"].forEach((id) => {
     const el = $(id);
