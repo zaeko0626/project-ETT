@@ -1,25 +1,30 @@
 // ===============================
-// ETT PPE System - app.js (Stable build)
-// - Header/Sidebar hidden on login
-// - Orders list: column layout + ЭЭЛЖ + dept under place + "Размер:" + "ширхэг"
-// - Approve/Reject => buttons replaced by "ШИЙДВЭРЛЭСЭН"
-// - Filters 100% working
-// - Employee can submit order + view own history
-// - Admin can manage items/users (simple UI)
+// ETT PPE System - app.js (Requests workflow)
+// - Requests + Request_Items (line_id)
+// - Employee multi-item cart submit
+// - Admin per-item approve/reject + finalize request
+// - Keeps existing tabs (Items/Users/Pass) compatible with Code.gs
 // ===============================
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzrFXNS4aOBTKeSjxEpkKAshZDDriNcKt39e4qnHg-saVaDjmnIXsilfMxUn2PPUVEr/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxhW_WTYiexNg7PBl9ULpsyS7Hf1-QlU3t6psVyy-6hfucPoWoEVfUhiWeKUstqJ56A/exec"; // <- Apps Script Web App URL
 
-let allOrders = [];
-let allItems = [];
-let allUsers = [];
 let currentUser = null;
 
-const SHIFT_OPTIONS = ["А", "Б", "Өдөр", "Шөнө"];
+// Data from backend
+let requests = [];        // Requests sheet
+let requestItems = [];    // Request_Items sheet
+let itemsMaster = [];     // Items sheet
+let users = [];           // Users sheet (admin only)
 
-// ---------- Helpers ----------
+// Modal state
+let currentModalRequestId = null;
+
+// Cart (employee)
+let cart = []; // { item, size, qty }
+
 const $ = (id) => document.getElementById(id);
 
+// ---------- Helpers ----------
 function esc(s) {
   return String(s ?? "")
     .replace(/&/g, "&amp;")
@@ -29,7 +34,6 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 function isAdmin() { return currentUser?.type === "admin"; }
-function uniq(arr) { return Array.from(new Set((arr || []).filter((x) => x != null && x !== ""))); }
 
 function fmtDateOnly(v) {
   const d = new Date(v);
@@ -40,14 +44,21 @@ function fmtDateOnly(v) {
   return `${y}-${m}-${day}`;
 }
 
-function statusMeta(raw) {
-  const s = String(raw || "").trim();
-  if (s === "Зөвшөөрсөн") return { label: "ОЛГОСОН", cls: "st-approved" };
-  if (s === "Татгалзсан") return { label: "ТАТГАЛЗАХ", cls: "st-rejected" };
+function statusMetaOverall(s) {
+  const st = String(s || "").trim();
+  if (st === "Шийдвэрлэсэн") return { label: "ШИЙДВЭРЛЭСЭН", cls: "st-approved" };
+  if (st === "Хэсэгчлэн") return { label: "ХЭСЭГЧЛЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 
-// ---------- UI: loading & modal ----------
+function statusMetaItem(s) {
+  const st = String(s || "").trim();
+  if (st === "Зөвшөөрсөн") return { label: "ЗӨВШӨӨРСӨН", cls: "st-approved" };
+  if (st === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
+  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
+}
+
+// ---------- Loading & Modal ----------
 function showLoading(show, subText = "") {
   const el = $("loading-overlay");
   if (!el) return;
@@ -71,6 +82,7 @@ window.openModal = (title, html) => {
 window.closeModal = () => {
   $("modal-overlay")?.classList.add("hidden");
   if ($("modal-body")) $("modal-body").innerHTML = "";
+  currentModalRequestId = null;
 };
 
 function popupError(msg) {
@@ -107,9 +119,9 @@ function setLoggedInUI(isLoggedIn) {
   $("login-screen")?.classList.toggle("hidden", isLoggedIn);
   $("main-screen")?.classList.toggle("hidden", !isLoggedIn);
 
-  // IMPORTANT: chrome should be hidden on login
   $("app-header")?.classList.toggle("hidden", !isLoggedIn);
   $("sidebar")?.classList.toggle("hidden", !isLoggedIn);
+
   $("sidebar-overlay")?.classList.add("hidden");
   $("sidebar")?.classList.remove("open");
 }
@@ -137,266 +149,307 @@ window.showTab = (tabName, btn) => {
 
   if (window.innerWidth < 1024) closeSidebar();
 
-  if (tabName === "orders") applyFilters();
-  if (tabName === "request") renderUserHistory();
+  if (tabName === "orders") renderRequests();
+  if (tabName === "request") {
+    fillRequestForm();
+    renderCart();
+    renderUserHistory();
+  }
   if (tabName === "items") renderItems();
   if (tabName === "users") renderUsers();
 };
 
-// ---------- Orders Grid CSS (Admin vs Employee) ----------
-function ensureOrdersGridCSS() {
-  if (document.getElementById("orders-grid-css")) return;
+// ---------- Requests grid CSS ----------
+function ensureRequestsGridCSS() {
+  if (document.getElementById("requests-grid-css")) return;
   const st = document.createElement("style");
-  st.id = "orders-grid-css";
+  st.id = "requests-grid-css";
   st.textContent = `
-    .orders-header, .order-row {
+    #requests-header, .request-row{
       display:grid;
-      width:100%;
-      column-gap:18px;
-      align-items:start;
+      grid-template-columns: 1.4fr 2.2fr 2.6fr 0.9fr 1fr 1.2fr 1.2fr;
+      column-gap: 16px;
+      align-items: start;
+      width: 100%;
     }
-    body.admin-mode .orders-header, body.admin-mode .order-row{
-      grid-template-columns: 2.1fr 2.6fr 1.6fr 1fr 2.2fr 1fr 1.2fr 1.2fr 1.7fr;
-    }
-    body.employee-mode .orders-header, body.employee-mode .order-row{
-      grid-template-columns: 2.2fr 1fr 2.6fr 1.1fr 1.3fr 1.2fr;
-    }
-    body.employee-mode .orders-header > :nth-child(2),
-    body.employee-mode .orders-header > :nth-child(3),
-    body.employee-mode .orders-header > :nth-child(9),
-    body.employee-mode .order-row > .col-place,
-    body.employee-mode .order-row > .col-role,
-    body.employee-mode .order-row > .col-actions{
-      display:none !important;
-    }
+    .request-row{ padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
+    .request-row:last-child{ border-bottom: none; }
+    .req-id{ font-weight: 900; letter-spacing:.3px; }
+    .sub{ color: var(--muted); font-size: 12px; margin-top: 2px; }
   `;
   document.head.appendChild(st);
 }
 
-function applyRoleMode() {
-  ensureOrdersGridCSS();
-  document.body.classList.toggle("admin-mode", isAdmin());
-  document.body.classList.toggle("employee-mode", !isAdmin());
+// ---------- Requests render ----------
+function getVisibleRequests() {
+  if (isAdmin()) return requests.slice();
 
-  // Admin-only tab buttons
-  const usersBtn = $("nav-users");
-  if (usersBtn) usersBtn.style.display = isAdmin() ? "" : "none";
+  const myCode = String(currentUser?.code || "").trim();
+  return requests.filter(r => String(r.code || "").trim() === myCode);
 }
 
-// ---------- Filters ----------
-function setSelectOptions(sel, values, allLabel = "Бүгд") {
-  if (!sel) return;
-  const opts = [`<option value="">${esc(allLabel)}</option>`];
-  uniq(values).forEach((v) => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
-  sel.innerHTML = opts.join("");
+function countItemsForRequest(reqId) {
+  return requestItems.filter(x => String(x.request_id) === String(reqId)).length;
 }
 
-function populateFilters() {
-  setSelectOptions($("filter-status"), ["Хүлээгдэж буй", "Зөвшөөрсөн", "Татгалзсан"]);
-  setSelectOptions($("filter-item"), allItems.map((x) => x.name));
-  setSelectOptions($("filter-year"),
-    uniq(allOrders.map(o => {
-      const d = new Date(o.requestedDate);
-      return isNaN(d) ? "" : String(d.getFullYear());
-    })).sort((a,b)=>b.localeCompare(a))
-  );
-  setSelectOptions($("filter-month"), Array.from({length:12}, (_,i)=>String(i+1).padStart(2,"0")));
-  setSelectOptions($("filter-place"), allOrders.map(o => o.place || ""));
-  setSelectOptions($("filter-dept"), allOrders.map(o => o.department || ""));
-  setSelectOptions($("filter-shift"), uniq(SHIFT_OPTIONS.concat(allOrders.map(o=>o.shift||""))));
-}
+function renderRequests() {
+  ensureRequestsGridCSS();
 
-function bindFilterEvents() {
-  const ids = [
-    "filter-status","filter-item","filter-year","filter-month","filter-place","filter-dept","filter-shift",
-    "search-name","search-code","search-role"
-  ];
-  ids.forEach(id => {
-    const el = $(id);
-    if (!el) return;
-    const evt = el.tagName === "SELECT" ? "change" : "input";
-    el.addEventListener(evt, applyFilters);
-  });
-}
-
-window.resetFilters = () => {
-  ["filter-status","filter-item","filter-year","filter-month","filter-place","filter-dept","filter-shift"].forEach(id => { if($(id)) $(id).value=""; });
-  ["search-name","search-code","search-role"].forEach(id => { if($(id)) $(id).value=""; });
-  applyFilters();
-};
-
-window.applyFilters = () => {
-  const f = {
-    status: ($("filter-status")?.value || "").trim(),
-    item: ($("filter-item")?.value || "").trim(),
-    year: ($("filter-year")?.value || "").trim(),
-    month: ($("filter-month")?.value || "").trim(),
-    place: ($("filter-place")?.value || "").trim(),
-    dept: ($("filter-dept")?.value || "").trim(),
-    shift: ($("filter-shift")?.value || "").trim(),
-    name: ($("search-name")?.value || "").trim().toLowerCase(),
-    code: ($("search-code")?.value || "").trim(),
-    role: ($("search-role")?.value || "").trim().toLowerCase(),
-  };
-
-  let rows = (allOrders || []).slice();
-
-  // employee sees only own
-  if (!isAdmin()) {
-    const myCode = String(currentUser?.code || "").trim();
-    rows = rows.filter(o => String(o.code || "").trim() === myCode);
-  }
-
-  const filtered = rows.filter(o => {
-    const d = new Date(o.requestedDate);
-    const fullName = `${o.ovog || ""} ${o.ner || ""}`.toLowerCase();
-
-    if (f.name && !fullName.includes(f.name)) return false;
-    if (f.code && !String(o.code || "").includes(f.code)) return false;
-    if (f.role && !String(o.role || "").toLowerCase().includes(f.role)) return false;
-
-    if (f.item && String(o.item || "") !== f.item) return false;
-    if (f.status && String(o.status || "") !== f.status) return false;
-
-    if (f.year && (!isNaN(d) ? String(d.getFullYear()) : "") !== f.year) return false;
-    if (f.month && (!isNaN(d) ? String(d.getMonth()+1).padStart(2,"0") : "") !== f.month) return false;
-
-    if (f.place && String(o.place || "") !== f.place) return false;
-    if (f.dept && String(o.department || "") !== f.dept) return false;
-    if (f.shift && String(o.shift || "") !== f.shift) return false;
-
-    return true;
-  });
-
-  renderOrders(filtered);
-};
-
-// ---------- Orders render ----------
-function renderOrders(listData) {
-  const list = $("orders-list");
+  const list = $("requests-list");
   if (!list) return;
 
-  applyRoleMode();
+  const data = getVisibleRequests()
+    .slice()
+    .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
-  const rows = listData || [];
-  if (!rows.length) {
-    list.innerHTML = `<div class="muted" style="padding:12px 0;">Мэдээлэл олдсонгүй</div>`;
+  if (!data.length) {
+    list.innerHTML = `<div class="muted" style="padding:12px 0;">Хүсэлт олдсонгүй</div>`;
     return;
   }
 
-  const sorted = rows.slice().sort((a,b)=> new Date(b.requestedDate) - new Date(a.requestedDate));
-
-  list.innerHTML = sorted.map(o => {
-    const st = statusMeta(o.status);
-    const empName = `${esc(o.ovog || "")} ${esc(o.ner || "")}`.trim() || "—";
-    const empId = esc(o.code || "—");
-
-    const place = esc(o.place || "—");
-    const dept = esc(o.department || "—");
-    const role = esc(o.role || "—");
-    const shift = esc(o.shift || "—");
-    const item = esc(o.item || "—");
-    const sizeLine = `Размер: ${esc(o.size || "—")}`;
-    const qtyVal = o.quantity ?? o.qty ?? "—";
-    const qtyLine = `${esc(qtyVal)} ширхэг`;
-    const date = esc(fmtDateOnly(o.requestedDate));
-
-    const isPending = String(o.status || "") === "Хүлээгдэж буй";
-    let actions = "—";
-    if (isAdmin()) {
-      actions = isPending
-        ? `
-          <button class="btn sm success" onclick="decideOrder('${esc(o.id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
-          <button class="btn sm danger" onclick="decideOrder('${esc(o.id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
-        `
-        : `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
-    }
+  list.innerHTML = data.map(r => {
+    const rid = esc(r.request_id || "");
+    const emp = `${esc(r.ovog || "")} ${esc(r.ner || "")}`.trim() || "—";
+    const code = esc(r.code || "—");
+    const place = esc(r.place || "—");
+    const dept = esc(r.department || "—");
+    const shift = esc(r.shift || "—");
+    const cnt = countItemsForRequest(r.request_id);
+    const st = statusMetaOverall(r.overall_status);
+    const dt = esc(fmtDateOnly(r.requestedDate));
 
     return `
-      <div class="order-row">
-        <div class="col-emp">
-          <div class="emp-name">${empName}</div>
-          <div class="emp-id">ID:${empId}</div>
+      <div class="request-row" onclick="openRequestDetail('${rid}')">
+        <div>
+          <div class="req-id">${rid}</div>
+          <div class="sub">ID:${code}</div>
         </div>
-
-        <div class="col-place">
-          <div class="place-main">${place}</div>
-          <div class="place-sub">Хэлтэс: ${dept}</div>
+        <div>
+          <div style="font-weight:800">${emp}</div>
+          <div class="sub">${esc(r.role || "")}</div>
         </div>
-
-        <div class="col-role">${role}</div>
-        <div class="col-shift">${shift}</div>
-
-        <div class="col-item">
-          <div style="font-weight:800">${item}</div>
-          <div class="place-sub">${esc(sizeLine)}</div>
+        <div>
+          <div style="font-weight:800">${place}</div>
+          <div class="sub">Хэлтэс: ${dept}</div>
         </div>
-
-        <div class="col-qty">${qtyLine}</div>
-        <div class="col-date">${date}</div>
-
-        <div class="col-status">
-          <span class="status ${st.cls}">${esc(st.label)}</span>
-        </div>
-
-        <div class="col-actions">${actions}</div>
+        <div>${shift}</div>
+        <div><span class="tag">${cnt} бараа</span></div>
+        <div><span class="status ${st.cls}">${esc(st.label)}</span></div>
+        <div>${dt}</div>
       </div>
     `;
   }).join("");
 }
 
-window.decideOrder = async (id, status) => {
-  try {
-    // optimistic
-    const idx = allOrders.findIndex(x => String(x.id) === String(id));
-    if (idx >= 0) allOrders[idx].status = status;
-    applyFilters();
+// ---------- Request Detail Modal (admin + employee read-only) ----------
+window.openRequestDetail = (request_id) => {
+  currentModalRequestId = request_id;
 
-    const r = await apiPost({ action: "update_status", id, status });
+  const req = requests.find(x => String(x.request_id) === String(request_id));
+  if (!req) return popupError("Request олдсонгүй");
+
+  const lines = requestItems
+    .filter(x => String(x.request_id) === String(request_id))
+    .slice();
+
+  const st = statusMetaOverall(req.overall_status);
+
+  const title = `Request: ${request_id}`;
+  const header = `
+    <div class="kv" style="margin-bottom:10px;">
+      <div><div class="k">Ажилтан</div><div class="v">${esc(req.ovog||"")} ${esc(req.ner||"")}</div></div>
+      <div><div class="k">Код</div><div class="v">${esc(req.code||"")}</div></div>
+      <div><div class="k">Газар</div><div class="v">${esc(req.place||"")}</div></div>
+      <div><div class="k">Хэлтэс</div><div class="v">${esc(req.department||"")}</div></div>
+      <div><div class="k">Ээлж</div><div class="v">${esc(req.shift||"")}</div></div>
+      <div><div class="k">Огноо</div><div class="v">${esc(fmtDateOnly(req.requestedDate))}</div></div>
+      <div><div class="k">Төлөв</div><div class="v"><span class="status ${st.cls}">${esc(st.label)}</span></div></div>
+    </div>
+  `;
+
+  const tableHead = `
+    <div class="orders-header" style="display:grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.3fr 2fr; column-gap:16px; margin-top:10px;">
+      <div>БАРАА</div><div>ХЭМЖЭЭ</div><div>ТОО</div><div>ТӨЛӨВ</div><div>ҮЙЛДЭЛ</div>
+    </div>
+  `;
+
+  const bodyRows = lines.map(line => {
+    const item = esc(line.item || "—");
+    const size = esc(line.size || "—");
+    const qty = esc(line.qty ?? "—");
+    const meta = statusMetaItem(line.item_status);
+    const decided = String(line.item_status || "").trim() !== "" && String(line.item_status || "").trim() !== "Хүлээгдэж буй";
+
+    let actionHtml = `<span class="tag">—</span>`;
+    if (isAdmin()) {
+      if (!decided) {
+        actionHtml = `
+          <button class="btn sm success" onclick="setItemDecision('${esc(line.line_id)}','Зөвшөөрсөн')">ЗӨВШӨӨРӨХ</button>
+          <button class="btn sm danger" onclick="setItemDecision('${esc(line.line_id)}','Татгалзсан')">ТАТГАЛЗАХ</button>
+        `;
+      } else {
+        actionHtml = `<span class="tag">ШИЙДВЭРЛЭСЭН</span>`;
+      }
+    } else {
+      actionHtml = decided ? `<span class="tag">ШИЙДВЭРЛЭСЭН</span>` : `<span class="tag">ХҮЛЭЭЖ БУЙ</span>`;
+    }
+
+    return `
+      <div class="order-row" style="display:grid; grid-template-columns: 2.4fr 1.4fr 1fr 1.3fr 2fr; column-gap:16px;">
+        <div><div style="font-weight:800">${item}</div></div>
+        <div>Размер: ${size}</div>
+        <div>${qty} ширхэг</div>
+        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
+        <div>${actionHtml}</div>
+      </div>
+    `;
+  }).join("");
+
+  const finalizeBtn = isAdmin()
+    ? `<div class="modal-actions">
+         <button class="btn" onclick="closeModal()">ХААХ</button>
+         <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
+       </div>`
+    : `<div class="modal-actions">
+         <button class="btn" onclick="closeModal()">ХААХ</button>
+       </div>`;
+
+  openModal(title, `
+    ${header}
+    ${tableHead}
+    <div class="orders-list" style="padding:10px 0;">
+      ${bodyRows || `<div class="muted">Мэдээлэл хоосон.</div>`}
+    </div>
+    ${finalizeBtn}
+  `);
+};
+
+window.setItemDecision = async (line_id, status) => {
+  try {
+    showLoading(true, "Шийдвэрлэж байна...");
+    const r = await apiPost({ action: "update_item_status", line_id, status });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-    await refreshData();
+
+    await refreshData(false); // keep tab
+    // re-open current modal to refresh UI
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
     popupError(e.message || String(e));
-    await refreshData();
+  } finally {
+    showLoading(false);
   }
 };
 
-// ---------- Request (employee) ----------
+window.finalizeCurrentRequest = async () => {
+  try {
+    if (!currentModalRequestId) return;
+    showLoading(true, "Finalize хийж байна...");
+    const r = await apiPost({ action: "finalize_request", request_id: currentModalRequestId });
+    if (!r.success) throw new Error(r.msg || "Finalize алдаа");
+
+    await refreshData(false);
+    closeModal();
+    popupOk("Хүсэлт шийдвэрлэгдлээ");
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+// ---------- Employee: Multi-item cart ----------
+function setSelectOptions(sel, values, allLabel = "Сонгох") {
+  if (!sel) return;
+  const uniq = Array.from(new Set((values || []).filter(v => v != null && v !== "")));
+  const opts = [`<option value="">${esc(allLabel)}</option>`];
+  uniq.forEach(v => opts.push(`<option value="${esc(v)}">${esc(v)}</option>`));
+  sel.innerHTML = opts.join("");
+}
+
 function fillRequestForm() {
   const itemSel = $("req-item");
-  if (!itemSel) return;
-  setSelectOptions(itemSel, allItems.map(x => x.name), "Сонгох");
-  itemSel.addEventListener("change", () => fillSizeOptions());
-  fillSizeOptions();
-}
-function fillSizeOptions() {
-  const itemName = ($("req-item")?.value || "").trim();
   const sizeSel = $("req-size");
-  if (!sizeSel) return;
-  const it = allItems.find(x => String(x.name) === itemName);
-  const sizes = it ? String(it.sizes || "").split(",").map(s => s.trim()).filter(Boolean) : [];
-  setSelectOptions(sizeSel, sizes, "Сонгох");
+  if (!itemSel || !sizeSel) return;
+
+  setSelectOptions(itemSel, itemsMaster.map(x => x.name), "Сонгох");
+
+  const onItemChange = () => {
+    const itemName = (itemSel.value || "").trim();
+    const it = itemsMaster.find(x => String(x.name) === itemName);
+    const sizes = it ? String(it.sizes || "").split(",").map(s => s.trim()).filter(Boolean) : [];
+    setSelectOptions(sizeSel, sizes, "Сонгох");
+  };
+
+  itemSel.onchange = onItemChange;
+  onItemChange();
 }
 
-window.submitOrder = async () => {
+window.addToCart = () => {
+  if (isAdmin()) return popupError("Admin талд хүсэлт илгээх хэрэггүй");
+
+  const item = ($("req-item")?.value || "").trim();
+  const size = ($("req-size")?.value || "").trim();
+  let qty = parseInt(($("req-qty")?.value || "1"), 10);
+  if (!qty || qty < 1) qty = 1;
+
+  if (!item) return popupError("Бараа сонгоно уу");
+  if (!size) return popupError("Размер сонгоно уу");
+
+  // merge same item+size
+  const idx = cart.findIndex(x => x.item === item && x.size === size);
+  if (idx >= 0) cart[idx].qty += qty;
+  else cart.push({ item, size, qty });
+
+  renderCart();
+};
+
+window.removeCartItem = (i) => {
+  cart.splice(i, 1);
+  renderCart();
+};
+
+function renderCart() {
+  const box = $("cart-list");
+  if (!box) return;
+
+  if (!cart.length) {
+    box.innerHTML = `<div class="muted">Одоогоор сонгосон бараа алга.</div>`;
+    return;
+  }
+
+  box.innerHTML = cart.map((c, i) => `
+    <div class="item-card">
+      <div class="kv">
+        <div><div class="k">Бараа</div><div class="v">${esc(c.item)}</div></div>
+        <div><div class="k">Размер</div><div class="v">Размер: ${esc(c.size)}</div></div>
+        <div><div class="k">Тоо</div><div class="v">${esc(c.qty)} ширхэг</div></div>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <button class="btn danger sm" onclick="removeCartItem(${i})">УСТГАХ</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.submitMultiRequest = async () => {
   try {
-    if (!currentUser) return;
-
-    const item = ($("req-item")?.value || "").trim();
-    const size = ($("req-size")?.value || "").trim();
-    let qty = parseInt(($("req-qty")?.value || "1"), 10);
-    if (!qty || qty < 1) qty = 1;
-
-    if (!item) return popupError("Бараа сонгоно уу");
-    if (!size) return popupError("Хэмжээ сонгоно уу");
+    if (isAdmin()) return popupError("Admin талд хүсэлт илгээх хэрэггүй");
+    if (!currentUser) return popupError("Нэвтэрнэ үү");
+    if (!cart.length) return popupError("Сонгосон бараа алга");
 
     showLoading(true, "Хүсэлт илгээж байна...");
-    const r = await apiPost({ action: "add_order", code: currentUser.code, item, size, qty });
+    const r = await apiPost({
+      action: "add_request",
+      code: currentUser.code,
+      items: cart.map(x => ({ item: x.item, size: x.size, qty: x.qty })),
+    });
+
     if (!r.success) throw new Error(r.msg || "Илгээхэд алдаа");
 
+    cart = [];
+    renderCart();
     popupOk("Хүсэлт амжилттай илгээгдлээ");
-    await refreshData();
-    await renderUserHistory();
+    await refreshData(false);
     showTab("orders", $("nav-orders"));
   } catch (e) {
     popupError(e.message || String(e));
@@ -409,6 +462,7 @@ window.submitOrder = async () => {
 async function renderUserHistory() {
   const box = $("user-history");
   if (!box) return;
+
   if (!currentUser || isAdmin()) {
     box.innerHTML = `<div class="muted">Зөвхөн ажилтны хэсэгт харагдана.</div>`;
     return;
@@ -423,15 +477,16 @@ async function renderUserHistory() {
       box.innerHTML = `<div class="muted">Түүх хоосон байна.</div>`;
       return;
     }
+
     box.innerHTML = hist
       .slice()
-      .sort((a,b)=> new Date(b.date)-new Date(a.date))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
       .map(h => `
         <div class="hist-card">
           <div class="kv">
             <div><div class="k">Огноо</div><div class="v">${esc(fmtDateOnly(h.date))}</div></div>
             <div><div class="k">Бараа</div><div class="v">${esc(h.item || "")}</div></div>
-            <div><div class="k">Хэмжээ</div><div class="v">Размер: ${esc(h.size || "")}</div></div>
+            <div><div class="k">Размер</div><div class="v">Размер: ${esc(h.size || "")}</div></div>
             <div><div class="k">Тоо</div><div class="v">${esc(h.qty || "")} ширхэг</div></div>
           </div>
         </div>
@@ -441,7 +496,7 @@ async function renderUserHistory() {
   }
 }
 
-// ---------- Items (admin) ----------
+// ---------- Items (Admin) ----------
 window.clearItemSearch = () => { if ($("item-search")) $("item-search").value = ""; renderItems(); };
 
 window.addItem = async () => {
@@ -449,13 +504,14 @@ window.addItem = async () => {
   const name = ($("new-item-name")?.value || "").trim();
   const sizes = ($("new-item-sizes")?.value || "").trim();
   if (!name) return popupError("Барааны нэр оруулна уу");
+
   try {
     showLoading(true, "Нэмэж байна...");
     const r = await apiPost({ action: "add_item", name, sizes });
     if (!r.success) throw new Error(r.msg || "Алдаа");
     $("new-item-name").value = "";
     $("new-item-sizes").value = "";
-    await refreshData();
+    await refreshData(false);
     popupOk("Бараа нэмэгдлээ");
   } catch (e) {
     popupError(e.message || String(e));
@@ -467,29 +523,22 @@ window.addItem = async () => {
 function renderItems() {
   const box = $("items-list");
   if (!box) return;
-  if (!isAdmin()) {
-    box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`;
-    return;
-  }
+  if (!isAdmin()) { box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`; return; }
 
   const q = ($("item-search")?.value || "").trim().toLowerCase();
-  const items = (allItems || []).filter(it => !q || String(it.name||"").toLowerCase().includes(q));
+  const data = itemsMaster.filter(it => !q || String(it.name || "").toLowerCase().includes(q));
 
-  if (!items.length) {
-    box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`;
-    return;
-  }
+  if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; return; }
 
-  box.innerHTML = items.map(it => `
+  box.innerHTML = data.map(it => `
     <div class="item-card">
       <div class="kv">
         <div><div class="k">Нэр</div><div class="v">${esc(it.name)}</div></div>
         <div><div class="k">Size</div><div class="v">${esc(it.sizes || "")}</div></div>
-        <div><div class="k">Locked</div><div class="v">${it.locked ? "ТИЙМ" : "ҮГҮЙ"}</div></div>
       </div>
       <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn" onclick="promptUpdateItem('${esc(it.name)}','${esc(it.sizes||"")}')" ${it.locked ? "disabled" : ""}>ЗАСАХ</button>
-        <button class="btn danger" onclick="deleteItem('${esc(it.name)}')" ${it.locked ? "disabled" : ""}>УСТГАХ</button>
+        <button class="btn" onclick="promptUpdateItem('${esc(it.name)}','${esc(it.sizes||"")}')">ЗАСАХ</button>
+        <button class="btn danger" onclick="deleteItem('${esc(it.name)}')">УСТГАХ</button>
         <button class="btn" onclick="showItemHistory('${esc(it.name)}')">ТҮҮХ</button>
       </div>
     </div>
@@ -523,7 +572,7 @@ window.updateItem = async (oldName) => {
     const r = await apiPost({ action: "update_item", oldName, newName, sizes });
     if (!r.success) throw new Error(r.msg || "Алдаа");
     closeModal();
-    await refreshData();
+    await refreshData(false);
     popupOk("Засагдлаа");
   } catch (e) {
     popupError(e.message || String(e));
@@ -538,7 +587,7 @@ window.deleteItem = async (name) => {
     showLoading(true, "Устгаж байна...");
     const r = await apiPost({ action: "delete_item", name });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-    await refreshData();
+    await refreshData(false);
     popupOk("Устгагдлаа");
   } catch (e) {
     popupError(e.message || String(e));
@@ -562,7 +611,7 @@ window.showItemHistory = async (item) => {
               <div><div class="k">Огноо</div><div class="v">${esc(fmtDateOnly(h.date))}</div></div>
               <div><div class="k">Код</div><div class="v">${esc(h.code)}</div></div>
               <div><div class="k">Нэр</div><div class="v">${esc(h.ovog||"")} ${esc(h.ner||"")}</div></div>
-              <div><div class="k">Хэмжээ</div><div class="v">Размер: ${esc(h.size||"")}</div></div>
+              <div><div class="k">Размер</div><div class="v">Размер: ${esc(h.size||"")}</div></div>
               <div><div class="k">Тоо</div><div class="v">${esc(h.qty||"")} ширхэг</div></div>
             </div>
           </div>
@@ -577,7 +626,7 @@ window.showItemHistory = async (item) => {
   }
 };
 
-// ---------- Users (admin) ----------
+// ---------- Users (Admin) ----------
 window.addUser = async () => {
   if (!isAdmin()) return popupError("Admin эрх хэрэгтэй");
 
@@ -596,8 +645,9 @@ window.addUser = async () => {
     showLoading(true, "Нэмэж байна...");
     const r = await apiPost({ action: "add_user", code, pass, ner, ovog, role, place, department, shift });
     if (!r.success) throw new Error(r.msg || "Алдаа");
+
     ["u-code","u-pass","u-ner","u-ovog","u-role","u-place","u-dept","u-shift"].forEach(id => { if($(id)) $(id).value=""; });
-    await refreshData();
+    await refreshData(false);
     popupOk("Ажилтан нэмэгдлээ");
   } catch (e) {
     popupError(e.message || String(e));
@@ -610,17 +660,10 @@ function renderUsers() {
   const box = $("users-list");
   if (!box) return;
 
-  if (!isAdmin()) {
-    box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`;
-    return;
-  }
+  if (!isAdmin()) { box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`; return; }
+  if (!users.length) { box.innerHTML = `<div class="muted">Ажилтан олдсонгүй.</div>`; return; }
 
-  if (!allUsers.length) {
-    box.innerHTML = `<div class="muted">Ажилтан олдсонгүй.</div>`;
-    return;
-  }
-
-  box.innerHTML = allUsers.map(u => `
+  box.innerHTML = users.map(u => `
     <div class="user-card">
       <div class="kv">
         <div><div class="k">Код</div><div class="v">${esc(u.code)}</div></div>
@@ -629,18 +672,17 @@ function renderUsers() {
         <div><div class="k">Газар</div><div class="v">${esc(u.place||"")}</div></div>
         <div><div class="k">Хэлтэс</div><div class="v">${esc(u.department||"")}</div></div>
         <div><div class="k">Ээлж</div><div class="v">${esc(u.shift||"")}</div></div>
-        <div><div class="k">Locked</div><div class="v">${u.locked ? "ТИЙМ" : "ҮГҮЙ"}</div></div>
       </div>
       <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn" onclick="promptUpdateUser('${esc(u.code)}')" ${u.locked ? "" : ""}>ЗАСАХ</button>
-        <button class="btn danger" onclick="deleteUser('${esc(u.code)}')" ${u.locked ? "disabled" : ""}>УСТГАХ</button>
+        <button class="btn" onclick="promptUpdateUser('${esc(u.code)}')">ЗАСАХ</button>
+        <button class="btn danger" onclick="deleteUser('${esc(u.code)}')">УСТГАХ</button>
       </div>
     </div>
   `).join("");
 }
 
 window.promptUpdateUser = (code) => {
-  const u = allUsers.find(x => String(x.code) === String(code));
+  const u = users.find(x => String(x.code) === String(code));
   if (!u) return popupError("Ажилтан олдсонгүй");
 
   openModal("Ажилтан засах", `
@@ -694,7 +736,7 @@ window.updateUser = async (code) => {
     const r = await apiPost(payload);
     if (!r.success) throw new Error(r.msg || "Алдаа");
     closeModal();
-    await refreshData();
+    await refreshData(false);
     popupOk("Засагдлаа");
   } catch (e) {
     popupError(e.message || String(e));
@@ -709,7 +751,7 @@ window.deleteUser = async (code) => {
     showLoading(true, "Устгаж байна...");
     const r = await apiPost({ action: "delete_user", code });
     if (!r.success) throw new Error(r.msg || "Алдаа");
-    await refreshData();
+    await refreshData(false);
     popupOk("Устгагдлаа");
   } catch (e) {
     popupError(e.message || String(e));
@@ -721,9 +763,11 @@ window.deleteUser = async (code) => {
 // ---------- Password ----------
 window.changePass = async () => {
   if (!currentUser || isAdmin()) return popupError("Зөвхөн ажилтан өөрийн нууц үгээ солино");
+
   const oldP = ($("old-pass")?.value || "").trim();
   const newP = ($("new-pass")?.value || "").trim();
   if (!oldP || !newP) return popupError("Мэдээлэл дутуу");
+
   try {
     showLoading(true, "Сольж байна...");
     const r = await apiPost({ action: "change_pass", code: currentUser.code, oldP, newP });
@@ -739,29 +783,37 @@ window.changePass = async () => {
 };
 
 // ---------- Data refresh ----------
-window.refreshData = async () => {
+window.refreshData = async (keepTab = true) => {
   if (!currentUser) return;
+
+  const activeTab = keepTab
+    ? (document.querySelector(".nav-btn.active")?.id || "nav-orders")
+    : "nav-orders";
+
   try {
     showLoading(true, "Өгөгдөл татаж байна...");
     const r = await apiPost({ action: "get_all_data" });
     if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
 
-    allOrders = r.orders || [];
-    allItems = r.items || [];
+    requests = r.requests || [];
+    requestItems = r.request_items || [];
+    itemsMaster = r.items || [];
 
-    // admin users
     if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
-      if (u.success) allUsers = u.users || [];
+      if (u.success) users = u.users || [];
+      else users = [];
     } else {
-      allUsers = [];
+      users = [];
     }
 
-    populateFilters();
-    fillRequestForm();
-    renderItems();
-    renderUsers();
-    applyFilters();
+    // Refresh UI on current tab
+    if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
+    if (activeTab === "nav-request") showTab("request", $("nav-request"));
+    if (activeTab === "nav-items") showTab("items", $("nav-items"));
+    if (activeTab === "nav-users") showTab("users", $("nav-users"));
+    if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
+
   } catch (e) {
     popupError(e.message || String(e));
   } finally {
@@ -782,13 +834,16 @@ window.login = async () => {
 
     currentUser = r.user;
     setLoggedInUI(true);
-    applyRoleMode();
 
-    await refreshData();
+    // admin-only tabs visibility
+    const usersBtn = $("nav-users");
+    if (usersBtn) usersBtn.style.display = isAdmin() ? "" : "none";
 
-    // default tab
+    await refreshData(false);
+
     if (isAdmin()) showTab("orders", $("nav-orders"));
     else showTab("request", $("nav-request"));
+
   } catch (e) {
     popupError(e.message || String(e));
   } finally {
@@ -798,10 +853,15 @@ window.login = async () => {
 
 window.logout = () => {
   currentUser = null;
-  allOrders = [];
-  allItems = [];
-  allUsers = [];
+  requests = [];
+  requestItems = [];
+  itemsMaster = [];
+  users = [];
+  cart = [];
+  currentModalRequestId = null;
+
   setLoggedInUI(false);
+
   if ($("login-code")) $("login-code").value = "";
   if ($("login-pass")) $("login-pass").value = "";
 };
@@ -809,10 +869,10 @@ window.logout = () => {
 // ---------- Init ----------
 function init() {
   setLoggedInUI(false);
-  bindFilterEvents();
 
   $("login-pass")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") login();
   });
 }
+
 window.addEventListener("load", init);
