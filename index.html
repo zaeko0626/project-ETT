@@ -13,7 +13,6 @@
     <div class="overlay-card">
       <div class="spinner">⛏️</div>
       <div class="overlay-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
-      <!-- ✅ доор нь бичиг байхгүй -->
     </div>
   </div>
 
@@ -78,7 +77,6 @@
         <input id="login-pass" class="input" type="password" placeholder="••••••" autocomplete="current-password" />
 
         <button class="btn primary full" onclick="login()">НЭВТРЭХ</button>
-        <!-- ✅ Admin demo hint устгав -->
       </div>
     </div>
   </main>
@@ -92,7 +90,7 @@
         <div class="page-title">ЗАХИАЛГЫН ЖАГСААЛТ</div>
       </div>
 
-      <!-- ✅ Filter bar: цөөн (status, shift-г header дээр) -->
+      <!-- Filter bar: цөөн -->
       <div class="card" id="orders-filters">
         <div class="row" style="gap:12px; flex-wrap:wrap;">
 
@@ -111,7 +109,7 @@
             <select id="f-item" class="input"></select>
           </div>
 
-          <!-- Admin-only filters -->
+          <!-- Admin-only -->
           <div class="grow admin-only" id="f-place-wrap">
             <div class="label">Газар</div>
             <select id="f-place" class="input"></select>
@@ -145,9 +143,7 @@
       </div>
 
       <div class="orders-box card">
-        <div class="orders-header" id="requests-header">
-          <!-- JS renders header + header-filter(select) -->
-        </div>
+        <div class="orders-header" id="requests-header"></div>
         <div id="requests-list" class="orders-list"></div>
       </div>
     </section>
@@ -276,7 +272,6 @@
           </div>
           <div class="grow">
             <div class="label">Ээлж</div>
-            <!-- ✅ сонголт -->
             <select id="u-shift" class="input">
               <option value="">Сонгох</option>
               <option value="А ээлж">А ээлж</option>
