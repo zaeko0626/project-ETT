@@ -42,9 +42,7 @@
     <button id="btn-refresh" class="btn" onclick="refreshData(true)">СЭРГЭЭХ</button>
 
     <!-- Icon buttons (example) -->
-    <button class="icon-btn btn-icon" onclick="showTab('pass', document.getElementById('nav-pass'))" title="Нууц үг">🔒</button>
-    <button class="icon-btn btn-icon" onclick="logout()" title="Гарах">⎋</button>
-  </div>
+</div>
 
   <!-- Sidebar overlay -->
   <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="closeSidebar()"></div>
@@ -59,11 +57,11 @@
     <div id="sidebar-userinfo" class="sidebar-userinfo">—</div>
 
     <div class="nav">
-      <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">Захиалгын жагсаалт</button>
-      <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">Захиалга гаргах</button>
-      <button id="nav-items" class="nav-btn" onclick="showTab('items', this)">Барааны мэдээлэл</button>
-      <button id="nav-users" class="nav-btn" onclick="showTab('users', this)">Ажилтны мэдээлэл</button>
-      <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">Нууц үг</button>
+      <button id="nav-orders" class="nav-btn active" onclick="showTab('orders', this)">📋 Захиалгын жагсаалт</button>
+      <button id="nav-request" class="nav-btn" onclick="showTab('request', this)">➕ Захиалга гаргах</button>
+      <button id="nav-items" class="nav-btn" onclick="showTab('items', this)">📦 Барааны мэдээлэл</button>
+      <button id="nav-users" class="nav-btn" onclick="showTab('users', this)">👥 Ажилтны мэдээлэл</button>
+      <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">🔑 Нууц үг</button>
 
       <div style="margin-top:10px;">
         <button class="btn danger full" onclick="logout()">ГАРАХ</button>
@@ -85,7 +83,7 @@
             <input id="login-code" autocomplete="username" />
           </div>
           <div class="grow">
-            <div class="label">Нууц үг</div>
+            <div class="label">🔑 Нууц үг</div>
             <input id="login-pass" type="password" autocomplete="current-password" />
           </div>
         </div>
@@ -109,17 +107,14 @@
             <div class="row">
               <div class="grow"><div class="label">Он</div><select id="f-year"></select></div>
               <div class="grow"><div class="label">Сар</div><select id="f-month"></select></div>
-              <div class="grow"><div class="label">Бараа</div><select id="f-item"></select></div>
-              <div class="grow"><div class="label">Газар</div><select id="f-place"></select></div>
-              <div class="grow"><div class="label">Хэлтэс</div><select id="f-dept"></select></div>
-              <div class="grow"><div class="label">Албан тушаал</div><input id="f-role" placeholder="Ж: Машинист"/></div>
-              <div class="grow"><div class="label">Нэрээр хайх</div><input id="f-name" placeholder="Ж: Бат"/></div>
-              <div class="grow"><div class="label">Кодоор хайх</div><input id="f-code" placeholder="Ж: 12345"/></div>
+              <div class="grow"><div class="label">Бараа</div><select id="f-item"></select></div><div class="grow emp-only" style="display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;"><button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button><button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button></div>
+              <div class="grow"><div class="label">Газар</div><select id="f-place" class="admin-only"></select></div>
+              <div class="grow"><div class="label">Хэлтэс</div><select id="f-dept" class="admin-only"></select></div>
+              <div class="grow"><div class="label">Албан тушаал</div><input id="f-role" class="admin-only" placeholder="Ж: Машинист"/></div>
+              <div class="grow"><div class="label">Нэрээр хайх</div><input id="f-name" class="admin-only" placeholder="Ж: Бат"/></div>
+              <div class="grow admin-only" style="display:flex;align-items:flex-end;gap:10px;"><div style="flex:1 1 auto;"><div class="label">Кодоор хайх</div><input id="f-code" class="admin-only" placeholder="Ж: 12345"/></div><div style="display:flex;gap:10px;"><button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button><button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button></div></div>
             </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
-              <button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button>
-              <button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button>
-            </div>
+            
           </div>
         </div>
 
@@ -190,7 +185,7 @@
 
           <div class="row" style="margin-top:12px;">
             <div class="grow"><div class="label">Код</div><input id="u-code"/></div>
-            <div class="grow"><div class="label">Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
+            <div class="grow"><div class="label">🔑 Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
             <div class="grow"><div class="label">Нэр</div><input id="u-ner"/></div>
             <div class="grow"><div class="label">Овог</div><input id="u-ovog"/></div>
           </div>
