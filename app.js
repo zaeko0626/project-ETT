@@ -34,7 +34,7 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-function isAdmin() { return currentUser?.type === "admin"; }
+function isAdmin() { return String(currentUser?.code || "").toLowerCase() === "admin"; }
 
 function fmtDateOnly(v) {
   const d = new Date(v);
@@ -158,6 +158,8 @@ function setSidebarUserInfo() {
 }
 
 function applyRoleVisibility() {
+  const headerLine = document.getElementById("header-userline");
+  if (headerLine) headerLine.style.display = isAdmin() ? "" : "none";
   const navReq = $("nav-request");
   const navItems = $("nav-items");
   const navUsers = $("nav-users");
@@ -165,6 +167,7 @@ function applyRoleVisibility() {
   if (navItems) navItems.style.display = isAdmin() ? "" : "none";
   if (navUsers) navUsers.style.display = isAdmin() ? "" : "none";
   document.querySelectorAll(".admin-only").forEach((el) => { el.style.display = isAdmin() ? "" : "none"; });
+  document.querySelectorAll(".emp-only").forEach((el) => { el.style.display = isAdmin() ? "none" : ""; });
   renderOrdersHeader();
   renderKpis();
 }
@@ -232,9 +235,9 @@ function renderKpis() {
     </div>`;
   wrap.innerHTML = [
     card("Нийт захиалга", total, "Бүгд", ""),
-    card("Хүлээгдэж буй", pending, "Status: Хүлээгдэж буй", "Хүлээгдэж буй"),
-    card("Хэсэгчлэн", partial, "Status: Хэсэгчлэн", "Хэсэгчлэн"),
-    card("Шийдвэрлэсэн", done, "Status: Шийдвэрлэсэн", "Шийдвэрлэсэн")
+    card("Хүлээгдэж буй", pending, "Хүлээгдэж буй", "Хүлээгдэж буй"),
+    card("Хэсэгчлэн шийдвэрлэсэн", partial, "Хэсэгчлэн шийдвэрлэсэн", "Хэсэгчлэн"),
+    card("Шийдвэрлэсэн", done, "Шийдвэрлэсэн", "Шийдвэрлэсэн")
   ].join("");
 }
 
@@ -291,14 +294,14 @@ function renderOrdersHeader() {
       <div>БАРАА</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.3fr 2.2fr 2.4fr 0.9fr 3.2fr 1.3fr 1.1fr";
+    header.style.gridTemplateColumns = "1.1fr 2.1fr 2.2fr 0.7fr 3.6fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>БАРАА</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.3fr 3.8fr 1.3fr 1.1fr";
+    header.style.gridTemplateColumns = "1.2fr 4.2fr 1.3fr 1.1fr";
   }
 }
 
@@ -459,13 +462,14 @@ window.openRequestDetail = (request_id) => {
     const size = esc(l.size || "");
     const qty = esc(l.qty ?? "");
     const meta = statusMetaItem(l.item_status);
+    const decided = ["Зөвшөөрсөн","Татгалзсан"].includes(String(l.item_status||"").trim());
     const actionHtml = isAdmin()
-      ? `<div style="display:flex;gap:8px;justify-content:flex-end;">
-          <button class="btn primary" onclick="setItemDecision('${esc(l.line_id)}','Зөвшөөрсөн');event.stopPropagation();">ЗӨВШӨӨРӨХ</button>
-          <button class="btn danger" onclick="setItemDecision('${esc(l.line_id)}','Татгалзсан');event.stopPropagation();">ТАТГАЛЗАХ</button>
-        </div>`
-      : ``;
-    return `<div class="light-table-row">
+      ? (decided ? `<span class="pill decided">ШИЙДВЭРЛЭСЭН</span>` :
+        `<div class="decision-actions">
+          <button class="btn pill approve" onclick="setItemDecision('${esc(l.line_id)}','Зөвшөөрсөн');event.stopPropagation();">ЗӨВШӨӨРӨХ</button>
+          <button class="btn pill reject" onclick="setItemDecision('${esc(l.line_id)}','Татгалзсан');event.stopPropagation();">ТАТГАЛЗАХ</button>
+        </div>`)
+      : ``;    return `<div class="light-table-row">
       <div style="font-weight:900;">${item}</div>
       <div>Размер: ${size}</div>
       <div>${qty} ширхэг</div>
@@ -749,7 +753,7 @@ function renderItems() {
   if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; return; }
 
   box.innerHTML = `
-    <div class="mini-table">
+    <div class="mini-table items-table">
       <div class="mini-th">Бараа</div>
       <div class="mini-th">Size</div>
       <div class="mini-th">Locked</div>
@@ -914,7 +918,7 @@ function renderUsers() {
   if (!data.length) { box.innerHTML = `<div class="muted">Ажилтан олдсонгүй.</div>`; return; }
 
   box.innerHTML = `
-    <div class="mini-table">
+    <div class="mini-table users-table">
       <div class="mini-th">Код</div>
       <div class="mini-th">Нэр</div>
       <div class="mini-th">Албан тушаал</div>
