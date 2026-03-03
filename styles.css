@@ -220,5 +220,136 @@ body{
   background: rgba(16,18,28,.96);
   box-shadow: var(--shadow2);
 }
-.modal-head{display:flex; justify-content:space-between; align-items:center; padding: 12px 14px; border-bottom:1px solid var(--line2)}
+.modal-head{display:flex; justify-content:space-between; align-items:center; padding: 12px 14px; border-bottom:1px solid var(--line2)} 
 .modal-body{padding: 14px}
+/* =========================================
+   ETT - LIST UI OVERRIDE (Light Table Style)
+   Paste this at the VERY BOTTOM of your styles.css
+   It only targets the Order/Request list header & rows
+   ========================================= */
+
+:root{
+  --list-bg: #ffffff;
+  --list-text:#111827;
+  --list-muted:#6b7280;
+  --list-line:#e5e7eb;
+  --list-row-hover:#f8fafc;
+
+  --pill-green-bg:#eafff1;
+  --pill-green:#16a34a;
+  --pill-yellow-bg:#fff7d6;
+  --pill-yellow:#b45309;
+  --pill-red-bg:#ffe7e7;
+  --pill-red:#dc2626;
+}
+
+/* The outer list container */
+.orders-box,
+.orders-box.card,
+#orders-box,
+#requests-box{
+  background: var(--list-bg) !important;
+  border: 1px solid var(--list-line) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,.14) !important;
+}
+
+/* Header row */
+#requests-header,
+.orders-header{
+  background: #fff !important;
+  color: var(--list-muted) !important;
+  border-bottom: 1px solid var(--list-line) !important;
+  padding: 14px 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: .2px !important;
+}
+
+/* Content wrapper */
+.orders-list,
+#requests-list{
+  padding: 0 !important;
+}
+
+/* Each row (grid/table-like) */
+.request-row{
+  background: #fff !important;
+  color: var(--list-text) !important;
+  border-bottom: 1px solid var(--list-line) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  transition: background .15s ease !important;
+}
+.request-row:hover{
+  background: var(--list-row-hover) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Force cells to align like a table */
+#requests-header > div,
+.request-row > div{
+  display: flex !important;
+  align-items: center !important;
+  min-height: 36px !important;
+}
+
+/* Primary + secondary text (if you already have these classes) */
+.req-id{ font-weight: 900 !important; color: var(--list-text) !important; }
+.sub{ color: var(--list-muted) !important; opacity: 1 !important; }
+
+/* Status pill (works with your existing .status + st-* classes) */
+.status{
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  letter-spacing: .2px !important;
+
+  border: none !important;
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+}
+.status::before{
+  content:"";
+  width: 8px; height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: .9;
+}
+.st-approved{ background: var(--pill-green-bg) !important; color: var(--pill-green) !important; }
+.st-pending{ background: var(--pill-yellow-bg) !important; color: var(--pill-yellow) !important; }
+.st-rejected{ background: var(--pill-red-bg) !important; color: var(--pill-red) !important; }
+
+/* Optional: Action '...' button if you have one */
+.action-btn{
+  border: 1px solid var(--list-line);
+  background: #fff;
+  color: #111827;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.action-btn:hover{ background:#f3f4f6; }
+
+/* Mobile: keep card stacking */
+@media (max-width: 768px){
+  #requests-header, .orders-header{ display:none !important; }
+  .request-row{
+    display:block !important;
+    border-radius: 16px !important;
+    margin: 12px 14px !important;
+    border: 1px solid var(--list-line) !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,.10) !important;
+  }
+  .request-row > div{ display:block !important; margin-bottom: 10px !important; }
+}
