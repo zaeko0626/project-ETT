@@ -1,51 +1,59 @@
 <!doctype html>
 <html lang="mn">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>ETT PPE System</title>
-<link rel="stylesheet" href="./styles.css?v=20260303-3" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>ETT PPE SYSTEM</title>
+  <link rel="stylesheet" href="./styles.css?v=20260303-patch1"/>
 </head>
 <body>
-
   <!-- Loading -->
-  <div id="loading-overlay" class="overlay hidden">
+  <div id="loading-overlay" class="modal-overlay hidden" aria-hidden="true">
     <div class="overlay-card">
-      <div class="spinner">⛏️</div>
-      <div class="overlay-title">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
+      <div class="modal-body" style="display:flex;gap:12px;align-items:center;justify-content:center;min-height:120px;">
+        <div style="font-size:22px;">⛏️</div>
+        <div style="font-weight:900;">ТҮР ХҮЛЭЭНЭ ҮҮ...</div>
+      </div>
     </div>
   </div>
 
   <!-- Modal -->
-  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
-    <div class="modal-card" onclick="event.stopPropagation()">
+  <div id="modal-overlay" class="modal-overlay hidden" aria-hidden="true" onclick="if(event.target.id==='modal-overlay') closeModal();">
+    <div class="modal-card" role="dialog" aria-modal="true">
       <div class="modal-head">
-        <div id="modal-title" class="modal-title">Modal</div>
-        <button class="icon-btn" onclick="closeModal()">✕</button>
+        <div id="modal-title" style="font-weight:900;">Modal</div>
+        <button class="icon-btn btn-icon" onclick="closeModal()" aria-label="Close">✕</button>
       </div>
       <div id="modal-body" class="modal-body"></div>
     </div>
   </div>
 
-  <!-- HEADER (hidden until login) -->
-  <header id="app-header" class="header hidden">
-    <button class="icon-btn" onclick="toggleSidebar()">☰</button>
-    <div class="brand">
+  <!-- Header -->
+  <div id="app-header" class="header hidden">
+    <button class="icon-btn btn-icon" onclick="toggleSidebar()" aria-label="Menu">☰</button>
+    <div style="display:flex;flex-direction:column;gap:2px;">
       <div class="brand-title">ETT PPE SYSTEM</div>
-      <div class="brand-sub">—</div>
+      <div id="header-userline" class="brand-sub">—</div>
     </div>
-    <div class="header-actions">
-      <button class="btn" onclick="refreshData()">СЭРГЭЭХ</button>
-    </div>
-  </header>
 
-  <!-- SIDEBAR (hidden until login) -->
+    <div class="header-spacer"></div>
+
+    <!-- Refresh stays text -->
+    <button id="btn-refresh" class="btn" onclick="refreshData(true)">СЭРГЭЭХ</button>
+
+    <!-- Icon buttons (example) -->
+    <button class="icon-btn btn-icon" onclick="showTab('pass', document.getElementById('nav-pass'))" title="Нууц үг">🔒</button>
+    <button class="icon-btn btn-icon" onclick="logout()" title="Гарах">⎋</button>
+  </div>
+
+  <!-- Sidebar overlay -->
   <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="closeSidebar()"></div>
 
+  <!-- Sidebar -->
   <aside id="sidebar" class="sidebar hidden">
-    <div class="sidebar-top">
-      <div class="sidebar-title">ETT PPE SYSTEM</div>
-      <button class="icon-btn" onclick="closeSidebar()">✕</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06);">
+      <div class="brand-title">ETT PPE SYSTEM</div>
+      <button class="icon-btn btn-icon" onclick="closeSidebar()" aria-label="Close">✕</button>
     </div>
 
     <div id="sidebar-userinfo" class="sidebar-userinfo">—</div>
@@ -56,265 +64,173 @@
       <button id="nav-items" class="nav-btn" onclick="showTab('items', this)">Барааны мэдээлэл</button>
       <button id="nav-users" class="nav-btn" onclick="showTab('users', this)">Ажилтны мэдээлэл</button>
       <button id="nav-pass" class="nav-btn" onclick="showTab('pass', this)">Нууц үг</button>
-    </div>
 
-    <div class="sidebar-bottom">
-      <button id="btn-logout" class="btn danger full" onclick="logout()">ГАРАХ</button>
+      <div style="margin-top:10px;">
+        <button class="btn danger full" onclick="logout()">ГАРАХ</button>
+      </div>
     </div>
   </aside>
 
-  <!-- LOGIN SCREEN -->
-  <main id="login-screen" class="screen">
-    <div class="card">
-      <div class="card-title">PPE LOGIN</div>
-      <div class="muted">Нэвтрэх код, нууц үгээ оруулна уу</div>
+  <!-- Screens -->
+  <main class="screen">
+    <!-- Login -->
+    <section id="login-screen">
+      <div class="card" style="max-width:520px;margin:64px auto;">
+        <div class="card-title">PPE LOGIN</div>
+        <div class="muted" style="margin:6px 0 14px;">Нэвтрэх код, нууц үгээ оруулна уу</div>
 
-      <div class="form">
-        <label class="label">Код</label>
-        <input id="login-code" class="input" placeholder="Ж: 1000123" autocomplete="username" />
-
-        <label class="label">Нууц үг</label>
-        <input id="login-pass" class="input" type="password" placeholder="••••••" autocomplete="current-password" />
-
-        <button class="btn primary full" onclick="login()">НЭВТРЭХ</button>
-      </div>
-    </div>
-  </main>
-
-  <!-- MAIN SCREEN -->
-  <main id="main-screen" class="screen hidden">
-
-    <!-- ORDERS -->
-    <section id="tab-orders" class="tab-content">
-      <div class="page-head">
-        <div class="page-title">ЗАХИАЛГЫН ЖАГСААЛТ</div>
-      </div>
-
-      <!-- KPI cards (Admin only) -->
-      <div id="kpi-wrap" class="kpi-grid admin-only"></div>
-
-      <!-- Filter bar -->
-      <div class="card" id="orders-filters">
-        <div class="row" style="gap:12px; flex-wrap:wrap;">
-
-          <div class="grow">
-            <div class="label">Он</div>
-            <select id="f-year" class="input"></select>
-          </div>
-
-          <div class="grow">
-            <div class="label">Сар</div>
-            <select id="f-month" class="input"></select>
-          </div>
-
-          <div class="grow" id="f-item-wrap">
-            <div class="label">Бараа</div>
-            <select id="f-item" class="input"></select>
-          </div>
-
-          <!-- Admin-only -->
-          <div class="grow admin-only" id="f-place-wrap">
-            <div class="label">Газар</div>
-            <select id="f-place" class="input"></select>
-          </div>
-
-          <div class="grow admin-only" id="f-dept-wrap">
-            <div class="label">Хэлтэс</div>
-            <select id="f-dept" class="input"></select>
-          </div>
-
-          <div class="grow admin-only" id="f-role-wrap">
-            <div class="label">Албан тушаал</div>
-            <input id="f-role" class="input" placeholder="Ж: Машинист" />
-          </div>
-
-          <div class="grow admin-only" id="f-name-wrap">
-            <div class="label">Нэрээр хайх</div>
-            <input id="f-name" class="input" placeholder="Ж: Бат" />
-          </div>
-
-          <div class="grow admin-only" id="f-code-wrap">
-            <div class="label">Кодоор хайх</div>
-            <input id="f-code" class="input" placeholder="Ж: 12345" />
-          </div>
-
-          <div class="row-actions" style="display:flex; align-items:end; gap:10px;">
-            <button class="btn" onclick="applyOrderFilters()">ШҮҮХ</button>
-            <button class="btn danger" onclick="clearOrderFilters()">ЦЭВЭРЛЭХ</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="orders-box card">
-        <div class="orders-header" id="requests-header"></div>
-        <div id="requests-list" class="orders-list"></div>
-      </div>
-    </section>
-
-    <!-- REQUEST (employee only; admin hidden via JS) -->
-    <section id="tab-request" class="tab-content hidden">
-      <div class="page-head">
-        <div class="page-title">ШИНЭ ЗАХИАЛГА</div>
-      </div>
-
-      <div class="card">
-        <div class="form">
-          <div class="row">
-            <div class="grow">
-              <div class="label">Бараа</div>
-              <select id="req-item" class="input"></select>
-            </div>
-
-            <div class="grow">
-              <div class="label">Хэмжээ</div>
-              <select id="req-size" class="input"></select>
-            </div>
-
-            <div class="grow">
-              <div class="label">Тоо</div>
-              <input id="req-qty" class="input" type="number" min="1" value="1" />
-            </div>
-
-            <div class="row-actions">
-              <button class="btn" onclick="addToCart()">➕ НЭМЭХ</button>
-            </div>
-          </div>
-
-          <div style="height:10px;"></div>
-
-          <div class="page-subtitle">СОНГОСОН БАРААНУУД</div>
-          <div id="cart-list" class="items-list"></div>
-
-          <button class="btn primary full" onclick="submitMultiRequest()">ЗАХИАЛГА ИЛГЭЭХ</button>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:12px;">
-        <div class="page-subtitle">Миний олголтын түүх (Зөвшөөрсөн)</div>
-        <div id="user-history" class="history-list"></div>
-      </div>
-    </section>
-
-    <!-- ITEMS (admin only; employee hidden via JS) -->
-    <section id="tab-items" class="tab-content hidden">
-      <div class="page-head">
-        <div class="page-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
-      </div>
-
-      <div class="card">
-        <div class="row">
-          <div class="grow">
-            <div class="label">Бараа нэмэх</div>
-            <input id="new-item-name" class="input" placeholder="Барааны нэр" />
-          </div>
-          <div class="grow">
-            <div class="label">Size-үүд (таслалаар)</div>
-            <input id="new-item-sizes" class="input" placeholder="S,M,L,XL" />
-          </div>
-          <div class="row-actions">
-            <button class="btn primary" onclick="addItem()">НЭМЭХ</button>
-          </div>
-        </div>
-
-        <div class="row" style="margin-top:12px;">
-          <div class="grow">
-            <div class="label">Бараа шүүх</div>
-            <input id="item-search" class="input" placeholder="Нэрээр хайх..." />
-          </div>
-          <div class="row-actions">
-            <button class="btn" onclick="renderItems()">ШҮҮХ</button>
-            <button class="btn" onclick="clearItemSearch()">ЦЭВЭРЛЭХ</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div id="items-list" class="items-list"></div>
-      </div>
-    </section>
-
-    <!-- USERS (admin only) -->
-    <section id="tab-users" class="tab-content hidden">
-      <div class="page-head">
-        <div class="page-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
-        <div class="muted">(Admin)</div>
-      </div>
-
-      <div class="card">
         <div class="row">
           <div class="grow">
             <div class="label">Код</div>
-            <input id="u-code" class="input" placeholder="1000123" />
+            <input id="login-code" autocomplete="username" />
           </div>
           <div class="grow">
             <div class="label">Нууц үг</div>
-            <input id="u-pass" class="input" placeholder="12345" />
-          </div>
-          <div class="grow">
-            <div class="label">Нэр</div>
-            <input id="u-ner" class="input" placeholder="Нэр" />
-          </div>
-          <div class="grow">
-            <div class="label">Овог</div>
-            <input id="u-ovog" class="input" placeholder="Овог" />
+            <input id="login-pass" type="password" autocomplete="current-password" />
           </div>
         </div>
 
-        <div class="row" style="margin-top:12px;">
-          <div class="grow">
-            <div class="label">Албан тушаал</div>
-            <input id="u-role" class="input" placeholder="Албан тушаал" />
-          </div>
-          <div class="grow">
-            <div class="label">Газар</div>
-            <input id="u-place" class="input" placeholder="Газар" />
-          </div>
-          <div class="grow">
-            <div class="label">Хэлтэс</div>
-            <input id="u-dept" class="input" placeholder="Хэлтэс" />
-          </div>
-          <div class="grow">
-            <div class="label">Ээлж</div>
-            <select id="u-shift" class="input">
-              <option value="">Сонгох</option>
-              <option value="А ээлж">А ээлж</option>
-              <option value="Б ээлж">Б ээлж</option>
-              <option value="В ээлж">В ээлж</option>
-              <option value="Г ээлж">Г ээлж</option>
-            </select>
-          </div>
-          <div class="row-actions">
-            <button class="btn primary" onclick="addUser()">НЭМЭХ</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div id="users-list" class="users-list"></div>
-      </div>
-    </section>
-
-    <!-- PASS -->
-    <section id="tab-pass" class="tab-content hidden">
-      <div class="page-head">
-        <div class="page-title">НУУЦ ҮГ СОЛИХ</div>
-      </div>
-
-      <div class="card">
-        <div class="form">
-          <div class="label">Хуучин нууц үг</div>
-          <input id="old-pass" class="input" type="password" />
-
-          <div class="label">Шинэ нууц үг</div>
-          <input id="new-pass" class="input" type="password" />
-
-          <button class="btn primary full" onclick="changePass()">СОЛИХ</button>
+        <div style="margin-top:12px;">
+          <button class="btn primary full" onclick="login()">НЭВТРЭХ</button>
         </div>
       </div>
     </section>
 
+    <!-- Main -->
+    <section id="main-screen" class="hidden">
+      <!-- ORDERS -->
+      <section id="tab-orders" class="tab-content">
+        <div class="card" style="margin-bottom:12px;">
+          <div class="card-title">ЗАХИАЛГЫН ЖАГСААЛТ</div>
+          <div id="kpi-wrap" class="kpi-grid" style="margin-top:12px;"></div>
+
+          <!-- old filters kept (if used by your JS); can be hidden later -->
+          <div id="orders-filters" class="card" style="margin-top:12px;">
+            <div class="row">
+              <div class="grow"><div class="label">Он</div><select id="f-year"></select></div>
+              <div class="grow"><div class="label">Сар</div><select id="f-month"></select></div>
+              <div class="grow"><div class="label">Бараа</div><select id="f-item"></select></div>
+              <div class="grow"><div class="label">Газар</div><select id="f-place"></select></div>
+              <div class="grow"><div class="label">Хэлтэс</div><select id="f-dept"></select></div>
+              <div class="grow"><div class="label">Албан тушаал</div><input id="f-role" placeholder="Ж: Машинист"/></div>
+              <div class="grow"><div class="label">Нэрээр хайх</div><input id="f-name" placeholder="Ж: Бат"/></div>
+              <div class="grow"><div class="label">Кодоор хайх</div><input id="f-code" placeholder="Ж: 12345"/></div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;">
+              <button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button>
+              <button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="orders-box" id="orders-box">
+          <div id="requests-header" class="orders-header"></div>
+          <div id="requests-list" class="orders-list"></div>
+        </div>
+      </section>
+
+      <!-- REQUEST (employee) -->
+      <section id="tab-request" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">ШИНЭ ЗАХИАЛГА</div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Бараа</div><select id="req-item"></select></div>
+            <div class="grow"><div class="label">Хэмжээ</div><select id="req-size"></select></div>
+            <div class="grow"><div class="label">Тоо</div><input id="req-qty" type="number" value="1" min="1"/></div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="btn primary" style="margin-top:22px;" onclick="addToCart()">➕ НЭМЭХ</button>
+            </div>
+          </div>
+
+          <div style="margin-top:14px;">
+            <div class="label">СОНГОСОН БАРААНУУД</div>
+            <div id="cart-list" style="margin-top:10px;"></div>
+          </div>
+
+          <div style="margin-top:12px;">
+            <button class="btn primary full" onclick="submitMultiRequest()">ЗАХИАЛГА ИЛГЭЭХ</button>
+          </div>
+
+          <div style="margin-top:18px;">
+            <div class="label">Миний олголтын түүх (Зөвшөөрсөн)</div>
+            <div id="user-history" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ITEMS (admin) -->
+      <section id="tab-items" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Бараа нэмэх</div><input id="new-item-name" placeholder="Барааны нэр"/></div>
+            <div class="grow"><div class="label">Size-үүд (таслалаар)</div><input id="new-item-sizes" placeholder="S,M,L"/></div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="btn primary" style="margin-top:22px;" onclick="addItem()">НЭМЭХ</button>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Бараа шүүх</div><input id="item-search" placeholder="Хайх..." oninput="renderItems()"/></div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="icon-btn btn-icon" style="margin-top:22px;" onclick="clearItemSearch()" title="Цэвэрлэх">🗑️</button>
+            </div>
+          </div>
+
+          <div id="items-list" style="margin-top:12px;"></div>
+        </div>
+      </section>
+
+      <!-- USERS (admin) -->
+      <section id="tab-users" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">АЖИЛТНЫ МЭДЭЭЛЭЛ</div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Код</div><input id="u-code"/></div>
+            <div class="grow"><div class="label">Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
+            <div class="grow"><div class="label">Нэр</div><input id="u-ner"/></div>
+            <div class="grow"><div class="label">Овог</div><input id="u-ovog"/></div>
+          </div>
+
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Албан тушаал</div><input id="u-role"/></div>
+            <div class="grow"><div class="label">Газар</div><input id="u-place"/></div>
+            <div class="grow"><div class="label">Хэлтэс</div><input id="u-dept"/></div>
+            <div class="grow">
+              <div class="label">Ээлж</div>
+              <select id="u-shift">
+                <option value="">Сонгох</option>
+                <option>А ээлж</option><option>Б ээлж</option><option>В ээлж</option><option>Г ээлж</option>
+              </select>
+            </div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="btn primary" style="margin-top:22px;" onclick="addUser()">НЭМЭХ</button>
+            </div>
+          </div>
+
+          <div id="users-list" style="margin-top:12px;"></div>
+        </div>
+      </section>
+
+      <!-- PASS -->
+      <section id="tab-pass" class="tab-content hidden">
+        <div class="card" style="max-width:640px;">
+          <div class="card-title">НУУЦ ҮГ СОЛИХ</div>
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Хуучин нууц үг</div><input id="old-pass" type="password"/></div>
+            <div class="grow"><div class="label">Шинэ нууц үг</div><input id="new-pass" type="password"/></div>
+          </div>
+          <div style="margin-top:12px;">
+            <button class="btn primary" onclick="changePass()">СОЛИХ</button>
+          </div>
+        </div>
+      </section>
+    </section>
   </main>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20260303-patch1"></script>
 </body>
 </html>
