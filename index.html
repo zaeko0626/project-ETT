@@ -129,7 +129,18 @@
         <div class="card">
           <div class="card-title">ШИНЭ ЗАХИАЛГА</div>
 
-          <div class="row" style="margin-top:12px;">
+          
+        <div class="grid grid-3 gap-12" style="margin-bottom:12px;">
+          <div class="field">
+            <label>Багц захиалга</label>
+            <select id="req-pack" class="input"></select>
+          </div>
+          <div class="field" style="display:flex;align-items:flex-end;gap:10px;">
+            <button class="btn" onclick="addPackToCart()">Багц нэмэх</button>
+            <button class="btn primary" onclick="submitPackRequest()">Багц илгээх</button>
+          </div>
+        </div>
+<div class="row" style="margin-top:12px;">
             <div class="grow"><div class="label">Бараа</div><select id="req-item"></select></div>
             <div class="grow"><div class="label">Хэмжээ</div><select id="req-size"></select></div>
             <div class="grow"><div class="label">Тоо</div><input id="req-qty" type="number" value="1" min="1"/></div>
