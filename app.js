@@ -1,9 +1,12 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxdq5rmoZqVaV6rvlKA6hjVqvftv-CDKXvIckkjFkVavUO_MrEDPTllVGpqmbLZXmlC/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbygYNwxpS9gjnTkSVjBrU5Z-MxwC6jdSP_Y9Fhd5UROg9fVF0t-s_4PeGxiSZykCS-k/exec";
 
 let currentUser = null;
 let requests = [];
 let requestItems = [];
 let itemsMaster = [];
+let packsMaster = []; // Packs sheet (active)
+let stockMaster = []; // Inventory rows
+
 let users = [];
 let currentModalRequestId = null;
 let cart = []; // { item, size, qty }
@@ -24,6 +27,8 @@ let orderFilters = {
 let openHeaderFilterKey = null; // 'status' | 'shift' | null
 
 const $ = (id) => document.getElementById(id);
+
+function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function esc(s) {
   return String(s ?? "")
@@ -480,12 +485,14 @@ window.openRequestDetail = (request_id) => {
     const size = esc(l.size || "");
     const qty = esc(l.qty ?? "");
     const meta = statusMetaItem(l.item_status);
-    const decided = ["Зөвшөөрсөн","Татгалзсан"].includes(String(l.item_status||"").trim());
+    const decided = ["Зөвшөөрсөн","Татгалзсан","Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status||"").trim());
     const actionHtml = isAdmin()
       ? (decided ? `<span class="pill decided">ШИЙДВЭРЛЭСЭН</span>` :
-        `<div class="decision-actions">
-          <button class="btn pill approve" onclick="setItemDecision('${esc(l.line_id)}','Зөвшөөрсөн');event.stopPropagation();">ЗӨВШӨӨРӨХ</button>
-          <button class="btn pill reject" onclick="setItemDecision('${esc(l.line_id)}','Татгалзсан');event.stopPropagation();">ТАТГАЛЗАХ</button>
+        `<div class="decision-actions issue-actions">
+          <input class="input tiny" id="iss-size-${esc(l.line_id)}" value="${esc(l.issued_size || l.size || "")}" placeholder="Размер" />
+          <input class="input tiny" id="iss-qty-${esc(l.line_id)}" type="number" min="0" value="${esc(l.issued_qty || l.qty || 0)}" placeholder="Тоо" />
+          <button class="btn pill approve" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">ОЛГОХ</button>
+          <button class="btn pill reject" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">ТАТГАЛЗАХ</button>
         </div>`)
       : ``;    return `<div class="light-table-row">
       <div style="font-weight:900;">${item}</div>
@@ -519,6 +526,55 @@ window.setItemDecision = async (line_id, status) => {
     popupError(e.message || String(e));
   } finally {
     showLoading(false);
+  }
+};
+
+
+// Admin: approve + issued size/qty + stock-out
+window.issueLine = async (line_id) => {
+  try {
+    const size = ($(`iss-size-${line_id}`)?.value || "").trim();
+    const qty = parseInt($(`iss-qty-${line_id}`)?.value || "0", 10) || 0;
+    showLoading("Шийдвэрлэж байна...");
+    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: size, issued_qty: qty });
+    hideLoading();
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    hideLoading();
+    popupError("Алдаа: " + e.toString());
+  }
+};
+
+window.issueLineReject = async (line_id) => {
+  try {
+    showLoading("Татгалзаж байна...");
+    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: "", issued_qty: 0 });
+    hideLoading();
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    hideLoading();
+    popupError("Алдаа: " + e.toString());
+  }
+};
+
+// Employee: confirm receive by PIN
+window.confirmReceive = async () => {
+  const pin = ($("receive-pin")?.value || "").trim();
+  if (!pin) return popupError("PIN оруулна уу");
+  try {
+    showLoading("Баталгаажуулж байна...");
+    const r = await api({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin: pin });
+    hideLoading();
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    hideLoading();
+    popupError("Алдаа: " + e.toString());
   }
 };
 
@@ -571,6 +627,52 @@ window.addToCart = () => {
   else cart.push({ item, size, qty });
 
   renderCart();
+  // clear last selections to prevent duplicate accidental add
+  try {
+    const itemSel = $("req-item");
+    const sizeSel = $("req-size");
+    const qtyInp = $("req-qty");
+    if (itemSel) itemSel.value = "";
+    if (sizeSel) sizeSel.innerHTML = '<option value="">Размер</option>';
+    if (qtyInp) qtyInp.value = 1;
+  } catch (e) {}
+};
+
+
+window.addPackToCart = () => {
+  const packName = ($("req-pack")?.value || "").trim();
+  if (!packName) return popupError("Багц сонгоно уу");
+  const lines = (packsMaster || []).filter(p => String(p.pack_name||"").trim() === packName);
+  if (!lines.length) return popupError("Багц хоосон/олдсонгүй");
+  lines.forEach(p => {
+    const item = String(p.item||"").trim();
+    if (!item) return;
+    const size = String(p.default_size||"").trim();
+    const qty = parseInt(p.default_qty,10) || 1;
+    cart.push({ item, size, qty });
+  });
+  renderCart();
+  try { $("req-pack").value=""; } catch(e){}
+};
+
+window.submitPackRequest = async () => {
+  const packName = ($("req-pack")?.value || "").trim();
+  if (!packName) return popupError("Багц сонгоно уу");
+  try {
+    showLoading("Захиалга илгээж байна...");
+    const r = await api({ action: "add_pack_request", code: currentUser.code, pack_name: packName });
+    hideLoading();
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    cart = [];
+    renderCart();
+    $("req-pack").value = "";
+    await loadAllData();
+    showTab("tab-orders");
+    popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
+  } catch (e) {
+    hideLoading();
+    popupError("Алдаа: " + e.toString());
+  }
 };
 
 window.removeCartItem = (i) => { cart.splice(i, 1); renderCart(); };
@@ -991,6 +1093,8 @@ window.refreshData = async (keepTab = true) => {
     requests = r.requests || [];
     requestItems = r.request_items || [];
     itemsMaster = r.items || [];
+    packsMaster = r.packs || [];
+    stockMaster = r.stock || [];
     if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
       users = u.success ? (u.users || []) : [];
