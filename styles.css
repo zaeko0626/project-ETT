@@ -360,3 +360,9 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 .mini-table.items-table{grid-template-columns: 2fr 2fr 1fr 1.6fr}
 .mini-table.users-table{grid-template-columns: 1.1fr 1.2fr 1.4fr 1.2fr 1.2fr 1fr 1.4fr}
 @media (max-width:1100px){.mini-table.users-table{grid-template-columns: 1fr 1.6fr 1.2fr 1.6fr}}
+
+
+/* v2 additions */
+.issue-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.input.tiny{padding:8px 10px;font-size:13px;max-width:140px;}
+.pill.decided{background:#1f2937;color:#fff;}
