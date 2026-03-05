@@ -159,15 +159,33 @@ function setSidebarUserInfo() {
 
 function applyRoleVisibility() {
   const headerLine = document.getElementById("header-userline");
+  // ✅ employee дээр header доор давхар мэдээлэл харагдахгүй
   if (headerLine) headerLine.style.display = isAdmin() ? "" : "none";
+
   const navReq = $("nav-request");
   const navItems = $("nav-items");
   const navUsers = $("nav-users");
   if (navReq) navReq.style.display = isAdmin() ? "none" : "";
   if (navItems) navItems.style.display = isAdmin() ? "" : "none";
   if (navUsers) navUsers.style.display = isAdmin() ? "" : "none";
-  document.querySelectorAll(".admin-only").forEach((el) => { el.style.display = isAdmin() ? "" : "none"; });
-  document.querySelectorAll(".emp-only").forEach((el) => { el.style.display = isAdmin() ? "none" : ""; });
+
+  document.querySelectorAll(".admin-only").forEach((el) => {
+    el.style.display = isAdmin() ? "" : "none";
+  });
+  document.querySelectorAll(".emp-only").forEach((el) => {
+    el.style.display = isAdmin() ? "none" : "";
+  });
+
+  // ✅ Legacy filter panel: employee үед илүүдэл шүүлтүүрийн ТОЛГОЙ/BOX бүхэлд нь нуух
+  const adminOnlyIds = ["f-place", "f-dept", "f-role", "f-name", "f-code"];
+  adminOnlyIds.forEach((id) => {
+    const el = $(id);
+    if (!el) return;
+    const wrap = el.closest(".grow") || el.closest(".filter-field") || el.parentElement;
+    if (wrap) wrap.style.display = isAdmin() ? "" : "none";
+    else el.style.display = isAdmin() ? "" : "none";
+  });
+
   renderOrdersHeader();
   renderKpis();
 }
@@ -291,17 +309,17 @@ function renderOrdersHeader() {
       <div>АЖИЛТАН</div>
       <div>ГАЗАР, ХЭЛТЭС</div>
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
-      <div>БАРАА</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.1fr 2.1fr 2.2fr 0.7fr 3.6fr 1.2fr 1.1fr";
+    // ✅ БАРАА багана авсан
+    header.style.gridTemplateColumns = "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
-      <div>БАРАА</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.2fr 4.2fr 1.3fr 1.1fr";
+    // ✅ Ажилтан: зөвхөн дугаар / төлөв / огноо
+    header.style.gridTemplateColumns = "1.4fr 1.2fr 1.1fr";
   }
 }
 
@@ -389,36 +407,36 @@ function renderRequests() {
     return;
   }
 
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
+    ? "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr"
+    : "1.4fr 1.2fr 1.1fr");
+
   list.innerHTML = data.map((r) => {
     const st = statusMetaOverall(r.overall_status);
     const reqId = esc(r.request_id);
-    const employee = isAdmin()
-      ? `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
-           <div class="sub">ID: ${esc(r.code||"")}${r.role?` · ${esc(r.role)}`:""}</div></div>`
-      : `<div class="items-vertical">${buildItemsSummaryHTML(r.request_id)}</div>`;
+
+    const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
+        <div class="sub">ID: ${esc(r.code||"")}${r.role?` · ${esc(r.role)}`:""}</div></div>`;
 
     const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"")}</div><div class="sub">${esc(r.department||"")}</div></div>`;
     const shift = `<div>${esc(r.shift||"")}</div>`;
-    const items = `<div class="items-vertical">${buildItemsSummaryHTML(r.request_id)}</div>`;
     const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
     const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
 
     if (isAdmin()) {
-      return `<div class="request-row" style="display:grid;grid-template-columns:${$("requests-header")?.style.gridTemplateColumns || "1.3fr 2.2fr 2.4fr 0.9fr 3.2fr 1.3fr 1.1fr"};" onclick="openRequestDetail('${reqId}')">
+      return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
         <div class="req-id">${reqId}</div>
         <div>${employee}</div>
         <div>${placeDept}</div>
         <div>${shift}</div>
-        <div>${items}</div>
         <div>${status}</div>
         <div>${date}</div>
       </div>`;
     }
 
-    // employee view
-    return `<div class="request-row" style="display:grid;grid-template-columns:${$("requests-header")?.style.gridTemplateColumns || "1.3fr 3.8fr 1.3fr 1.1fr"};" onclick="openRequestDetail('${reqId}')">
+    // employee view (✅ бараа багана байхгүй)
+    return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
       <div class="req-id">${reqId}</div>
-      <div>${items}</div>
       <div>${status}</div>
       <div>${date}</div>
     </div>`;
