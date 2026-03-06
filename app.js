@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbygYNwxpS9gjnTkSVjBrU5Z-MxwC6jdSP_Y9Fhd5UROg9fVF0t-s_4PeGxiSZykCS-k/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyn-d52tx1Zc_5L7zmx3_7K9VtWVBeAQN5Hj-lWWvJSLOAFegIQAbmWB9AwioV72eTf/exec";
 
 let currentUser = null;
 let requests = [];
