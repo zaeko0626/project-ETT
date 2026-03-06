@@ -537,12 +537,12 @@ window.issueLine = async (line_id) => {
     const qty = parseInt($(`iss-qty-${line_id}`)?.value || "0", 10) || 0;
     showLoading("Шийдвэрлэж байна...");
     const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: size, issued_qty: qty });
-    hideLoading();
+    showLoading(false);
     if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
     await loadAllData();
     openRequestDetail(currentModalRequestId);
   } catch (e) {
-    hideLoading();
+    showLoading(False);
     popupError("Алдаа: " + e.toString());
   }
 };
@@ -551,12 +551,12 @@ window.issueLineReject = async (line_id) => {
   try {
     showLoading("Татгалзаж байна...");
     const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: "", issued_qty: 0 });
-    hideLoading();
+    showLoading(False);
     if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
     await loadAllData();
     openRequestDetail(currentModalRequestId);
   } catch (e) {
-    hideLoading();
+    showLoading(False);
     popupError("Алдаа: " + e.toString());
   }
 };
@@ -568,12 +568,12 @@ window.confirmReceive = async () => {
   try {
     showLoading("Баталгаажуулж байна...");
     const r = await api({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin: pin });
-    hideLoading();
+    showLoading(false);
     if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
     await loadAllData();
     openRequestDetail(currentModalRequestId);
   } catch (e) {
-    hideLoading();
+    showLoading(false);
     popupError("Алдаа: " + e.toString());
   }
 };
@@ -661,7 +661,7 @@ window.submitPackRequest = async () => {
   try {
     showLoading("Захиалга илгээж байна...");
     const r = await api({ action: "add_pack_request", code: currentUser.code, pack_name: packName });
-    hideLoading();
+    showLoading(false);
     if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
     cart = [];
     renderCart();
@@ -670,7 +670,7 @@ window.submitPackRequest = async () => {
     showTab("tab-orders");
     popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
   } catch (e) {
-    hideLoading();
+    showLoading(false);
     popupError("Алдаа: " + e.toString());
   }
 };
