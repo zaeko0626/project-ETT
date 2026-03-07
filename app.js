@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbyQIqMyPAHmzw6tw8w-J7cKooNfbiF_V5D1pb3vR36rU0vx2Kkk62_3G7F6O9WNm740/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxrTB8mzOATB8Nrb0ElEIStYparkzsXemSDyeArcwssk-_YXDaigwz4Gk8iFpoI8Qk/exec";
 
 let currentUser = null;
 let requests = [];
@@ -39,7 +39,9 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-function isAdmin() { return String(currentUser?.code || "").toLowerCase() === "admin"; }
+function isAdmin() {
+  return String(currentUser?.type || "").toLowerCase() === "admin" || String(currentUser?.code || "").toLowerCase() === "admin";
+}
 
 function fmtDateOnly(v) {
   const d = new Date(v);
@@ -52,16 +54,30 @@ function fmtDateOnly(v) {
 function getYear(v) { const d = new Date(v); return isNaN(d) ? "" : String(d.getFullYear()); }
 function getMonth(v) { const d = new Date(v); return isNaN(d) ? "" : String(d.getMonth() + 1).padStart(2, "0"); }
 
-function statusMetaOverall(s) {
+function normalizeOverallStatus(s) {
   const st = String(s || "").trim();
+  if (!st) return "Хүлээгдэж буй";
+  if (st === "Хэсэгчлэн") return "Хэсэгчлэн шийдвэрлэсэн";
+  return st;
+}
+function normalizeItemStatus(s) {
+  const st = String(s || "").trim();
+  if (!st) return "Хүлээгдэж буй";
+  if (st === "Хэсэгчлэн") return "Хэсэгчлэн шийдвэрлэсэн";
+  return st;
+}
+
+function statusMetaOverall(s) {
+  const st = normalizeOverallStatus(s);
   if (st === "Шийдвэрлэсэн") return { label: "ШИЙДВЭРЛЭСЭН", cls: "st-approved" };
-  if (st === "Хэсэгчлэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
+  if (st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 function statusMetaItem(s) {
-  const st = String(s || "").trim();
+  const st = normalizeItemStatus(s);
   if (st === "Зөвшөөрсөн") return { label: "ЗӨВШӨӨРСӨН", cls: "st-approved" };
   if (st === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
+  if (st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 
@@ -246,9 +262,9 @@ function renderKpis() {
 
   const data = getVisibleRequests();
   const total = data.length;
-  const pending = data.filter(r => String(r.overall_status || "").trim() === "Хүлээгдэж буй" || String(r.overall_status || "").trim() === "").length;
-  const partial = data.filter(r => String(r.overall_status || "").trim() === "Хэсэгчлэн").length;
-  const done = data.filter(r => String(r.overall_status || "").trim() === "Шийдвэрлэсэн").length;
+  const pending = data.filter(r => normalizeOverallStatus(r.overall_status) === "Хүлээгдэж буй").length;
+  const partial = data.filter(r => normalizeOverallStatus(r.overall_status) === "Хэсэгчлэн шийдвэрлэсэн").length;
+  const done = data.filter(r => normalizeOverallStatus(r.overall_status) === "Шийдвэрлэсэн").length;
 
   const card = (title, value, chip, clickStatus) => `
     <div class="kpi-card" onclick="applyKpiStatus('${esc(clickStatus)}')" role="button">
@@ -259,7 +275,7 @@ function renderKpis() {
   wrap.innerHTML = [
     card("Нийт захиалга", total, "Бүгд", ""),
     card("Хүлээгдэж буй", pending, "Хүлээгдэж буй", "Хүлээгдэж буй"),
-    card("Хэсэгчлэн шийдвэрлэсэн", partial, "Хэсэгчлэн шийдвэрлэсэн", "Хэсэгчлэн"),
+    card("Хэсэгчлэн шийдвэрлэсэн", partial, "Хэсэгчлэн шийдвэрлэсэн", "Хэсэгчлэн шийдвэрлэсэн"),
     card("Шийдвэрлэсэн", done, "Шийдвэрлэсэн", "Шийдвэрлэсэн")
   ].join("");
 }
@@ -299,7 +315,7 @@ function renderOrdersHeader() {
   const statusOptions = `
     <option value="">Бүгд</option>
     <option ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
-    <option ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
+    <option ${orderFilters.status==="Хэсэгчлэн шийдвэрлэсэн"?"selected":""}>Хэсэгчлэн шийдвэрлэсэн</option>
     <option ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
   const shiftOptions = `
     <option value="">Бүгд</option>
@@ -379,7 +395,7 @@ function populateOrderFilters() {
 function passFilters(r) {
   const y = getYear(r.requestedDate);
   const m = getMonth(r.requestedDate);
-  const st = String(r.overall_status || "").trim() || "Хүлээгдэж буй";
+  const st = normalizeOverallStatus(r.overall_status);
 
   if (orderFilters.status && st !== orderFilters.status) return false;
   if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
@@ -470,7 +486,7 @@ window.openRequestDetail = (request_id) => {
 
   const tableHead = `
     <div style="padding:0 14px 10px;">
-      <div class="light-table-head">
+      <div class="light-table-head ${isAdmin() ? "admin" : "user"}">
         <div>БАРАА</div>
         <div>РАЗМЕР</div>
         <div>ТОО</div>
@@ -494,7 +510,7 @@ window.openRequestDetail = (request_id) => {
           <button class="btn pill approve" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">ОЛГОХ</button>
           <button class="btn pill reject" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">ТАТГАЛЗАХ</button>
         </div>`)
-      : ``;    return `<div class="light-table-row">
+      : ``;    return `<div class="light-table-row ${isAdmin() ? "admin" : "user"}">
       <div style="font-weight:900;">${item}</div>
       <div>Размер: ${size}</div>
       <div>${qty} ширхэг</div>
@@ -535,29 +551,29 @@ window.issueLine = async (line_id) => {
   try {
     const size = ($(`iss-size-${line_id}`)?.value || "").trim();
     const qty = parseInt($(`iss-qty-${line_id}`)?.value || "0", 10) || 0;
-    showLoading("Шийдвэрлэж байна...");
-    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: size, issued_qty: qty });
-    showLoading(false);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: size, issued_qty: qty });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
-    showLoading(False);
-    popupError("Алдаа: " + e.toString());
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
   }
 };
 
 window.issueLineReject = async (line_id) => {
   try {
-    showLoading("Татгалзаж байна...");
-    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: "", issued_qty: 0 });
-    showLoading(False);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: "", issued_qty: 0 });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
-    showLoading(False);
-    popupError("Алдаа: " + e.toString());
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
   }
 };
 
@@ -566,15 +582,15 @@ window.confirmReceive = async () => {
   const pin = ($("receive-pin")?.value || "").trim();
   if (!pin) return popupError("PIN оруулна уу");
   try {
-    showLoading("Баталгаажуулж байна...");
-    const r = await api({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin: pin });
-    showLoading(false);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
     showLoading(false);
-    popupError("Алдаа: " + e.toString());
   }
 };
 
@@ -598,13 +614,20 @@ window.finalizeCurrentRequest = async () => {
 function fillRequestForm() {
   const itemSel = $("req-item");
   const sizeSel = $("req-size");
+  const packSel = $("req-pack");
   if (!itemSel || !sizeSel) return;
 
-  setSelectOptions(itemSel, itemsMaster.map((x) => x.name), "Сонгох");
+  const openItems = (itemsMaster || []).filter((x) => String(x?.locked).toLowerCase() !== "true" && String(x?.name || "").trim());
+  setSelectOptions(itemSel, openItems.map((x) => x.name), "Сонгох");
+
+  if (packSel) {
+    const packNames = uniq((packsMaster || []).map((p) => String(p.pack_name || "").trim())).sort((a, b) => a.localeCompare(b, "mn"));
+    setSelectOptions(packSel, packNames, "Сонгох");
+  }
 
   const onItemChange = () => {
     const itemName = (itemSel.value || "").trim();
-    const it = itemsMaster.find((x) => String(x.name) === itemName);
+    const it = openItems.find((x) => String(x.name) === itemName);
     const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
     setSelectOptions(sizeSel, sizes, "Сонгох");
   };
@@ -659,19 +682,19 @@ window.submitPackRequest = async () => {
   const packName = ($("req-pack")?.value || "").trim();
   if (!packName) return popupError("Багц сонгоно уу");
   try {
-    showLoading("Захиалга илгээж байна...");
-    const r = await api({ action: "add_pack_request", code: currentUser.code, pack_name: packName });
-    showLoading(false);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    showLoading(true);
+    const r = await apiPost({ action: "add_pack_request", code: currentUser.code, pack_name: packName });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
     cart = [];
     renderCart();
-    $("req-pack").value = "";
-    await loadAllData();
-    showTab("tab-orders");
+    if ($("req-pack")) $("req-pack").value = "";
+    await refreshData(false);
+    showTab("orders", $("nav-orders"));
     popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
   } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
     showLoading(false);
-    popupError("Алдаа: " + e.toString());
   }
 };
 
