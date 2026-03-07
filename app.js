@@ -5,11 +5,11 @@ let requests = [];
 let requestItems = [];
 let itemsMaster = [];
 let packsMaster = []; // Packs sheet (active)
-let packsAdmin = []; // all pack rows (admin)
 let stockMaster = []; // Inventory rows
+let packBuilder = []; // { item, qty }
+let packsGrouped = []; // [{ pack_name, active, lines:[] }]
 
 let users = [];
-let packDraft = []; // { item, qty } for admin builder
 let currentModalRequestId = null;
 let cart = []; // { item, size, qty }
 
@@ -57,7 +57,7 @@ function getMonth(v) { const d = new Date(v); return isNaN(d) ? "" : String(d.ge
 function statusMetaOverall(s) {
   const st = String(s || "").trim();
   if (st === "Шийдвэрлэсэн") return { label: "ШИЙДВЭРЛЭСЭН", cls: "st-approved" };
-  if (st === "Хэсэгчлэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
+  if (st === "Хэсэгчлэн" || st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 function statusMetaItem(s) {
@@ -212,7 +212,7 @@ window.showTab = (tabName, btn) => {
 
   if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
   if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
-  if (tabName === "items") renderItems();
+  if (tabName === "items") { renderItems(); fillPackItemSelect(); renderPackBuilder(); renderPacks(); }
   if (tabName === "users") renderUsers();
 };
 
@@ -289,7 +289,6 @@ function headerFilterCell(title, key, optionsHtml) {
         <select class="hdr-select" onchange="applyHeaderSelect('${esc(key)}', this.value)">${optionsHtml}</select>
       </div>
     </div>`;
-  renderPacksAdmin();
 }
 window.toggleHeaderFilter = (key) => { openHeaderFilterKey = (openHeaderFilterKey === key) ? null : key; renderOrdersHeader(); };
 window.clearHeaderFilter = (key) => { orderFilters[key] = ""; openHeaderFilterKey = null; renderOrdersHeader(); renderRequests(); };
@@ -538,29 +537,29 @@ window.issueLine = async (line_id) => {
   try {
     const size = ($(`iss-size-${line_id}`)?.value || "").trim();
     const qty = parseInt($(`iss-qty-${line_id}`)?.value || "0", 10) || 0;
-    showLoading("Шийдвэрлэж байна...");
-    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: size, issued_qty: qty });
-    showLoading(false);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: size, issued_qty: qty });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
-    showLoading(False);
-    popupError("Алдаа: " + e.toString());
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
   }
 };
 
 window.issueLineReject = async (line_id) => {
   try {
-    showLoading("Татгалзаж байна...");
-    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: "", issued_qty: 0 });
-    showLoading(False);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: "", issued_qty: 0 });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
-    showLoading(False);
-    popupError("Алдаа: " + e.toString());
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
   }
 };
 
@@ -569,15 +568,15 @@ window.confirmReceive = async () => {
   const pin = ($("receive-pin")?.value || "").trim();
   if (!pin) return popupError("PIN оруулна уу");
   try {
-    showLoading("Баталгаажуулж байна...");
-    const r = await api({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin: pin });
-    showLoading(false);
-    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
-    await loadAllData();
-    openRequestDetail(currentModalRequestId);
+    showLoading(true);
+    const r = await apiPost({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
   } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
     showLoading(false);
-    popupError("Алдаа: " + e.toString());
   }
 };
 
@@ -598,28 +597,69 @@ window.finalizeCurrentRequest = async () => {
 };
 
 /* ---------------- Request (employee) ---------------- */
+function groupPacks(lines) {
+  const map = {};
+  (lines || []).forEach((p) => {
+    const name = String(p.pack_name || "").trim();
+    if (!name) return;
+    if (!map[name]) {
+      map[name] = {
+        pack_name: name,
+        active: String(p.active || "").toLowerCase() === "false" ? false : true,
+        lines: []
+      };
+    }
+    map[name].lines.push({
+      item: String(p.item || "").trim(),
+      default_size: String(p.default_size || "").trim(),
+      default_qty: Number(p.default_qty || 1)
+    });
+  });
+  return Object.values(map).sort((a, b) => a.pack_name.localeCompare(b.pack_name, "mn"));
+}
+
+function rebuildPacksGrouped() {
+  packsGrouped = groupPacks(packsMaster || []);
+}
+
+function fillPackItemSelect() {
+  const sel = $("pack-item-select");
+  if (!sel) return;
+  const allItems = (itemsMaster || [])
+    .map((x) => String(x.name || "").trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "mn"));
+  setSelectOptions(sel, allItems, "Сонгох");
+}
+
 function fillRequestForm() {
   const itemSel = $("req-item");
   const sizeSel = $("req-size");
   const packSel = $("req-pack");
-  if (!itemSel || !sizeSel) return;
 
-  const activeItems = itemsMaster.filter((x) => String(x.locked).toLowerCase() !== "true");
-  setSelectOptions(itemSel, activeItems.map((x) => x.name), "Сонгох");
+  if (itemSel) {
+    const itemNames = (itemsMaster || [])
+      .map((x) => String(x.name || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "mn"));
+    setSelectOptions(itemSel, itemNames, "Сонгох");
 
-  if (packSel) {
-    const packNames = Array.from(new Set((packsMaster || []).map((x) => String(x.pack_name || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "mn"));
-    setSelectOptions(packSel, packNames, "Сонгох");
+    const onItemChange = () => {
+      const itemName = (itemSel.value || "").trim();
+      const it = itemsMaster.find((x) => String(x.name || "") === itemName);
+      const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+      setSelectOptions(sizeSel, sizes, "Сонгох");
+    };
+    itemSel.onchange = onItemChange;
+    onItemChange();
   }
 
-  const onItemChange = () => {
-    const itemName = (itemSel.value || "").trim();
-    const it = activeItems.find((x) => String(x.name) === itemName);
-    const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
-    setSelectOptions(sizeSel, sizes, "Сонгох");
-  };
-  itemSel.onchange = onItemChange;
-  onItemChange();
+  if (packSel) {
+    const activePackNames = groupPacks(packsMaster || [])
+      .filter((p) => p.active)
+      .map((p) => p.pack_name);
+    setSelectOptions(packSel, activePackNames, "Сонгох");
+  }
 }
 
 window.addToCart = () => {
@@ -649,102 +689,136 @@ window.addToCart = () => {
 };
 
 
-
-function getPackLinesByName(packName, useAdminRows = false) {
-  const source = useAdminRows ? packsAdmin : packsMaster;
-  return (source || []).filter((p) => String(p.pack_name || "").trim() === String(packName || "").trim());
-}
-
-function openPackRequestModal(packName, mode) {
-  const lines = getPackLinesByName(packName, false);
-  if (!lines.length) return popupError("Багц хоосон/олдсонгүй");
-
-  const html = `
-    <div style="padding:14px;display:grid;gap:12px;">
-      <div class="muted">Багц: <b>${esc(packName)}</b></div>
-      <div class="mini-table pack-size-table">
-        <div class="mini-th">Бараа</div>
-        <div class="mini-th">Размер</div>
-        <div class="mini-th">Тоо</div>
-        ${lines.map((ln, idx) => {
-          const itemName = String(ln.item || "").trim();
-          const item = itemsMaster.find((x) => String(x.name || "").trim() === itemName);
-          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
-          return `
-            <div class="mini-td" style="font-weight:900;">${esc(itemName)}</div>
-            <div class="mini-td">
-              <select id="pack-size-${idx}" class="input">
-                <option value="">Сонгох</option>
-                ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
-              </select>
-            </div>
-            <div class="mini-td">${esc(parseInt(ln.default_qty, 10) || 1)} ширхэг</div>`;
-        }).join("")}
-      </div>
-      <div style="display:flex;gap:10px;justify-content:flex-end;">
-        <button class="btn" onclick="closeModal()">БОЛИХ</button>
-        <button class="btn primary" onclick="confirmPackRequest('${escAttr(packName)}','${escAttr(mode)}')">${mode === "submit" ? "ИЛГЭЭХ" : "САГСЛАХ"}</button>
-      </div>
-    </div>`;
-  openModal("Багц сонгох", html);
-}
-
 window.addPackToCart = () => {
-  if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
   const packName = ($("req-pack")?.value || "").trim();
   if (!packName) return popupError("Багц сонгоно уу");
-  openPackRequestModal(packName, "cart");
+
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack || !pack.lines.length) return popupError("Багц хоосон/олдсонгүй");
+
+  const modalHtml = `
+    <div style="padding:14px;">
+      <div class="muted" style="margin-bottom:12px;">${esc(packName)} багцын бараа бүрт размер сонгоно уу.</div>
+      <div class="mini-table" style="display:grid;gap:10px;">
+        ${pack.lines.map((ln, i) => {
+          const item = itemsMaster.find((x) => String(x.name || "") === String(ln.item || ""));
+          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+          return `
+            <div class="light-table-row" style="grid-template-columns:2fr 1fr 1.2fr;">
+              <div style="font-weight:900;">${esc(ln.item)}</div>
+              <div>${esc(ln.default_qty)} ширхэг</div>
+              <div>
+                <select id="pack-size-${i}" class="input">
+                  <option value="">Размер</option>
+                  ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
+                </select>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
+        <button class="btn primary" onclick="confirmPackToCart('${escAttr(packName)}')">БАГЦ НЭМЭХ</button>
+      </div>
+    </div>`;
+  openModal(`Багц: ${packName}`, modalHtml);
 };
 
-window.confirmPackRequest = async (packName, mode) => {
-  const lines = getPackLinesByName(packName, false);
-  if (!lines.length) return popupError("Багц олдсонгүй");
-  const resolved = [];
-  for (let i = 0; i < lines.length; i++) {
-    const item = String(lines[i].item || "").trim();
+window.confirmPackToCart = (packName) => {
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack) return popupError("Багц олдсонгүй");
+
+  for (let i = 0; i < pack.lines.length; i++) {
+    const ln = pack.lines[i];
     const size = ($(`pack-size-${i}`)?.value || "").trim();
-    const qty = parseInt(lines[i].default_qty, 10) || 1;
-    if (!size) return popupError(`"${item}" барааны размер сонгоно уу`);
-    resolved.push({ item, size, qty });
+    if (!size) return popupError(`"${ln.item}" бараанд размер сонгоно уу.`);
   }
 
-  if (mode === "submit") {
-    try {
-      showLoading(true);
-      const r = await apiPost({ action: "add_request", code: currentUser.code, items: resolved });
-      if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
-      closeModal();
-      if ($("req-pack")) $("req-pack").value = "";
-      await refreshData(false);
-      showTab("orders", $("nav-orders"));
-      popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
-    } catch (e) {
-      popupError(e.message || String(e));
-    } finally {
-      showLoading(false);
-    }
-    return;
-  }
-
-  resolved.forEach((ln) => {
-    const idx = cart.findIndex((x) => x.item === ln.item && x.size === ln.size);
-    if (idx >= 0) cart[idx].qty += ln.qty;
-    else cart.push(ln);
+  pack.lines.forEach((ln, i) => {
+    const size = ($(`pack-size-${i}`)?.value || "").trim();
+    const qty = parseInt(ln.default_qty, 10) || 1;
+    const idx = cart.findIndex((x) => x.item === ln.item && x.size === size);
+    if (idx >= 0) cart[idx].qty += qty;
+    else cart.push({ item: ln.item, size, qty });
   });
-  closeModal();
-  if ($("req-pack")) $("req-pack").value = "";
+
   renderCart();
+  try { $("req-pack").value = ""; } catch (e) {}
+  closeModal();
 };
 
 window.submitPackRequest = async () => {
-  if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
   const packName = ($("req-pack")?.value || "").trim();
   if (!packName) return popupError("Багц сонгоно уу");
-  openPackRequestModal(packName, "submit");
+
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack || !pack.lines.length) return popupError("Багц хоосон/олдсонгүй");
+
+  const modalHtml = `
+    <div style="padding:14px;">
+      <div class="muted" style="margin-bottom:12px;">${esc(packName)} багцын бараа бүрт размер сонгоод шууд илгээнэ.</div>
+      <div class="mini-table" style="display:grid;gap:10px;">
+        ${pack.lines.map((ln, i) => {
+          const item = itemsMaster.find((x) => String(x.name || "") === String(ln.item || ""));
+          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+          return `
+            <div class="light-table-row" style="grid-template-columns:2fr 1fr 1.2fr;">
+              <div style="font-weight:900;">${esc(ln.item)}</div>
+              <div>${esc(ln.default_qty)} ширхэг</div>
+              <div>
+                <select id="pack-submit-size-${i}" class="input">
+                  <option value="">Размер</option>
+                  ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
+                </select>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
+        <button class="btn primary" onclick="confirmSubmitPackRequest('${escAttr(packName)}')">БАГЦ ИЛГЭЭХ</button>
+      </div>
+    </div>`;
+  openModal(`Багц илгээх: ${packName}`, modalHtml);
+};
+
+window.confirmSubmitPackRequest = async (packName) => {
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack) return popupError("Багц олдсонгүй");
+
+  const items = [];
+  for (let i = 0; i < pack.lines.length; i++) {
+    const ln = pack.lines[i];
+    const size = ($(`pack-submit-size-${i}`)?.value || "").trim();
+    if (!size) return popupError(`"${ln.item}" бараанд размер сонгоно уу.`);
+    items.push({ item: ln.item, size, qty: parseInt(ln.default_qty, 10) || 1 });
+  }
+
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "add_request", code: currentUser.code, items });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    closeModal();
+    try { $("req-pack").value = ""; } catch (e) {}
+    cart = [];
+    renderCart();
+    await refreshData(false);
+    showTab("orders", $("nav-orders"));
+    popupOk("Амжилттай! Захиалгын дугаар: " + (r.request_id || ""));
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
 };
 
 window.removeCartItem = (i) => { cart.splice(i, 1); renderCart(); };
-
 
 function renderCart() {
   const box = $("cart-list");
@@ -784,6 +858,173 @@ window.submitMultiRequest = async () => {
     showLoading(false);
   }
 };
+
+
+window.addPackLine = () => {
+  const item = ($("pack-item-select")?.value || "").trim();
+  let qty = parseInt(($("pack-item-qty")?.value || "1"), 10);
+  if (!item) return popupError("Бараа сонгоно уу.");
+  if (!qty || qty < 1) qty = 1;
+
+  const existing = packBuilder.find((x) => String(x.item) === item);
+  if (existing) existing.qty += qty;
+  else packBuilder.push({ item, qty });
+
+  if ($("pack-item-qty")) $("pack-item-qty").value = 1;
+  renderPackBuilder();
+};
+
+window.removePackLine = (idx) => {
+  packBuilder.splice(idx, 1);
+  renderPackBuilder();
+};
+
+function renderPackBuilder() {
+  const box = $("pack-builder-list");
+  if (!box) return;
+
+  if (!packBuilder.length) {
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = packBuilder.map((x, idx) => `
+    <div class="light-table-row" style="grid-template-columns:2fr 1fr auto;align-items:center;">
+      <div style="font-weight:900;">${esc(x.item)}</div>
+      <div>${esc(x.qty)} ширхэг</div>
+      <div style="display:flex;justify-content:flex-end;">
+        <button class="btn danger" onclick="removePackLine(${idx})">УСТГАХ</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+window.savePack = async () => {
+  try {
+    const pack_name = ($("pack-name")?.value || "").trim();
+    if (!pack_name) return popupError("Багцын нэр оруулна уу.");
+    if (!packBuilder.length) return popupError("Багцад дор хаяж 1 бараа нэмнэ үү.");
+
+    showLoading(true);
+    const r = await apiPost({
+      action: "save_pack",
+      admin_code: currentUser?.code || "",
+      pack_name,
+      lines: packBuilder.map((x) => ({
+        item: x.item,
+        default_size: "",
+        default_qty: x.qty
+      }))
+    });
+
+    if (!r.success) throw new Error(r.msg || "Багц хадгалах үед алдаа гарлаа.");
+
+    packBuilder = [];
+    if ($("pack-name")) $("pack-name").value = "";
+    if ($("pack-item-qty")) $("pack-item-qty").value = 1;
+
+    await refreshData(false);
+    rebuildPacksGrouped();
+    renderPackBuilder();
+    renderPacks();
+    fillPackItemSelect();
+    popupOk("Багц амжилттай хадгалагдлаа.");
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.togglePackActive = async (pack_name, nextActive) => {
+  try {
+    showLoading(true);
+    const r = await apiPost({
+      action: "set_pack_active",
+      admin_code: currentUser?.code || "",
+      pack_name,
+      active: nextActive
+    });
+    if (!r.success) throw new Error(r.msg || "Алдаа");
+    await refreshData(false);
+    rebuildPacksGrouped();
+    renderPacks();
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.deletePack = async (pack_name) => {
+  try {
+    if (!confirm(`"${pack_name}" багцыг устгах уу?`)) return;
+    showLoading(true);
+    const r = await apiPost({
+      action: "delete_pack",
+      admin_code: currentUser?.code || "",
+      pack_name
+    });
+    if (!r.success) throw new Error(r.msg || "Алдаа");
+    await refreshData(false);
+    rebuildPacksGrouped();
+    renderPacks();
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+function renderPacks() {
+  const box = $("packs-list");
+  if (!box) return;
+
+  rebuildPacksGrouped();
+  if (!packsGrouped.length) {
+    box.innerHTML = "";
+    return;
+  }
+
+  box.innerHTML = packsGrouped.map((p) => {
+    const activeBadge = p.active
+      ? `<span class="status st-approved">ИДЭВХТЭЙ</span>`
+      : `<span class="status st-rejected">ИДЭВХГҮЙ</span>`;
+
+    const linesHtml = p.lines.map((ln) => `
+      <div class="mini-td" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;align-items:center;">
+        <div style="font-weight:800;">${esc(ln.item)}</div>
+        <div>${esc(ln.default_qty)} ширхэг</div>
+      </div>
+    `).join("");
+
+    return `
+      <div class="card" style="margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-weight:1000;font-size:18px;">${esc(p.pack_name)}</div>
+            <div style="margin-top:6px;">${activeBadge}</div>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="togglePackActive('${escAttr(p.pack_name)}', ${p.active ? "false" : "true"})">
+              ${p.active ? "ИДЭВХГҮЙ БОЛГОХ" : "ИДЭВХЖҮҮЛЭХ"}
+            </button>
+            <button class="btn danger" onclick="deletePack('${escAttr(p.pack_name)}')">УСТГАХ</button>
+          </div>
+        </div>
+
+        <div class="mini-table" style="margin-top:12px;">
+          <div class="mini-th" style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
+            <div>БАРАА</div>
+            <div>ТОО</div>
+          </div>
+          ${linesHtml}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
 
 /* ---------------- History ---------------- */
 async function renderUserHistory() {
@@ -939,7 +1180,7 @@ function renderItems() {
     .slice()
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "mn"));
 
-  if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; renderPacksAdmin(); return; }
+  if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; return; }
 
   box.innerHTML = `
     <div class="mini-table items-table">
@@ -960,164 +1201,6 @@ function renderItems() {
             <button class="icon-btn btn-icon" title="Locked солих" onclick="toggleItemLock('${esc(it.name)}');event.stopPropagation();">${locked ? "🔓" : "🔒"}</button>
           </div>`;
       }).join("")}
-    </div>`;
-}
-
-
-/* ---------------- Packs (Admin) ---------------- */
-function groupPackRows(rows) {
-  const map = new Map();
-  (rows || []).forEach((r) => {
-    const name = String(r.pack_name || "").trim();
-    if (!name) return;
-    if (!map.has(name)) map.set(name, { pack_name: name, active: false, lines: [] });
-    const g = map.get(name);
-    g.lines.push({ item: String(r.item || "").trim(), qty: parseInt(r.default_qty, 10) || 1 });
-    if (String(r.active).toLowerCase() === "true") g.active = true;
-  });
-  return Array.from(map.values()).sort((a, b) => a.pack_name.localeCompare(b.pack_name, "mn"));
-}
-
-function fillPackItemSelect() {
-  const sel = $("pack-item-select");
-  if (!sel) return;
-  const activeItems = itemsMaster.filter((x) => String(x.locked).toLowerCase() !== "true").map((x) => x.name);
-  setSelectOptions(sel, activeItems, "Сонгох");
-}
-
-function renderPackDraft() {
-  const box = $("pack-draft-list");
-  if (!box) return;
-  if (!packDraft.length) {
-    box.innerHTML = `<div class="muted">Одоогоор багцад нэмсэн бараа алга.</div>`;
-    return;
-  }
-  box.innerHTML = `
-    <div class="mini-table pack-draft-table">
-      <div class="mini-th">Бараа</div>
-      <div class="mini-th">Тоо</div>
-      <div class="mini-th" style="text-align:right;">Үйлдэл</div>
-      ${packDraft.map((ln, i) => `
-        <div class="mini-td" style="font-weight:900;">${esc(ln.item)}</div>
-        <div class="mini-td">${esc(ln.qty)} ширхэг</div>
-        <div class="mini-td" style="display:flex;justify-content:flex-end;">
-          <button class="icon-btn btn-icon" onclick="removePackDraftItem(${i})">🗑️</button>
-        </div>
-      `).join("")}
-    </div>`;
-}
-
-window.addPackDraftItem = () => {
-  if (!isAdmin()) return popupError("Admin эрх хэрэгтэй");
-  const item = ($("pack-item-select")?.value || "").trim();
-  let qty = parseInt(($("pack-item-qty")?.value || "1"), 10);
-  if (!qty || qty < 1) qty = 1;
-  if (!item) return popupError("Бараа сонгоно уу");
-  const idx = packDraft.findIndex((x) => x.item === item);
-  if (idx >= 0) packDraft[idx].qty += qty;
-  else packDraft.push({ item, qty });
-  if ($("pack-item-select")) $("pack-item-select").value = "";
-  if ($("pack-item-qty")) $("pack-item-qty").value = 1;
-  renderPackDraft();
-};
-
-window.removePackDraftItem = (i) => {
-  packDraft.splice(i, 1);
-  renderPackDraft();
-};
-
-window.clearPackDraft = () => {
-  packDraft = [];
-  if ($("new-pack-name")) $("new-pack-name").value = "";
-  if ($("pack-item-select")) $("pack-item-select").value = "";
-  if ($("pack-item-qty")) $("pack-item-qty").value = 1;
-  renderPackDraft();
-};
-
-window.savePack = async () => {
-  if (!isAdmin()) return popupError("Admin эрх хэрэгтэй");
-  const packName = ($("new-pack-name")?.value || "").trim();
-  if (!packName) return popupError("Багцын нэр оруулна уу");
-  if (!packDraft.length) return popupError("Багцад дор хаяж 1 бараа нэмнэ үү");
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "add_pack", pack_name: packName, lines: packDraft });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    clearPackDraft();
-    await refreshData(false);
-    popupOk("Багц нэмэгдлээ");
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.deletePack = async (packName) => {
-  if (!confirm(`"${packName}" багцыг устгах уу?`)) return;
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "delete_pack", pack_name: packName });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    await refreshData(false);
-    popupOk("Багц устгалаа");
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.togglePackActive = async (packName) => {
-  const grouped = groupPackRows(packsAdmin);
-  const found = grouped.find((x) => x.pack_name === packName);
-  const next = !(found && found.active);
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "set_pack_active", pack_name: packName, active: next });
-    if (!r.success) throw new Error(r.msg || "Алдаа");
-    await refreshData(false);
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-function renderPacksAdmin() {
-  fillPackItemSelect();
-  renderPackDraft();
-
-  const box = $("packs-list");
-  if (!box) return;
-  if (!isAdmin()) { box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`; return; }
-
-  const q = ($("pack-search")?.value || "").trim().toLowerCase();
-  const grouped = groupPackRows(packsAdmin).filter((p) => {
-    if (!q) return true;
-    return p.pack_name.toLowerCase().includes(q) || p.lines.some((ln) => String(ln.item || "").toLowerCase().includes(q));
-  });
-
-  if (!grouped.length) {
-    box.innerHTML = `<div class="muted">Багц олдсонгүй.</div>`;
-    return;
-  }
-
-  box.innerHTML = `
-    <div class="mini-table packs-table">
-      <div class="mini-th">Багц</div>
-      <div class="mini-th">Бараанууд</div>
-      <div class="mini-th">Төлөв</div>
-      <div class="mini-th" style="text-align:right;">Үйлдэл</div>
-      ${grouped.map((p) => `
-        <div class="mini-td" style="font-weight:900;">${esc(p.pack_name)}</div>
-        <div class="mini-td">${p.lines.map((ln) => `${esc(ln.item)} (${esc(ln.qty)}ш)`).join(", ")}</div>
-        <div class="mini-td">${p.active ? `<span class="status st-approved">ACTIVE</span>` : `<span class="status st-rejected">INACTIVE</span>`}</div>
-        <div class="mini-td" style="display:flex;gap:8px;justify-content:flex-end;">
-          <button class="icon-btn btn-icon" title="Идэвх солих" onclick="togglePackActive('${escAttr(p.pack_name)}')">${p.active ? "⏸️" : "▶️"}</button>
-          <button class="icon-btn btn-icon" title="Устгах" onclick="deletePack('${escAttr(p.pack_name)}')">🗑️</button>
-        </div>
-      `).join("")}
     </div>`;
 }
 
@@ -1317,20 +1400,17 @@ window.refreshData = async (keepTab = true) => {
     showLoading(true);
     const r = await apiPost({ action: "get_all_data" });
     if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
-    requests = r.requests || [];
-    requestItems = r.request_items || [];
-    itemsMaster = r.items || [];
-    packsMaster = r.packs || [];
-    stockMaster = r.stock || [];
+    requests = Array.isArray(r.requests) ? r.requests : [];
+    requestItems = Array.isArray(r.request_items) ? r.request_items : [];
+    itemsMaster = Array.isArray(r.items) ? r.items : [];
+    packsMaster = Array.isArray(r.packs) ? r.packs : [];
+    stockMaster = Array.isArray(r.stock) ? r.stock : [];
+    rebuildPacksGrouped();
     if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
       users = u.success ? (u.users || []) : [];
-      const p = await apiPost({ action: "get_packs_admin" });
-      packsAdmin = p.success ? (p.packs || []) : [];
     } else {
       users = [];
-      packsAdmin = [];
-      packDraft = [];
     }
     setSidebarUserInfo();
     applyRoleVisibility();
@@ -1375,11 +1455,10 @@ window.logout = () => {
   requests = [];
   requestItems = [];
   itemsMaster = [];
-  packsMaster = [];
-  packsAdmin = [];
   users = [];
   cart = [];
-  packDraft = [];
+  packBuilder = [];
+  packsGrouped = [];
   currentModalRequestId = null;
   orderFilters = { status: "", shift: "", year: "", month: "", item: "", place: "", dept: "", role: "", code: "", name: "" };
   openHeaderFilterKey = null;
