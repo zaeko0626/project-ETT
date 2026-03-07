@@ -1,13 +1,15 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbxrTB8mzOATB8Nrb0ElEIStYparkzsXemSDyeArcwssk-_YXDaigwz4Gk8iFpoI8Qk/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxSnzfJ5ABLAn7dqba0TfUW7_MsgkbdQnrgwVa7__7rB3jKvDpmhH5ovLJryaa3oI49/exec";
 
 let currentUser = null;
 let requests = [];
 let requestItems = [];
 let itemsMaster = [];
 let packsMaster = []; // Packs sheet (active)
+let packsAdmin = []; // all pack rows (admin)
 let stockMaster = []; // Inventory rows
 
 let users = [];
+let packDraft = []; // { item, qty } for admin builder
 let currentModalRequestId = null;
 let cart = []; // { item, size, qty }
 
@@ -39,9 +41,7 @@ function esc(s) {
     .replace(/'/g, "&#39;");
 }
 
-function isAdmin() {
-  return String(currentUser?.type || "").toLowerCase() === "admin" || String(currentUser?.code || "").toLowerCase() === "admin";
-}
+function isAdmin() { return String(currentUser?.code || "").toLowerCase() === "admin"; }
 
 function fmtDateOnly(v) {
   const d = new Date(v);
@@ -54,30 +54,16 @@ function fmtDateOnly(v) {
 function getYear(v) { const d = new Date(v); return isNaN(d) ? "" : String(d.getFullYear()); }
 function getMonth(v) { const d = new Date(v); return isNaN(d) ? "" : String(d.getMonth() + 1).padStart(2, "0"); }
 
-function normalizeOverallStatus(s) {
-  const st = String(s || "").trim();
-  if (!st) return "Хүлээгдэж буй";
-  if (st === "Хэсэгчлэн") return "Хэсэгчлэн шийдвэрлэсэн";
-  return st;
-}
-function normalizeItemStatus(s) {
-  const st = String(s || "").trim();
-  if (!st) return "Хүлээгдэж буй";
-  if (st === "Хэсэгчлэн") return "Хэсэгчлэн шийдвэрлэсэн";
-  return st;
-}
-
 function statusMetaOverall(s) {
-  const st = normalizeOverallStatus(s);
+  const st = String(s || "").trim();
   if (st === "Шийдвэрлэсэн") return { label: "ШИЙДВЭРЛЭСЭН", cls: "st-approved" };
-  if (st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
+  if (st === "Хэсэгчлэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 function statusMetaItem(s) {
-  const st = normalizeItemStatus(s);
+  const st = String(s || "").trim();
   if (st === "Зөвшөөрсөн") return { label: "ЗӨВШӨӨРСӨН", cls: "st-approved" };
   if (st === "Татгалзсан") return { label: "ТАТГАЛЗСАН", cls: "st-rejected" };
-  if (st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
   return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
 }
 
@@ -262,9 +248,9 @@ function renderKpis() {
 
   const data = getVisibleRequests();
   const total = data.length;
-  const pending = data.filter(r => normalizeOverallStatus(r.overall_status) === "Хүлээгдэж буй").length;
-  const partial = data.filter(r => normalizeOverallStatus(r.overall_status) === "Хэсэгчлэн шийдвэрлэсэн").length;
-  const done = data.filter(r => normalizeOverallStatus(r.overall_status) === "Шийдвэрлэсэн").length;
+  const pending = data.filter(r => String(r.overall_status || "").trim() === "Хүлээгдэж буй" || String(r.overall_status || "").trim() === "").length;
+  const partial = data.filter(r => String(r.overall_status || "").trim() === "Хэсэгчлэн").length;
+  const done = data.filter(r => String(r.overall_status || "").trim() === "Шийдвэрлэсэн").length;
 
   const card = (title, value, chip, clickStatus) => `
     <div class="kpi-card" onclick="applyKpiStatus('${esc(clickStatus)}')" role="button">
@@ -275,7 +261,7 @@ function renderKpis() {
   wrap.innerHTML = [
     card("Нийт захиалга", total, "Бүгд", ""),
     card("Хүлээгдэж буй", pending, "Хүлээгдэж буй", "Хүлээгдэж буй"),
-    card("Хэсэгчлэн шийдвэрлэсэн", partial, "Хэсэгчлэн шийдвэрлэсэн", "Хэсэгчлэн шийдвэрлэсэн"),
+    card("Хэсэгчлэн шийдвэрлэсэн", partial, "Хэсэгчлэн шийдвэрлэсэн", "Хэсэгчлэн"),
     card("Шийдвэрлэсэн", done, "Шийдвэрлэсэн", "Шийдвэрлэсэн")
   ].join("");
 }
@@ -303,6 +289,7 @@ function headerFilterCell(title, key, optionsHtml) {
         <select class="hdr-select" onchange="applyHeaderSelect('${esc(key)}', this.value)">${optionsHtml}</select>
       </div>
     </div>`;
+  renderPacksAdmin();
 }
 window.toggleHeaderFilter = (key) => { openHeaderFilterKey = (openHeaderFilterKey === key) ? null : key; renderOrdersHeader(); };
 window.clearHeaderFilter = (key) => { orderFilters[key] = ""; openHeaderFilterKey = null; renderOrdersHeader(); renderRequests(); };
@@ -315,7 +302,7 @@ function renderOrdersHeader() {
   const statusOptions = `
     <option value="">Бүгд</option>
     <option ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
-    <option ${orderFilters.status==="Хэсэгчлэн шийдвэрлэсэн"?"selected":""}>Хэсэгчлэн шийдвэрлэсэн</option>
+    <option ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
     <option ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
   const shiftOptions = `
     <option value="">Бүгд</option>
@@ -395,7 +382,7 @@ function populateOrderFilters() {
 function passFilters(r) {
   const y = getYear(r.requestedDate);
   const m = getMonth(r.requestedDate);
-  const st = normalizeOverallStatus(r.overall_status);
+  const st = String(r.overall_status || "").trim() || "Хүлээгдэж буй";
 
   if (orderFilters.status && st !== orderFilters.status) return false;
   if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
@@ -486,7 +473,7 @@ window.openRequestDetail = (request_id) => {
 
   const tableHead = `
     <div style="padding:0 14px 10px;">
-      <div class="light-table-head ${isAdmin() ? "admin" : "user"}">
+      <div class="light-table-head">
         <div>БАРАА</div>
         <div>РАЗМЕР</div>
         <div>ТОО</div>
@@ -510,7 +497,7 @@ window.openRequestDetail = (request_id) => {
           <button class="btn pill approve" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">ОЛГОХ</button>
           <button class="btn pill reject" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">ТАТГАЛЗАХ</button>
         </div>`)
-      : ``;    return `<div class="light-table-row ${isAdmin() ? "admin" : "user"}">
+      : ``;    return `<div class="light-table-row">
       <div style="font-weight:900;">${item}</div>
       <div>Размер: ${size}</div>
       <div>${qty} ширхэг</div>
@@ -551,29 +538,29 @@ window.issueLine = async (line_id) => {
   try {
     const size = ($(`iss-size-${line_id}`)?.value || "").trim();
     const qty = parseInt($(`iss-qty-${line_id}`)?.value || "0", 10) || 0;
-    showLoading(true);
-    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: size, issued_qty: qty });
-    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
-    await refreshData(false);
-    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
+    showLoading("Шийдвэрлэж байна...");
+    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: size, issued_qty: qty });
     showLoading(false);
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    showLoading(False);
+    popupError("Алдаа: " + e.toString());
   }
 };
 
 window.issueLineReject = async (line_id) => {
   try {
-    showLoading(true);
-    const r = await apiPost({ action: "issue_item", admin_code: currentUser.code, line_id, issued_size: "", issued_qty: 0 });
-    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
-    await refreshData(false);
-    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
+    showLoading("Татгалзаж байна...");
+    const r = await api({ action: "issue_item", admin_code: currentUser.code, line_id: line_id, issued_size: "", issued_qty: 0 });
+    showLoading(False);
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
   } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
+    showLoading(False);
+    popupError("Алдаа: " + e.toString());
   }
 };
 
@@ -582,15 +569,15 @@ window.confirmReceive = async () => {
   const pin = ($("receive-pin")?.value || "").trim();
   if (!pin) return popupError("PIN оруулна уу");
   try {
-    showLoading(true);
-    const r = await apiPost({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin });
-    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
-    await refreshData(false);
-    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
+    showLoading("Баталгаажуулж байна...");
+    const r = await api({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pin: pin });
     showLoading(false);
+    if (!r.success) return popupError(r.msg || "Алдаа гарлаа");
+    await loadAllData();
+    openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    showLoading(false);
+    popupError("Алдаа: " + e.toString());
   }
 };
 
@@ -617,17 +604,17 @@ function fillRequestForm() {
   const packSel = $("req-pack");
   if (!itemSel || !sizeSel) return;
 
-  const openItems = (itemsMaster || []).filter((x) => String(x?.locked).toLowerCase() !== "true" && String(x?.name || "").trim());
-  setSelectOptions(itemSel, openItems.map((x) => x.name), "Сонгох");
+  const activeItems = itemsMaster.filter((x) => String(x.locked).toLowerCase() !== "true");
+  setSelectOptions(itemSel, activeItems.map((x) => x.name), "Сонгох");
 
   if (packSel) {
-    const packNames = uniq((packsMaster || []).map((p) => String(p.pack_name || "").trim())).sort((a, b) => a.localeCompare(b, "mn"));
+    const packNames = Array.from(new Set((packsMaster || []).map((x) => String(x.pack_name || "").trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, "mn"));
     setSelectOptions(packSel, packNames, "Сонгох");
   }
 
   const onItemChange = () => {
     const itemName = (itemSel.value || "").trim();
-    const it = openItems.find((x) => String(x.name) === itemName);
+    const it = activeItems.find((x) => String(x.name) === itemName);
     const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
     setSelectOptions(sizeSel, sizes, "Сонгох");
   };
@@ -662,43 +649,102 @@ window.addToCart = () => {
 };
 
 
+
+function getPackLinesByName(packName, useAdminRows = false) {
+  const source = useAdminRows ? packsAdmin : packsMaster;
+  return (source || []).filter((p) => String(p.pack_name || "").trim() === String(packName || "").trim());
+}
+
+function openPackRequestModal(packName, mode) {
+  const lines = getPackLinesByName(packName, false);
+  if (!lines.length) return popupError("Багц хоосон/олдсонгүй");
+
+  const html = `
+    <div style="padding:14px;display:grid;gap:12px;">
+      <div class="muted">Багц: <b>${esc(packName)}</b></div>
+      <div class="mini-table pack-size-table">
+        <div class="mini-th">Бараа</div>
+        <div class="mini-th">Размер</div>
+        <div class="mini-th">Тоо</div>
+        ${lines.map((ln, idx) => {
+          const itemName = String(ln.item || "").trim();
+          const item = itemsMaster.find((x) => String(x.name || "").trim() === itemName);
+          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+          return `
+            <div class="mini-td" style="font-weight:900;">${esc(itemName)}</div>
+            <div class="mini-td">
+              <select id="pack-size-${idx}" class="input">
+                <option value="">Сонгох</option>
+                ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="mini-td">${esc(parseInt(ln.default_qty, 10) || 1)} ширхэг</div>`;
+        }).join("")}
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn" onclick="closeModal()">БОЛИХ</button>
+        <button class="btn primary" onclick="confirmPackRequest('${escAttr(packName)}','${escAttr(mode)}')">${mode === "submit" ? "ИЛГЭЭХ" : "САГСЛАХ"}</button>
+      </div>
+    </div>`;
+  openModal("Багц сонгох", html);
+}
+
 window.addPackToCart = () => {
+  if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
   const packName = ($("req-pack")?.value || "").trim();
   if (!packName) return popupError("Багц сонгоно уу");
-  const lines = (packsMaster || []).filter(p => String(p.pack_name||"").trim() === packName);
-  if (!lines.length) return popupError("Багц хоосон/олдсонгүй");
-  lines.forEach(p => {
-    const item = String(p.item||"").trim();
-    if (!item) return;
-    const size = String(p.default_size||"").trim();
-    const qty = parseInt(p.default_qty,10) || 1;
-    cart.push({ item, size, qty });
+  openPackRequestModal(packName, "cart");
+};
+
+window.confirmPackRequest = async (packName, mode) => {
+  const lines = getPackLinesByName(packName, false);
+  if (!lines.length) return popupError("Багц олдсонгүй");
+  const resolved = [];
+  for (let i = 0; i < lines.length; i++) {
+    const item = String(lines[i].item || "").trim();
+    const size = ($(`pack-size-${i}`)?.value || "").trim();
+    const qty = parseInt(lines[i].default_qty, 10) || 1;
+    if (!size) return popupError(`"${item}" барааны размер сонгоно уу`);
+    resolved.push({ item, size, qty });
+  }
+
+  if (mode === "submit") {
+    try {
+      showLoading(true);
+      const r = await apiPost({ action: "add_request", code: currentUser.code, items: resolved });
+      if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+      closeModal();
+      if ($("req-pack")) $("req-pack").value = "";
+      await refreshData(false);
+      showTab("orders", $("nav-orders"));
+      popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
+    } catch (e) {
+      popupError(e.message || String(e));
+    } finally {
+      showLoading(false);
+    }
+    return;
+  }
+
+  resolved.forEach((ln) => {
+    const idx = cart.findIndex((x) => x.item === ln.item && x.size === ln.size);
+    if (idx >= 0) cart[idx].qty += ln.qty;
+    else cart.push(ln);
   });
+  closeModal();
+  if ($("req-pack")) $("req-pack").value = "";
   renderCart();
-  try { $("req-pack").value=""; } catch(e){}
 };
 
 window.submitPackRequest = async () => {
+  if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
   const packName = ($("req-pack")?.value || "").trim();
   if (!packName) return popupError("Багц сонгоно уу");
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "add_pack_request", code: currentUser.code, pack_name: packName });
-    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
-    cart = [];
-    renderCart();
-    if ($("req-pack")) $("req-pack").value = "";
-    await refreshData(false);
-    showTab("orders", $("nav-orders"));
-    popupOk("Амжилттай! Захиалгын дугаар: " + r.request_id);
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
+  openPackRequestModal(packName, "submit");
 };
 
 window.removeCartItem = (i) => { cart.splice(i, 1); renderCart(); };
+
 
 function renderCart() {
   const box = $("cart-list");
@@ -893,7 +939,7 @@ function renderItems() {
     .slice()
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "mn"));
 
-  if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; return; }
+  if (!data.length) { box.innerHTML = `<div class="muted">Бараа олдсонгүй.</div>`; renderPacksAdmin(); return; }
 
   box.innerHTML = `
     <div class="mini-table items-table">
@@ -914,6 +960,164 @@ function renderItems() {
             <button class="icon-btn btn-icon" title="Locked солих" onclick="toggleItemLock('${esc(it.name)}');event.stopPropagation();">${locked ? "🔓" : "🔒"}</button>
           </div>`;
       }).join("")}
+    </div>`;
+}
+
+
+/* ---------------- Packs (Admin) ---------------- */
+function groupPackRows(rows) {
+  const map = new Map();
+  (rows || []).forEach((r) => {
+    const name = String(r.pack_name || "").trim();
+    if (!name) return;
+    if (!map.has(name)) map.set(name, { pack_name: name, active: false, lines: [] });
+    const g = map.get(name);
+    g.lines.push({ item: String(r.item || "").trim(), qty: parseInt(r.default_qty, 10) || 1 });
+    if (String(r.active).toLowerCase() === "true") g.active = true;
+  });
+  return Array.from(map.values()).sort((a, b) => a.pack_name.localeCompare(b.pack_name, "mn"));
+}
+
+function fillPackItemSelect() {
+  const sel = $("pack-item-select");
+  if (!sel) return;
+  const activeItems = itemsMaster.filter((x) => String(x.locked).toLowerCase() !== "true").map((x) => x.name);
+  setSelectOptions(sel, activeItems, "Сонгох");
+}
+
+function renderPackDraft() {
+  const box = $("pack-draft-list");
+  if (!box) return;
+  if (!packDraft.length) {
+    box.innerHTML = `<div class="muted">Одоогоор багцад нэмсэн бараа алга.</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="mini-table pack-draft-table">
+      <div class="mini-th">Бараа</div>
+      <div class="mini-th">Тоо</div>
+      <div class="mini-th" style="text-align:right;">Үйлдэл</div>
+      ${packDraft.map((ln, i) => `
+        <div class="mini-td" style="font-weight:900;">${esc(ln.item)}</div>
+        <div class="mini-td">${esc(ln.qty)} ширхэг</div>
+        <div class="mini-td" style="display:flex;justify-content:flex-end;">
+          <button class="icon-btn btn-icon" onclick="removePackDraftItem(${i})">🗑️</button>
+        </div>
+      `).join("")}
+    </div>`;
+}
+
+window.addPackDraftItem = () => {
+  if (!isAdmin()) return popupError("Admin эрх хэрэгтэй");
+  const item = ($("pack-item-select")?.value || "").trim();
+  let qty = parseInt(($("pack-item-qty")?.value || "1"), 10);
+  if (!qty || qty < 1) qty = 1;
+  if (!item) return popupError("Бараа сонгоно уу");
+  const idx = packDraft.findIndex((x) => x.item === item);
+  if (idx >= 0) packDraft[idx].qty += qty;
+  else packDraft.push({ item, qty });
+  if ($("pack-item-select")) $("pack-item-select").value = "";
+  if ($("pack-item-qty")) $("pack-item-qty").value = 1;
+  renderPackDraft();
+};
+
+window.removePackDraftItem = (i) => {
+  packDraft.splice(i, 1);
+  renderPackDraft();
+};
+
+window.clearPackDraft = () => {
+  packDraft = [];
+  if ($("new-pack-name")) $("new-pack-name").value = "";
+  if ($("pack-item-select")) $("pack-item-select").value = "";
+  if ($("pack-item-qty")) $("pack-item-qty").value = 1;
+  renderPackDraft();
+};
+
+window.savePack = async () => {
+  if (!isAdmin()) return popupError("Admin эрх хэрэгтэй");
+  const packName = ($("new-pack-name")?.value || "").trim();
+  if (!packName) return popupError("Багцын нэр оруулна уу");
+  if (!packDraft.length) return popupError("Багцад дор хаяж 1 бараа нэмнэ үү");
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "add_pack", pack_name: packName, lines: packDraft });
+    if (!r.success) throw new Error(r.msg || "Алдаа");
+    clearPackDraft();
+    await refreshData(false);
+    popupOk("Багц нэмэгдлээ");
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.deletePack = async (packName) => {
+  if (!confirm(`"${packName}" багцыг устгах уу?`)) return;
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "delete_pack", pack_name: packName });
+    if (!r.success) throw new Error(r.msg || "Алдаа");
+    await refreshData(false);
+    popupOk("Багц устгалаа");
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+window.togglePackActive = async (packName) => {
+  const grouped = groupPackRows(packsAdmin);
+  const found = grouped.find((x) => x.pack_name === packName);
+  const next = !(found && found.active);
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "set_pack_active", pack_name: packName, active: next });
+    if (!r.success) throw new Error(r.msg || "Алдаа");
+    await refreshData(false);
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+function renderPacksAdmin() {
+  fillPackItemSelect();
+  renderPackDraft();
+
+  const box = $("packs-list");
+  if (!box) return;
+  if (!isAdmin()) { box.innerHTML = `<div class="muted">Зөвхөн Admin харна.</div>`; return; }
+
+  const q = ($("pack-search")?.value || "").trim().toLowerCase();
+  const grouped = groupPackRows(packsAdmin).filter((p) => {
+    if (!q) return true;
+    return p.pack_name.toLowerCase().includes(q) || p.lines.some((ln) => String(ln.item || "").toLowerCase().includes(q));
+  });
+
+  if (!grouped.length) {
+    box.innerHTML = `<div class="muted">Багц олдсонгүй.</div>`;
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="mini-table packs-table">
+      <div class="mini-th">Багц</div>
+      <div class="mini-th">Бараанууд</div>
+      <div class="mini-th">Төлөв</div>
+      <div class="mini-th" style="text-align:right;">Үйлдэл</div>
+      ${grouped.map((p) => `
+        <div class="mini-td" style="font-weight:900;">${esc(p.pack_name)}</div>
+        <div class="mini-td">${p.lines.map((ln) => `${esc(ln.item)} (${esc(ln.qty)}ш)`).join(", ")}</div>
+        <div class="mini-td">${p.active ? `<span class="status st-approved">ACTIVE</span>` : `<span class="status st-rejected">INACTIVE</span>`}</div>
+        <div class="mini-td" style="display:flex;gap:8px;justify-content:flex-end;">
+          <button class="icon-btn btn-icon" title="Идэвх солих" onclick="togglePackActive('${escAttr(p.pack_name)}')">${p.active ? "⏸️" : "▶️"}</button>
+          <button class="icon-btn btn-icon" title="Устгах" onclick="deletePack('${escAttr(p.pack_name)}')">🗑️</button>
+        </div>
+      `).join("")}
     </div>`;
 }
 
@@ -1121,8 +1325,12 @@ window.refreshData = async (keepTab = true) => {
     if (isAdmin()) {
       const u = await apiPost({ action: "get_users" });
       users = u.success ? (u.users || []) : [];
+      const p = await apiPost({ action: "get_packs_admin" });
+      packsAdmin = p.success ? (p.packs || []) : [];
     } else {
       users = [];
+      packsAdmin = [];
+      packDraft = [];
     }
     setSidebarUserInfo();
     applyRoleVisibility();
@@ -1167,8 +1375,11 @@ window.logout = () => {
   requests = [];
   requestItems = [];
   itemsMaster = [];
+  packsMaster = [];
+  packsAdmin = [];
   users = [];
   cart = [];
+  packDraft = [];
   currentModalRequestId = null;
   orderFilters = { status: "", shift: "", year: "", month: "", item: "", place: "", dept: "", role: "", code: "", name: "" };
   openHeaderFilterKey = null;
