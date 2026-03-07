@@ -28,14 +28,6 @@ body{
 .row{display:flex;gap:12px;flex-wrap:wrap}
 .grow{flex:1;min-width:200px}
 
-.grid{display:grid}
-.grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.gap-12{gap:12px}
-.field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field label{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:800}
-.btn-icon{line-height:1}
-
-
 input,select{
   width:100%;
   padding:12px 12px;
@@ -249,6 +241,7 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 /* Light table (inside modal) */
 .light-table-head{
   display:grid;
+  grid-template-columns: 2fr 1.2fr 0.8fr 1.2fr 2fr;
   gap:10px;
   padding:10px 12px;
   border-radius:16px;
@@ -261,6 +254,7 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 }
 .light-table-row{
   display:grid;
+  grid-template-columns: 2fr 1.2fr 0.8fr 1.2fr 2fr;
   gap:10px;
   padding:12px;
   margin:0 14px 10px;
@@ -269,12 +263,6 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
   border-radius:18px;
   border:1px solid #eef2f7;
 }
-
-.light-table-head.admin,
-.light-table-row.admin{grid-template-columns: 2fr 1.2fr 0.8fr 1.2fr 2fr;}
-.light-table-head.user,
-.light-table-row.user{grid-template-columns: 2fr 1.2fr 0.8fr 1.2fr;}
-
 
 /* mini table */
 .mini-table{display:grid;gap:10px;align-items:center}
@@ -380,17 +368,19 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 .pill.decided{background:#1f2937;color:#fff;}
 
 
-.issue-actions .btn,
-.issue-actions .input.tiny{min-height:40px}
-.issue-actions .input.tiny{width:110px}
-.issue-actions .btn.pill{display:inline-flex;align-items:center;justify-content:center}
+.section-card{
+  background: rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);
+}
 
-@media (max-width:900px){
-  .grid-3{grid-template-columns:1fr}
-  .light-table-head.admin,
-  .light-table-row.admin,
-  .light-table-head.user,
-  .light-table-row.user{grid-template-columns:1fr}
-  .orders-header,
-  .request-row{font-size:12px}
+.pack-size-table{grid-template-columns: 1.5fr 1.2fr 0.8fr;}
+.pack-draft-table{grid-template-columns: 1.6fr 0.8fr 0.7fr;}
+.packs-table{grid-template-columns: 1.2fr 2.4fr 0.9fr 0.9fr;}
+
+@media (max-width: 900px){
+  .pack-size-table,
+  .pack-draft-table,
+  .packs-table{
+    grid-template-columns: 1fr;
+  }
 }
