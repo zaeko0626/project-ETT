@@ -212,9 +212,20 @@ window.showTab = (tabName, btn) => {
 
   if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
   if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
-  if (tabName === "items") { renderItems(); fillPackItemSelect(); renderPackBuilder(); renderPacks(); }
+  if (tabName === "items") {
+    setTimeout(() => {
+      renderItemsTabAll();
+    }, 0);
+  }
   if (tabName === "users") renderUsers();
 };
+
+function renderItemsTabAll() {
+  renderItems();
+  fillPackItemSelect();
+  renderPackBuilder();
+  renderPacks();
+}
 
 /* ---------------- Orders: header dropdown filters (excel-like) ---------------- */
 function ensureRequestsGridCSS() { /* kept for compatibility (now mostly in CSS file) */ }
@@ -625,11 +636,17 @@ function rebuildPacksGrouped() {
 function fillPackItemSelect() {
   const sel = $("pack-item-select");
   if (!sel) return;
-  const allItems = (itemsMaster || [])
-    .map((x) => String(x.name || "").trim())
-    .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b, "mn"));
-  setSelectOptions(sel, allItems, "Сонгох");
+
+  const names = Array.from(
+    new Set(
+      (itemsMaster || [])
+        .map((x) => String(x.name || "").trim())
+        .filter(Boolean)
+    )
+  ).sort((a, b) => a.localeCompare(b, "mn"));
+
+  sel.innerHTML = `<option value="">Сонгох</option>` +
+    names.map((name) => `<option value="${escAttr(name)}">${esc(name)}</option>`).join("");
 }
 
 function fillRequestForm() {
@@ -1417,7 +1434,12 @@ window.refreshData = async (keepTab = true) => {
     populateOrderFilters();
     if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
     if (activeTab === "nav-request") showTab("request", $("nav-request"));
-    if (activeTab === "nav-items") showTab("items", $("nav-items"));
+    if (activeTab === "nav-items") {
+      showTab("items", $("nav-items"));
+      setTimeout(() => {
+        renderItemsTabAll();
+      }, 0);
+    }
     if (activeTab === "nav-users") showTab("users", $("nav-users"));
     if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
   } catch (e) {
