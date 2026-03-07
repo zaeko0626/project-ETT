@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ETT PPE SYSTEM</title>
-  <link rel="stylesheet" href="./styles.css?v=20260308-fix1"/>
+  <link rel="stylesheet" href="./styles.css?v=20260303-patch2"/>
 </head>
 <body>
   <!-- Loading -->
@@ -186,6 +186,34 @@
           </div>
 
           <div id="items-list" style="margin-top:12px;"></div>
+
+          <div class="card section-card" style="margin-top:14px;">
+            <div class="card-title">БАГЦ НЭМЭХ</div>
+
+            <div class="row" style="margin-top:12px;">
+              <div class="grow"><div class="label">Багцын нэр</div><input id="new-pack-name" placeholder="Ж: Стандарт багц"/></div>
+              <div class="grow"><div class="label">Бараа сонгох</div><select id="pack-item-select"></select></div>
+              <div class="grow"><div class="label">Тоо</div><input id="pack-item-qty" type="number" min="1" value="1"/></div>
+              <div class="grow" style="justify-content:flex-end;display:flex;">
+                <button class="btn primary" style="margin-top:22px;" onclick="addPackDraftItem()">БАРАА НЭМЭХ</button>
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <div class="label">Сонгосон багцын бараанууд</div>
+              <div id="pack-draft-list" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <div class="grow"><div class="label">Багц шүүх</div><input id="pack-search" placeholder="Багц хайх..." oninput="renderPacksAdmin()"/></div>
+              <div class="grow" style="justify-content:flex-end;display:flex;gap:10px;">
+                <button class="btn" style="margin-top:22px;" onclick="clearPackDraft()">ЦЭВЭРЛЭХ</button>
+                <button class="btn primary" style="margin-top:22px;" onclick="savePack()">БАГЦ ХАДГАЛАХ</button>
+              </div>
+            </div>
+
+            <div id="packs-list" style="margin-top:12px;"></div>
+          </div>
         </div>
       </section>
 
@@ -196,7 +224,7 @@
 
           <div class="row" style="margin-top:12px;">
             <div class="grow"><div class="label">Код</div><input id="u-code"/></div>
-            <div class="grow"><div class="label">🔑 Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
+            <div class="grow"><div class="label">Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
             <div class="grow"><div class="label">Нэр</div><input id="u-ner"/></div>
             <div class="grow"><div class="label">Овог</div><input id="u-ovog"/></div>
           </div>
@@ -237,6 +265,6 @@
     </section>
   </main>
 
-  <script src="./app.js?v=20260307-fix1"></script>
+  <script src="./app.js?v=20260303-patch1"></script>
 </body>
 </html>
