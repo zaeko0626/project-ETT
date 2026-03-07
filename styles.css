@@ -384,3 +384,90 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
     grid-template-columns: 1fr;
   }
 }
+/* ===== ITEMS / PACKS SECTION LAYOUT ===== */
+.items-page{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.section-shell{
+  background: rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:40px;
+  padding:22px 22px 18px;
+  box-shadow: var(--shadow);
+}
+
+.section-shell-title{
+  font-size:18px;
+  font-weight:1000;
+  letter-spacing:.02em;
+  color:var(--text);
+  margin:0 0 14px 6px;
+}
+
+.inner-shell{
+  background: rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:28px;
+  padding:18px;
+}
+
+.inner-shell + .inner-shell{
+  margin-top:14px;
+}
+
+.compact-shell{
+  min-height:130px;
+}
+
+.list-shell{
+  min-height:280px;
+}
+
+.inner-shell-title{
+  text-align:center;
+  font-size:16px;
+  font-weight:1000;
+  color:var(--text);
+  margin-bottom:8px;
+}
+
+.items-form-action{
+  justify-content:flex-end;
+  display:flex;
+}
+
+#items-list .items-box,
+#packs-list .items-box{
+  margin-top:0;
+}
+
+#pack-builder-list:empty::before,
+#packs-list:empty::before{
+  content:"Мэдээлэл алга";
+  display:block;
+  padding:14px 16px;
+  color:var(--muted);
+  border:1px dashed rgba(255,255,255,.10);
+  border-radius:18px;
+  background: rgba(255,255,255,.02);
+}
+
+@media (max-width: 900px){
+  .section-shell{
+    border-radius:28px;
+    padding:16px;
+  }
+
+  .inner-shell{
+    border-radius:22px;
+    padding:14px;
+  }
+
+  .compact-shell,
+  .list-shell{
+    min-height:auto;
+  }
+}
