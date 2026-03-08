@@ -2578,3 +2578,70 @@ window.refreshData = async (keepTab = true) => {
     showLoading(false);
   }
 };
+
+/* ---------------- Login / Logout ---------------- */
+window.login = async () => {
+  const btn = document.querySelector('#login-screen button[onclick="login()"]');
+  if (btn?.dataset.loading === "1") return;
+
+  const code = ($("login-code")?.value || "").trim();
+  const pass = ($("login-pass")?.value || "").trim();
+  if (!code || !pass) return popupError("Код, нууц үг оруулна уу");
+
+  try {
+    if (btn) {
+      btn.dataset.loading = "1";
+      btn.disabled = true;
+    }
+    showLoading(true);
+    const r = await apiPost({ action: "login", code, pass });
+    if (!r.success) throw new Error(r.msg || "Нэвтрэх амжилтгүй");
+    currentUser = r.user;
+    setLoggedInUI(true);
+    setSidebarUserInfo();
+    applyRoleVisibility();
+    await refreshData(false);
+    if (isAdmin()) showTab("orders", $("nav-orders"));
+    else showTab("request", $("nav-request"));
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+    if (btn) {
+      btn.dataset.loading = "0";
+      btn.disabled = false;
+    }
+  }
+};
+
+window.logout = () => {
+  currentUser = null;
+  requests = [];
+  requestItems = [];
+  itemsMaster = [];
+  packsMaster = [];
+  stockMaster = [];
+  packBuilder = [];
+  packsGrouped = [];
+  users = [];
+  cart = [];
+  currentModalRequestId = null;
+  orderFilters = { status: "", shift: "", year: "", month: "", item: "", place: "", dept: "", role: "", code: "", name: "" };
+  openHeaderFilterKey = null;
+  setLoggedInUI(false);
+  if ($("sidebar-userinfo")) $("sidebar-userinfo").textContent = "—";
+  if ($("header-userline")) $("header-userline").textContent = "—";
+  if ($("login-code")) $("login-code").value = "";
+  if ($("login-pass")) $("login-pass").value = "";
+};
+
+/* ---------------- Init ---------------- */
+function init() {
+  setLoggedInUI(false);
+  $("login-pass")?.addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
+  renderOrdersHeader();
+  installHeaderCloseHandler();
+  renderKpis();
+}
+
+window.addEventListener("load", init);
