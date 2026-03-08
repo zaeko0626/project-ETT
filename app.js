@@ -400,7 +400,10 @@ function passFilters(r) {
   if (orderFilters.month && m !== orderFilters.month) return false;
   if (orderFilters.place && String(r.place || "").trim() !== orderFilters.place) return false;
   if (orderFilters.dept && String(r.department || "").trim() !== orderFilters.dept) return false;
-  if (orderFilters.role && !String(r.role || "").toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
+  if (orderFilters.role){
+  const role = String(r.role || "").trim();
+  if(role !== orderFilters.role.trim()) return false;
+}
   if (orderFilters.code && !String(r.code || "").toLowerCase().includes(orderFilters.code.toLowerCase())) return false;
   if (orderFilters.name) {
     const full = `${String(r.ovog||"")} ${String(r.ner||"")}`.toLowerCase();
@@ -434,8 +437,7 @@ function renderRequests() {
     const reqId = esc(r.request_id);
 
     const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
-        <div class="sub">ID: ${esc(r.code||"")}${r.role?` · ${esc(r.role)}`:""}</div></div>`;
-
+        <div class="sub">ID: ${esc(r.code||"")}${r.role ? ` · ${esc(r.role)}` : ``}</div>
     const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"")}</div><div class="sub">${esc(r.department||"")}</div></div>`;
     const shift = `<div>${esc(r.shift||"")}</div>`;
     const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
