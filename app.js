@@ -1,5 +1,13 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzCTHxnIWVV70Nw9NBuADybkcWaCtg9dBe91CY008uXhSw7lRp01WDlFpeR6otNDaYE/exec";
-
+function rebuildPacksGrouped(){
+  if(!Array.isArray(packsMaster)) return;
+  const map = {};
+  packsMaster.forEach(p=>{
+    if(!map[p.pack_name]) map[p.pack_name] = [];
+    map[p.pack_name].push(p);
+  });
+  packsGrouped = map;
+}
 let currentUser = null;
 let requests = [];
 let requestItems = [];
