@@ -314,6 +314,7 @@ function renderOrdersHeader() {
     <option ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
     <option ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
     <option ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
+
   const shiftOptions = `
     <option value="">Бүгд</option>
     <option ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
@@ -325,18 +326,17 @@ function renderOrdersHeader() {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>АЖИЛТАН</div>
+      <div>АЛБАН ТУШААЛ</div>
       <div>ГАЗАР, ХЭЛТЭС</div>
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    // ✅ БАРАА багана авсан
-    header.style.gridTemplateColumns = "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr";
+    header.style.gridTemplateColumns = "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    // ✅ Ажилтан: зөвхөн дугаар / төлөв / огноо
     header.style.gridTemplateColumns = "1.4fr 1.2fr 1.1fr";
   }
 }
@@ -1677,13 +1677,67 @@ function renderRequests() {
   if (!list) return;
 
   renderOrdersHeader();
-  const data = getVisibleRequestsHydrated().filter(passFilters)
+
+  const data = getVisibleRequests()
+    .filter(passFilters)
     .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
   if (!data.length) {
-    list.innerHTML = `<div style="padding:16px;color:#94a3b8;">Мэдээлэл олдсонгүй.</div>`;
+    list.innerHTML = `<div style="padding:16px;color:#6b7280;">Мэдээлэл олдсонгүй.</div>`;
     return;
   }
+
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (
+    isAdmin()
+      ? "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr"
+      : "1.4fr 1.2fr 1.1fr"
+  );
+
+  list.innerHTML = data.map((r) => {
+    const st = statusMetaOverall(r.overall_status);
+    const reqId = esc(r.request_id);
+
+    const fullName = `${String(r.ovog || "").trim()} ${String(r.ner || "").trim()}`.trim();
+
+    const employee = `
+      <div>
+        <div style="font-weight:900;">${esc(fullName || "—")}</div>
+        <div class="sub">ID: ${esc(r.code || "")}</div>
+      </div>`;
+
+    const roleCol = `<div>${esc(String(r.role || "").trim())}</div>`;
+
+    const placeDept = `
+      <div>
+        <div style="font-weight:900;">${esc(r.place || "")}</div>
+        <div class="sub">${esc(r.department || "")}</div>
+      </div>`;
+
+    const shift = `<div>${esc(r.shift || "")}</div>`;
+    const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
+    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
+
+    if (isAdmin()) {
+      return `
+        <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+          <div class="req-id">${reqId}</div>
+          <div>${employee}</div>
+          <div>${roleCol}</div>
+          <div>${placeDept}</div>
+          <div>${shift}</div>
+          <div>${status}</div>
+          <div>${date}</div>
+        </div>`;
+    }
+
+    return `
+      <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+        <div class="req-id">${reqId}</div>
+        <div>${status}</div>
+        <div>${date}</div>
+      </div>`;
+  }).join("");
+}
 
   const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
     ? "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr"
@@ -1751,7 +1805,7 @@ window.openRequestDetail = (request_id) => {
       </div>
       <div class="detail-meta-grid">
         <div><span class="muted">Ажилтан:</span> ${esc(`${req.ovog || ""} ${req.ner || ""}`.trim())} (Код: ${esc(req.code || "")})</div>
-        <div><span class="muted">Албан тушаал:</span> ${esc(req.role || "—")}</div>
+        <div><span class="muted">Албан тушаал:</span> ${esc(req.role || "")}</div>
         <div><span class="muted">Газар/Хэлтэс:</span> ${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
         <div><span class="muted">Ээлж:</span> ${esc(req.shift || "—")}</div>
         <div><span class="muted">Багц:</span> ${esc(packLabel)}</div>
