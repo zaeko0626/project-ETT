@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ETT PPE SYSTEM</title>
-  <link rel="stylesheet" href="./styles.css?v=20260308-clean2"/>
+  <link rel="stylesheet" href="./styles.css?v=20260308-mobilefix2"/>
 </head>
 <body>
   <div id="loading-overlay" class="modal-overlay hidden" aria-hidden="true">
@@ -130,17 +130,17 @@
               <select id="req-pack" class="input"></select>
             </div>
             <div class="field" style="display:flex;align-items:flex-end;gap:10px;">
-              <button class="btn" onclick="addPackToCart()">Багц нэмэх</button>
-              <button class="btn primary" onclick="submitPackRequest()">Багц илгээх</button>
+              <button id="btn-pack-add" class="btn" onclick="addPackToCart()">Багц нэмэх</button>
+              <button id="btn-pack-submit" class="btn primary" onclick="submitPackRequest()">Багц илгээх</button>
             </div>
           </div>
 
-          <div class="row" style="margin-top:12px;">
+          <div id="manual-request-block" class="row" style="margin-top:12px;">
             <div class="grow"><div class="label">Бараа</div><select id="req-item"></select></div>
             <div class="grow"><div class="label">Хэмжээ</div><select id="req-size"></select></div>
             <div class="grow"><div class="label">Тоо</div><input id="req-qty" type="number" value="1" min="1"/></div>
             <div class="grow" style="justify-content:flex-end;display:flex;">
-              <button class="btn primary" style="margin-top:22px;" onclick="addToCart()">➕ НЭМЭХ</button>
+              <button id="btn-add-item" class="btn primary" style="margin-top:22px;" onclick="addToCart()">➕ НЭМЭХ</button>
             </div>
           </div>
 
@@ -150,7 +150,7 @@
           </div>
 
           <div style="margin-top:12px;">
-            <button class="btn primary full" onclick="submitMultiRequest()">ЗАХИАЛГА ИЛГЭЭХ</button>
+            <button id="btn-submit-request" class="btn primary full" onclick="submitMultiRequest()">ЗАХИАЛГА ИЛГЭЭХ</button>
           </div>
 
           <div style="margin-top:18px;">
@@ -288,6 +288,6 @@
     </section>
   </main>
 
-  <script src="./app.js?v=20260308-clean2"></script>
+  <script src="./app.js?v=20260308-mobilefix2"></script>
 </body>
 </html>
