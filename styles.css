@@ -503,35 +503,122 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 .receive-pin{max-width:260px}
 @media (max-width: 1100px){.detail-meta-grid{grid-template-columns:1fr}.detail-admin-head-grid,.detail-admin-grid{grid-template-columns:1.3fr .8fr .55fr .9fr .65fr .95fr .7fr}}
 
-/* ===== FINAL OVERRIDES: receive by password ===== */
-.receive-pin{max-width:320px}
+
+/* ===== Final mobile/request-mode fixes ===== */
+.mode-disabled{
+  opacity:.45;
+  pointer-events:none;
+}
+.mode-note{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:12px;
+}
 @media (max-width:768px){
+  .screen{padding:12px 10px;}
+  .header{padding:10px;}
+  .brand-title{font-size:16px;}
+  .btn{padding:10px 12px;}
+  .card{padding:12px;}
 
-.orders-table{
-  display:block;
-}
+  #orders-filters .row,
+  #manual-request-block,
+  .receive-row{
+    flex-direction:column;
+  }
 
-.orders-table thead{
-  display:none;
-}
+  #orders-filters .grow,
+  #manual-request-block .grow{
+    min-width:100%;
+    width:100%;
+  }
 
-.orders-table tr{
-  display:block;
-  margin-bottom:14px;
-  background:#111827;
-  border-radius:14px;
-  padding:14px;
-}
+  .orders-header{
+    display:grid !important;
+    grid-template-columns:1.3fr 1fr 1fr 1fr !important;
+    gap:10px !important;
+  }
 
-.orders-table td{
-  display:block;
-  padding:4px 0;
-  font-size:14px;
-}
+  .orders-header > div:nth-child(1){grid-column:1 / span 1;}
+  .orders-header > div:nth-child(2){grid-column:2 / span 1;}
+  .orders-header > div:nth-child(3){grid-column:3 / span 1;}
+  .orders-header > div:nth-child(4){grid-column:4 / span 1;}
+  .orders-header > div:nth-child(n+5){display:none !important;}
 
-.orders-table td:first-child{
-  font-size:18px;
-  font-weight:700;
-}
+  .request-row{
+    display:grid !important;
+    grid-template-columns:1.3fr 1fr 1fr 1fr !important;
+    gap:10px !important;
+    align-items:center !important;
+  }
 
+  .request-row > div:nth-child(n+5){display:none !important;}
+
+  .request-row .req-id{font-size:18px;}
+  .request-row .sub{display:none !important;}
+
+  .modal-card{
+    width:min(96vw, 96vw);
+    max-height:86vh;
+  }
+
+  .detail-meta-grid{
+    grid-template-columns:1fr !important;
+    gap:8px !important;
+  }
+
+  .detail-table-head{
+    display:none !important;
+  }
+
+  .detail-table-row.detail-admin-grid,
+  .detail-table-row.detail-user-grid{
+    display:block !important;
+    grid-template-columns:none !important;
+    padding:12px !important;
+  }
+
+  .detail-table-row.detail-admin-grid > div,
+  .detail-table-row.detail-user-grid > div{
+    display:block;
+    margin-bottom:8px;
+    min-width:0;
+  }
+
+  .detail-table-row.detail-admin-grid > div:nth-child(1)::before{content:"Бараа";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(2)::before{content:"Хүссэн размер";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(3)::before{content:"Хүссэн тоо";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(4)::before{content:"Олгох размер";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(5)::before{content:"Олгох тоо";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(6)::before{content:"Төлөв";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-admin-grid > div:nth-child(7)::before{content:"Үйлдэл";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+
+  .detail-table-row.detail-user-grid > div:nth-child(1)::before{content:"Бараа";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-user-grid > div:nth-child(2)::before{content:"Размер";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-user-grid > div:nth-child(3)::before{content:"Тоо";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+  .detail-table-row.detail-user-grid > div:nth-child(4)::before{content:"Төлөв";display:block;color:var(--muted);font-size:12px;margin-bottom:4px;}
+
+  .detail-actions{
+    justify-content:flex-start !important;
+  }
+
+  .light-table-row{
+    grid-template-columns:1fr !important;
+  }
+
+  .light-table-row > div{
+    min-width:0;
+  }
+
+  .receive-row > *{
+    width:100%;
+  }
+
+  .receive-pin{
+    max-width:none;
+  }
+
+  .items-page{
+    gap:14px;
+  }
 }
