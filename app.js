@@ -1,12 +1,28 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzCTHxnIWVV70Nw9NBuADybkcWaCtg9dBe91CY008uXhSw7lRp01WDlFpeR6otNDaYE/exec";
-function rebuildPacksGrouped(){
-  if(!Array.isArray(packsMaster)) return;
+
+function groupPacks(lines) {
   const map = {};
-  packsMaster.forEach(p=>{
-    if(!map[p.pack_name]) map[p.pack_name] = [];
-    map[p.pack_name].push(p);
+  (lines || []).forEach((p) => {
+    const name = String(p?.pack_name || "").trim();
+    if (!name) return;
+    if (!map[name]) {
+      map[name] = {
+        pack_name: name,
+        active: String(p?.active ?? "true").toLowerCase() !== "false",
+        lines: []
+      };
+    }
+    map[name].lines.push({
+      item: String(p?.item || "").trim(),
+      default_size: String(p?.default_size || "").trim(),
+      default_qty: Number(p?.default_qty || 1)
+    });
   });
-  packsGrouped = map;
+  return Object.values(map).sort((a, b) => a.pack_name.localeCompare(b.pack_name, "mn"));
+}
+
+function rebuildPacksGrouped() {
+  packsGrouped = groupPacks(Array.isArray(packsMaster) ? packsMaster : []);
 }
 let currentUser = null;
 let requests = [];
