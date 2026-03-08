@@ -1503,11 +1503,7 @@ function init() {
 window.addEventListener("load", init);
 
 
-
-
-/* ================= CLEAN UI / FILTER / MODAL OVERRIDES ================= */
-
-let isLoggingIn = false;
+/* ================= 2026-03-08 UI / FILTER / MODAL OVERRIDES ================= */
 
 function fmtDateTime(v) {
   const d = new Date(v);
@@ -1549,10 +1545,6 @@ function packSignatureFromLines(lines) {
   return Object.keys(counts).sort().map((k) => `${k}::${counts[k]}`).join("|");
 }
 
-function rebuildPacksGrouped() {
-  packsGrouped = groupPacks(packsMaster || []);
-}
-
 function getRequestPackLabel(request_id) {
   const req = requests.find((x) => String(x.request_id) === String(request_id)) || {};
   if (String(req.pack_name || "").trim()) return String(req.pack_name || "").trim();
@@ -1561,7 +1553,7 @@ function getRequestPackLabel(request_id) {
   if (!lines.length) return "Энгийн";
 
   const reqSig = packSignatureFromLines(lines);
-  const grouped = groupPacks(packsMaster || []);
+  const grouped = groupPacks ? groupPacks(packsMaster || []) : [];
   const match = grouped.find((p) => packSignatureFromLines((p.lines || []).map((ln) => ({
     item: ln.item,
     qty: ln.default_qty
@@ -1601,7 +1593,6 @@ function renderOrdersHeader() {
     <option value="Хүлээгдэж буй" ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
     <option value="Хэсэгчлэн" ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
     <option value="Шийдвэрлэсэн" ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
-
   const shiftOptions = `
     <option value="">Бүгд</option>
     <option value="А ээлж" ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
@@ -1618,16 +1609,14 @@ function renderOrdersHeader() {
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.className = "orders-header orders-admin-grid";
-    header.style.gridTemplateColumns = "";
+    header.style.gridTemplateColumns = "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>БАГЦ</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.className = "orders-header orders-user-grid";
-    header.style.gridTemplateColumns = "";
+    header.style.gridTemplateColumns = "1.2fr 1fr 1.15fr 1.05fr";
   }
 }
 
@@ -1638,13 +1627,6 @@ function populateOrderFilters() {
   setSelectOptions($("f-item"), uniq(vis.map(r => getRequestPackLabel(r.request_id))).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
   setSelectOptions($("f-place"), uniq(vis.map(r => String(r.place||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
   setSelectOptions($("f-dept"), uniq(vis.map(r => String(r.department||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-
-  const itemLabel = document.querySelector('label[for="f-item"]');
-  const itemField = $("f-item")?.closest(".grow");
-  if (itemField) {
-    const label = itemField.querySelector(".label");
-    if (label) label.textContent = "Багц";
-  }
 
   window.applyFilters = () => {
     orderFilters.year = ($("f-year")?.value || "").trim();
@@ -1700,6 +1682,10 @@ function renderRequests() {
     list.innerHTML = `<div style="padding:16px;color:#94a3b8;">Мэдээлэл олдсонгүй.</div>`;
     return;
   }
+
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
+    ? "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr"
+    : "1.2fr 1fr 1.15fr 1.05fr");
 
   list.innerHTML = data.map((r) => {
     const st = statusMetaOverall(normalizeOverallStatus(r.overall_status));
@@ -1758,6 +1744,512 @@ window.openRequestDetail = (request_id) => {
       <div class="detail-request-title">Захиалгын дугаар: ${esc(req.request_id)}</div>
       <div class="detail-meta-row">
         <span class="muted">Огноо:</span> ${esc(fmtDateTime(req.requestedDate))}
+        <span class="detail-meta-sep">•</span>
+        <span class="status ${st.cls}">${esc(st.label)}</span>
+      </div>
+      <div class="detail-meta-grid">
+        <div><span class="muted">Ажилтан:</span> ${esc(`${req.ovog || ""} ${req.ner || ""}`.trim())} (Код: ${esc(req.code || "")})</div>
+        <div><span class="muted">Албан тушаал:</span> ${esc(req.role || "—")}</div>
+        <div><span class="muted">Газар/Хэлтэс:</span> ${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
+        <div><span class="muted">Ээлж:</span> ${esc(req.shift || "—")}</div>
+        <div><span class="muted">Багц:</span> ${esc(packLabel)}</div>
+      </div>
+    </div>`;
+
+  const tableHead = isAdmin()
+    ? `
+      <div class="detail-table-wrap">
+        <div class="detail-table-head detail-admin-grid">
+          <div>БАРАА</div>
+          <div>РАЗМЕР</div>
+          <div>ТОО</div>
+          <div>ОЛГОХ РАЗМЕР</div>
+          <div>ОЛГОХ ТОО</div>
+          <div>ТӨЛӨВ</div>
+          <div>ҮЙЛДЭЛ</div>
+        </div>
+        ${renderDetailRowsAdmin(request_id)}
+      </div>`
+    : `
+      <div class="detail-table-wrap">
+        <div class="detail-table-head detail-user-grid">
+          <div>БАРАА</div>
+          <div>РАЗМЕР</div>
+          <div>ТОО</div>
+          <div>ТӨЛӨВ</div>
+        </div>
+        ${renderDetailRowsUser(request_id)}
+      </div>`;
+
+  const footer = isAdmin()
+    ? `<div class="detail-footer">
+         <button class="btn" onclick="closeModal()">ХААХ</button>
+         <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
+       </div>`
+    : `<div class="detail-footer">
+         <button class="btn" onclick="closeModal()">ХААХ</button>
+       </div>`;
+
+  openModal(`Захиалга: ${request_id}`, `${header}${tableHead}${footer}`);
+};
+
+function renderDetailRowsAdmin(request_id) {
+  const lines = linesForRequest(request_id);
+  if (!lines.length) return `<div class="detail-empty">Мэдээлэл хоосон.</div>`;
+
+  return lines.map((l) => {
+    const meta = statusMetaItem(l.item_status);
+    const decided = ["Зөвшөөрсөн","Татгалзсан","Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status || "").trim());
+
+    const actionHtml = decided
+      ? `<span class="status ${meta.cls}">ШИЙДВЭРЛЭСЭН</span>`
+      : `
+        <div class="detail-actions">
+          <button class="icon-btn action-icon approve" title="Олгох" onclick="issueLine('${escAttr(l.line_id)}');event.stopPropagation();">✓</button>
+          <button class="icon-btn action-icon reject" title="Татгалзах" onclick="issueLineReject('${escAttr(l.line_id)}');event.stopPropagation();">✕</button>
+        </div>`;
+
+    return `
+      <div class="detail-table-row detail-admin-grid">
+        <div class="cell-strong">${esc(l.item || "")}</div>
+        <div>${esc(l.size || "—")}</div>
+        <div>${esc(l.qty ?? "")}</div>
+        <div><input class="input tiny issue-field" id="iss-size-${escAttr(l.line_id)}" value="${escAttr(l.issued_size || l.size || "")}" placeholder="Размер"/></div>
+        <div><input class="input tiny issue-field" id="iss-qty-${escAttr(l.line_id)}" type="number" min="0" value="${escAttr(l.issued_qty || l.qty || 0)}" placeholder="Тоо"/></div>
+        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
+        <div>${actionHtml}</div>
+      </div>`;
+  }).join("");
+}
+
+function renderDetailRowsUser(request_id) {
+  const lines = linesForRequest(request_id);
+  if (!lines.length) return `<div class="detail-empty">Мэдээлэл хоосон.</div>`;
+
+  return lines.map((l) => {
+    const meta = statusMetaItem(l.item_status);
+    return `
+      <div class="detail-table-row detail-user-grid">
+        <div class="cell-strong">${esc(l.item || "")}</div>
+        <div>${esc(l.size || "—")}</div>
+        <div>${esc(l.qty ?? "")}</div>
+        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
+      </div>`;
+  }).join("");
+}
+
+function renderItemsTabAll() {
+  renderItems();
+  fillPackItemSelect();
+  renderPackBuilder();
+  renderPacks();
+}
+
+window.showTab = (tabName, btn) => {
+  if (!isAdmin() && tabName === "items") return popupError("Зөвхөн админ харна.");
+  if (!isAdmin() && tabName === "users") return popupError("Зөвхөн админ харна.");
+  if (isAdmin() && tabName === "request") return popupError("Админ талд захиалга гаргах шаардлагагүй.");
+
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
+  $(`tab-${tabName}`)?.classList.remove("hidden");
+
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  if (window.innerWidth < 1024) closeSidebar();
+
+  if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
+  if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
+  if (tabName === "items") setTimeout(renderItemsTabAll, 0);
+  if (tabName === "users") renderUsers();
+};
+
+window.refreshData = async (keepTab = true) => {
+  if (!currentUser) return;
+  const activeTab = keepTab ? (document.querySelector(".nav-btn.active")?.id || "nav-orders") : "nav-orders";
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "get_all_data" });
+    if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
+    requests = Array.isArray(r.requests) ? r.requests : [];
+    requestItems = Array.isArray(r.request_items) ? r.request_items : [];
+    itemsMaster = Array.isArray(r.items) ? r.items : [];
+    packsMaster = Array.isArray(r.packs) ? r.packs : [];
+    stockMaster = Array.isArray(r.stock) ? r.stock : [];
+    rebuildPacksGrouped();
+    if (isAdmin()) {
+      const u = await apiPost({ action: "get_users" });
+      users = u.success ? (u.users || []) : [];
+    } else {
+      users = [];
+    }
+    hydrateRequestsForUI();
+    setSidebarUserInfo();
+    applyRoleVisibility();
+    populateOrderFilters();
+
+    if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
+    if (activeTab === "nav-request") showTab("request", $("nav-request"));
+    if (activeTab === "nav-items") {
+      showTab("items", $("nav-items"));
+      setTimeout(renderItemsTabAll, 0);
+    }
+    if (activeTab === "nav-users") showTab("users", $("nav-users"));
+    if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+
+/* ===== FINAL OVERRIDES: receive by password + received statuses ===== */
+let __loginBusy = false;
+
+function requestStatusMeta(req) {
+  const raw = String(req?.overall_status || "").trim();
+  const alreadyReceived = String(req?.received_confirmed || "").toLowerCase() === "true" || req?.received_confirmed === true;
+
+  if (alreadyReceived) return { label: "ХҮЛЭЭН АВСАН", cls: "st-approved", value: "Хүлээн авсан" };
+  if (raw === "Шийдвэрлэсэн") return { label: "ХҮЛЭЭН АВААГҮЙ", cls: "st-pending", value: "Хүлээн аваагүй" };
+  if (raw === "Хэсэгчлэн" || raw === "Хэсэгчлэн шийдвэрлэсэн") {
+    return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending", value: "Хэсэгчлэн" };
+  }
+  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending", value: "Хүлээгдэж буй" };
+}
+
+function normalizeOverallStatus(v) {
+  const s = String(v || "").trim();
+  if (s === "Хэсэгчлэн шийдвэрлэсэн") return "Хэсэгчлэн";
+  return s || "Хүлээгдэж буй";
+}
+
+function getUserMetaByCode(code) {
+  const wanted = String(code || "").trim();
+  const u = (users || []).find((x) => String(x.code || "").trim() === wanted);
+  if (!u) return null;
+  return {
+    role: String(u.role || "").trim(),
+    place: String(u.place || "").trim(),
+    department: String(u.department || "").trim(),
+    shift: String(u.shift || "").trim(),
+    ovog: String(u.ovog || "").trim(),
+    ner: String(u.ner || "").trim()
+  };
+}
+
+function packSignatureFromLines(lines) {
+  const counts = {};
+  (lines || []).forEach((ln) => {
+    const key = `${String(ln.item || "").trim()}__${parseInt(ln.qty, 10) || 0}`;
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  return Object.keys(counts).sort().map((k) => `${k}::${counts[k]}`).join("|");
+}
+
+function getRequestPackLabel(request_id) {
+  const req = requests.find((x) => String(x.request_id) === String(request_id)) || {};
+  if (String(req.pack_name || "").trim()) return String(req.pack_name || "").trim();
+
+  const lines = linesForRequest(request_id);
+  if (!lines.length) return "Энгийн";
+
+  const reqSig = packSignatureFromLines(lines);
+  const grouped = groupPacks(packsMaster || []);
+  const match = grouped.find((p) => packSignatureFromLines((p.lines || []).map((ln) => ({
+    item: ln.item,
+    qty: ln.default_qty
+  }))) === reqSig);
+
+  return match ? String(match.pack_name || "").trim() : "Энгийн";
+}
+
+function hydrateRequestsForUI() {
+  requests = (requests || []).map((r) => {
+    const meta = getUserMetaByCode(r.code) || {};
+    return {
+      ...r,
+      ovog: String(r.ovog || meta.ovog || "").trim(),
+      ner: String(r.ner || meta.ner || "").trim(),
+      role: String(r.role || meta.role || "").trim(),
+      place: String(r.place || meta.place || "").trim(),
+      department: String(r.department || meta.department || "").trim(),
+      shift: String(r.shift || meta.shift || "").trim(),
+      pack_name: String(r.pack_name || "").trim(),
+      pack_label: getRequestPackLabel(r.request_id)
+    };
+  });
+}
+
+function rebuildPacksGrouped() {
+  packsGrouped = groupPacks(packsMaster || []);
+}
+
+function fillPackItemSelect() {
+  const sel = $("pack-item-select");
+  if (!sel) return;
+  const names = Array.from(new Set((itemsMaster || []).map((x) => String(x.name || "").trim()).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b, "mn"));
+  sel.innerHTML = `<option value="">Сонгох</option>` +
+    names.map((name) => `<option value="${escAttr(name)}">${esc(name)}</option>`).join("");
+}
+
+function fillRequestForm() {
+  const itemSel = $("req-item");
+  const sizeSel = $("req-size");
+  const packSel = $("req-pack");
+
+  if (itemSel) {
+    const itemNames = (itemsMaster || [])
+      .map((x) => String(x.name || "").trim())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, "mn"));
+    setSelectOptions(itemSel, itemNames, "Сонгох");
+
+    const onItemChange = () => {
+      const itemName = (itemSel.value || "").trim();
+      const it = itemsMaster.find((x) => String(x.name || "") === itemName);
+      const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+      setSelectOptions(sizeSel, sizes, "Сонгох");
+    };
+    itemSel.onchange = onItemChange;
+    onItemChange();
+  }
+
+  if (packSel) {
+    const activePackNames = groupPacks(packsMaster || [])
+      .filter((p) => p.active)
+      .map((p) => p.pack_name);
+    setSelectOptions(packSel, activePackNames, "Сонгох");
+  }
+}
+
+window.login = async () => {
+  if (__loginBusy) return;
+  const code = ($("login-code")?.value || "").trim();
+  const pass = ($("login-pass")?.value || "").trim();
+  if (!code || !pass) return popupError("Код, нууц үг оруулна уу");
+
+  const btn = document.querySelector('#login-screen button[onclick="login()"]');
+  try {
+    __loginBusy = true;
+    if (btn) btn.disabled = true;
+    showLoading(true);
+    const r = await apiPost({ action: "login", code, pass });
+    if (!r.success) throw new Error(r.msg || "Нэвтрэх амжилтгүй");
+    currentUser = r.user;
+    setLoggedInUI(true);
+    setSidebarUserInfo();
+    applyRoleVisibility();
+    await refreshData(false);
+    if (isAdmin()) showTab("orders", $("nav-orders"));
+    else showTab("request", $("nav-request"));
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+    __loginBusy = false;
+    if (btn) btn.disabled = false;
+  }
+};
+
+window.confirmReceive = async () => {
+  const pass = ($("receive-pass")?.value || "").trim();
+  if (!pass) return popupError("Нууц үг оруулна уу");
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "confirm_receive", code: currentUser.code, request_id: currentModalRequestId, pass });
+    if (!r.success) throw new Error(r.msg || "Алдаа гарлаа");
+    await refreshData(false);
+    if (currentModalRequestId) openRequestDetail(currentModalRequestId);
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
+
+function renderReceiveConfirmSection(req) {
+  const alreadyReceived = String(req.received_confirmed || "").toLowerCase() === "true" || req.received_confirmed === true;
+  const resolved = normalizeOverallStatus(req.overall_status) === "Шийдвэрлэсэн";
+
+  if (alreadyReceived) {
+    return `
+      <div class="detail-receive-box">
+        <div class="receive-title">ХҮЛЭЭН АВСАН</div>
+        <div class="muted">Энэ захиалгыг ажилтан хүлээн авсан байна.</div>
+      </div>`;
+  }
+  if (!resolved) return "";
+
+  return `
+    <div class="detail-receive-box">
+      <div class="receive-title">ХҮЛЭЭН АВАЛТ БАТАЛГААЖУУЛАХ</div>
+      <div class="receive-row">
+        <input id="receive-pass" class="input receive-pin" type="password" placeholder="Нууц үг оруулна уу" />
+        <button class="btn primary" onclick="confirmReceive()">ХҮЛЭЭН АВСАН</button>
+      </div>
+    </div>`;
+}
+
+function renderOrdersHeader() {
+  const header = $("requests-header");
+  if (!header) return;
+
+  const statusOptions = `
+    <option value="">Бүгд</option>
+    <option value="Хүлээгдэж буй" ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
+    <option value="Хэсэгчлэн" ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
+    <option value="Хүлээн аваагүй" ${orderFilters.status==="Хүлээн аваагүй"?"selected":""}>Хүлээн аваагүй</option>
+    <option value="Хүлээн авсан" ${orderFilters.status==="Хүлээн авсан"?"selected":""}>Хүлээн авсан</option>`;
+  const shiftOptions = `
+    <option value="">Бүгд</option>
+    <option value="А ээлж" ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
+    <option value="Б ээлж" ${orderFilters.shift==="Б ээлж"?"selected":""}>Б ээлж</option>
+    <option value="В ээлж" ${orderFilters.shift==="В ээлж"?"selected":""}>В ээлж</option>
+    <option value="Г ээлж" ${orderFilters.shift==="Г ээлж"?"selected":""}>Г ээлж</option>`;
+
+  if (isAdmin()) {
+    header.innerHTML = `
+      <div>ЗАХИАЛГЫН ДУГААР</div>
+      <div>АЖИЛТАН</div>
+      <div>АЛБАН ТУШААЛ</div>
+      <div>ГАЗАР, ХЭЛТЭС</div>
+      <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
+      <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
+      <div>ОГНОО</div>`;
+    header.style.gridTemplateColumns = "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr";
+  } else {
+    header.innerHTML = `
+      <div>ЗАХИАЛГЫН ДУГААР</div>
+      <div>БАГЦ</div>
+      <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
+      <div>ОГНОО</div>`;
+    header.style.gridTemplateColumns = "1.2fr 1fr 1.15fr 1.05fr";
+  }
+}
+
+function populateOrderFilters() {
+  const vis = getVisibleRequestsHydrated();
+  setSelectOptions($("f-year"), uniq(vis.map(r => getYear(r.requestedDate))).sort(), "Бүгд");
+  setSelectOptions($("f-month"), uniq(vis.map(r => getMonth(r.requestedDate))).sort(), "Бүгд");
+  setSelectOptions($("f-item"), uniq(vis.map(r => getRequestPackLabel(r.request_id))).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
+  setSelectOptions($("f-place"), uniq(vis.map(r => String(r.place||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
+  setSelectOptions($("f-dept"), uniq(vis.map(r => String(r.department||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
+
+  window.applyFilters = () => {
+    orderFilters.year = ($("f-year")?.value || "").trim();
+    orderFilters.month = ($("f-month")?.value || "").trim();
+    orderFilters.item = ($("f-item")?.value || "").trim();
+    orderFilters.place = ($("f-place")?.value || "").trim();
+    orderFilters.dept = ($("f-dept")?.value || "").trim();
+    orderFilters.role = ($("f-role")?.value || "").trim();
+    orderFilters.name = ($("f-name")?.value || "").trim();
+    orderFilters.code = ($("f-code")?.value || "").trim();
+    renderRequests();
+  };
+  window.clearFilters = () => {
+    ["f-year","f-month","f-item","f-place","f-dept","f-role","f-name","f-code"].forEach(id => { if ($(id)) $(id).value = ""; });
+    orderFilters = { status: orderFilters.status, shift: orderFilters.shift, year:"",month:"",item:"",place:"",dept:"",role:"",code:"",name:"" };
+    renderRequests();
+  };
+}
+
+function passFilters(r) {
+  const y = getYear(r.requestedDate);
+  const m = getMonth(r.requestedDate);
+  const st = requestStatusMeta(r).value;
+
+  if (orderFilters.status && st !== orderFilters.status) return false;
+  if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
+  if (orderFilters.year && y !== orderFilters.year) return false;
+  if (orderFilters.month && m !== orderFilters.month) return false;
+  if (orderFilters.place && String(r.place || "").trim() !== orderFilters.place) return false;
+  if (orderFilters.dept && String(r.department || "").trim() !== orderFilters.dept) return false;
+  if (orderFilters.role && !String(r.role || "").toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
+  if (orderFilters.code && !String(r.code || "").toLowerCase().includes(orderFilters.code.toLowerCase())) return false;
+  if (orderFilters.name) {
+    const full = `${String(r.ovog||"")} ${String(r.ner||"")}`.toLowerCase();
+    if (!full.includes(orderFilters.name.toLowerCase())) return false;
+  }
+  if (orderFilters.item && getRequestPackLabel(r.request_id) !== orderFilters.item) return false;
+
+  return true;
+}
+
+function getVisibleRequestsHydrated() {
+  hydrateRequestsForUI();
+  return getVisibleRequests();
+}
+
+function renderRequests() {
+  const list = $("requests-list");
+  if (!list) return;
+
+  renderOrdersHeader();
+
+  const data = getVisibleRequestsHydrated()
+    .filter(passFilters)
+    .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
+
+  if (!data.length) {
+    list.innerHTML = `<div style="padding:16px;color:#6b7280;">Мэдээлэл олдсонгүй.</div>`;
+    return;
+  }
+
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
+    ? "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr"
+    : "1.2fr 1fr 1.15fr 1.05fr");
+
+  list.innerHTML = data.map((r) => {
+    const st = requestStatusMeta(r);
+    const reqId = esc(r.request_id);
+
+    if (isAdmin()) {
+      const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div><div class="sub">ID: ${esc(r.code||"")}</div></div>`;
+      const role = `<div>${esc(r.role || "—")}</div>`;
+      const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"—")}</div><div class="sub">${esc(r.department||"—")}</div></div>`;
+      const shift = `<div>${esc(r.shift||"—")}</div>`;
+      const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
+      const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
+      return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+        <div class="req-id">${reqId}</div>
+        <div>${employee}</div>
+        <div>${role}</div>
+        <div>${placeDept}</div>
+        <div>${shift}</div>
+        <div>${status}</div>
+        <div>${date}</div>
+      </div>`;
+    }
+
+    const pack = `<div>${esc(getRequestPackLabel(r.request_id))}</div>`;
+    const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
+    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
+    return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+      <div class="req-id">${reqId}</div>
+      <div>${pack}</div>
+      <div>${status}</div>
+      <div>${date}</div>
+    </div>`;
+  }).join("");
+}
+
+window.openRequestDetail = (request_id) => {
+  hydrateRequestsForUI();
+  currentModalRequestId = String(request_id);
+  const req = requests.find((x) => String(x.request_id) === String(request_id));
+  if (!req) return popupError("Захиалга олдсонгүй");
+
+  const st = requestStatusMeta(req);
+  const packLabel = getRequestPackLabel(request_id);
+
+  const header = `
+    <div class="detail-meta">
+      <div class="detail-request-title">Захиалгын дугаар: ${esc(req.request_id)}</div>
+      <div class="detail-meta-row">
+        <span class="muted">Огноо:</span> ${esc(fmtDateOnly(req.requestedDate))}
         <span class="detail-meta-sep">•</span>
         <span class="status ${st.cls}">${esc(st.label)}</span>
       </div>
@@ -1860,120 +2352,3 @@ function renderDetailRowsUser(request_id) {
       </div>`;
   }).join("");
 }
-
-function renderReceiveConfirmSection(req) {
-  const overall = normalizeOverallStatus(req.overall_status);
-  const alreadyReceived = String(req.received_confirmed || "").toLowerCase() === "true" || req.received_confirmed === true;
-  if (alreadyReceived) {
-    return `
-      <div class="detail-receive-box">
-        <div class="receive-title">ХҮЛЭЭН АВСАН</div>
-        <div class="muted">Энэ захиалгыг ажилтан хүлээн авсан байна.</div>
-      </div>`;
-  }
-  if (overall !== "Шийдвэрлэсэн") return "";
-
-  return `
-    <div class="detail-receive-box">
-      <div class="receive-title">ХҮЛЭЭН АВАЛТ БАТАЛГААЖУУЛАХ</div>
-      <div class="receive-row">
-        <input id="receive-pin" class="input receive-pin" type="password" placeholder="PIN оруулна уу" />
-        <button class="btn primary" onclick="confirmReceive()">ХҮЛЭЭН АВСАН</button>
-      </div>
-    </div>`;
-}
-
-function renderItemsTabAll() {
-  renderItems();
-  fillPackItemSelect();
-  renderPackBuilder();
-  renderPacks();
-}
-
-window.showTab = (tabName, btn) => {
-  if (!isAdmin() && tabName === "items") return popupError("Зөвхөн админ харна.");
-  if (!isAdmin() && tabName === "users") return popupError("Зөвхөн админ харна.");
-  if (isAdmin() && tabName === "request") return popupError("Админ талд захиалга гаргах шаардлагагүй.");
-
-  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
-  $(`tab-${tabName}`)?.classList.remove("hidden");
-
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-
-  if (window.innerWidth < 1024) closeSidebar();
-
-  if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
-  if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
-  if (tabName === "items") setTimeout(renderItemsTabAll, 0);
-  if (tabName === "users") renderUsers();
-};
-
-window.refreshData = async (keepTab = true) => {
-  if (!currentUser) return;
-  const activeTab = keepTab ? (document.querySelector(".nav-btn.active")?.id || "nav-orders") : "nav-orders";
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "get_all_data" });
-    if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
-    requests = Array.isArray(r.requests) ? r.requests : [];
-    requestItems = Array.isArray(r.request_items) ? r.request_items : [];
-    itemsMaster = Array.isArray(r.items) ? r.items : [];
-    packsMaster = Array.isArray(r.packs) ? r.packs : [];
-    stockMaster = Array.isArray(r.stock) ? r.stock : [];
-    rebuildPacksGrouped();
-    if (isAdmin()) {
-      const u = await apiPost({ action: "get_users" });
-      users = u.success ? (u.users || []) : [];
-    } else {
-      users = [];
-    }
-    hydrateRequestsForUI();
-    setSidebarUserInfo();
-    applyRoleVisibility();
-    populateOrderFilters();
-
-    if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
-    if (activeTab === "nav-request") showTab("request", $("nav-request"));
-    if (activeTab === "nav-items") {
-      showTab("items", $("nav-items"));
-      setTimeout(renderItemsTabAll, 0);
-    }
-    if (activeTab === "nav-users") showTab("users", $("nav-users"));
-    if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-window.login = async () => {
-  if (isLoggingIn) return;
-  const code = ($("login-code")?.value || "").trim();
-  const pass = ($("login-pass")?.value || "").trim();
-  if (!code || !pass) return popupError("Код, нууц үг оруулна уу");
-
-  const btn = document.querySelector('#login-screen button[onclick="login()"]');
-  try {
-    isLoggingIn = true;
-    if (btn) btn.disabled = true;
-    showLoading(true);
-    const r = await apiPost({ action: "login", code, pass });
-    if (!r.success) throw new Error(r.msg || "Нэвтрэх амжилтгүй");
-    currentUser = r.user;
-    setLoggedInUI(true);
-    setSidebarUserInfo();
-    applyRoleVisibility();
-    await refreshData(false);
-    if (isAdmin()) showTab("orders", $("nav-orders"));
-    else showTab("request", $("nav-request"));
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    isLoggingIn = false;
-    if (btn) btn.disabled = false;
-    showLoading(false);
-  }
-};
-
