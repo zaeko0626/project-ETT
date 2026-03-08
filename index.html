@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>ETT PPE SYSTEM</title>
-  <link rel="stylesheet" href="./styles.css?v=20260303-patch2"/>
+  <link rel="stylesheet" href="./styles.css?v=20260308-ui1"/>
 </head>
 <body>
   <!-- Loading -->
@@ -107,7 +107,7 @@
             <div class="row">
               <div class="grow"><div class="label">Он</div><select id="f-year"></select></div>
               <div class="grow"><div class="label">Сар</div><select id="f-month"></select></div>
-              <div class="grow"><div class="label">Бараа</div><select id="f-item"></select></div><div class="grow emp-only" style="display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;"><button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button><button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button></div>
+              <div class="grow"><div class="label">Багц</div><select id="f-item"></select></div><div class="grow emp-only" style="display:flex;align-items:flex-end;justify-content:flex-end;gap:10px;"><button class="icon-btn btn-icon" onclick="applyFilters()" title="Шүүх">🔎</button><button class="icon-btn btn-icon" onclick="clearFilters()" title="Цэвэрлэх">🗑️</button></div>
               <div class="grow"><div class="label">Газар</div><select id="f-place" class="admin-only"></select></div>
               <div class="grow"><div class="label">Хэлтэс</div><select id="f-dept" class="admin-only"></select></div>
               <div class="grow"><div class="label">Албан тушаал</div><input id="f-role" class="admin-only" placeholder="Ж: Машинист"/></div>
@@ -166,89 +166,29 @@
       </section>
 
       <!-- ITEMS (admin) -->
-<section id="tab-items" class="tab-content hidden">
-  <div class="items-page">
-    <!-- ITEMS PANEL -->
-    <div class="section-shell">
-      <div class="section-shell-title">Барааны мэдээлэл</div>
+      <section id="tab-items" class="tab-content hidden">
+        <div class="card">
+          <div class="card-title">БАРААНЫ МЭДЭЭЛЭЛ</div>
 
-      <div class="inner-shell compact-shell">
-        <div class="inner-shell-title">Бараа нэмэх хэсэг</div>
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Бараа нэмэх</div><input id="new-item-name" placeholder="Барааны нэр"/></div>
+            <div class="grow"><div class="label">Size-үүд (таслалаар)</div><input id="new-item-sizes" placeholder="S,M,L"/></div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="btn primary" style="margin-top:22px;" onclick="addItem()">НЭМЭХ</button>
+            </div>
+          </div>
 
-        <div class="row" style="margin-top:12px;">
-          <div class="grow">
-            <div class="label">Бараа нэмэх</div>
-            <input id="new-item-name" placeholder="Барааны нэр"/>
+          <div class="row" style="margin-top:12px;">
+            <div class="grow"><div class="label">Бараа шүүх</div><input id="item-search" placeholder="Хайх..." oninput="renderItems()"/></div>
+            <div class="grow" style="justify-content:flex-end;display:flex;">
+              <button class="icon-btn btn-icon" style="margin-top:22px;" onclick="clearItemSearch()" title="Цэвэрлэх">🗑️</button>
+            </div>
           </div>
-          <div class="grow">
-            <div class="label">Size-үүд (таслалаар)</div>
-            <input id="new-item-sizes" placeholder="S,M,L"/>
-          </div>
-          <div class="grow items-form-action">
-            <button class="btn primary" style="margin-top:22px;" onclick="addItem()">НЭМЭХ</button>
-          </div>
+
+          <div id="items-list" style="margin-top:12px;"></div>
         </div>
-      </div>
+      </section>
 
-      <div class="inner-shell list-shell">
-        <div class="inner-shell-title">Барааны жагсаалт</div>
-
-        <div class="row" style="margin-top:12px;">
-          <div class="grow">
-            <div class="label">Бараа шүүх</div>
-            <input id="item-search" placeholder="Хайх..." oninput="renderItems()"/>
-          </div>
-          <div class="grow items-form-action">
-            <button class="icon-btn btn-icon" style="margin-top:22px;" onclick="clearItemSearch()" title="Цэвэрлэх">🗑️</button>
-          </div>
-        </div>
-
-        <div id="items-list" style="margin-top:12px;"></div>
-      </div>
-    </div>
-
-    <!-- PACKS PANEL -->
-    <div class="section-shell">
-      <div class="section-shell-title">Багцын мэдээлэл</div>
-
-      <div class="inner-shell compact-shell">
-        <div class="inner-shell-title">Багц нэмэх хэсэг</div>
-
-        <div class="row" style="margin-top:12px;">
-          <div class="grow">
-            <div class="label">Багцын нэр</div>
-            <input id="pack-name" placeholder="Ж: Өвлийн багц"/>
-          </div>
-          <div class="grow">
-            <div class="label">Бараа сонгох</div>
-            <select id="pack-item-select"></select>
-          </div>
-          <div class="grow">
-            <div class="label">Тоо</div>
-            <input id="pack-item-qty" type="number" min="1" value="1"/>
-          </div>
-          <div class="grow items-form-action">
-            <button class="btn primary" style="margin-top:22px;" onclick="addPackLine()">БАГЦАД НЭМЭХ</button>
-          </div>
-        </div>
-
-        <div style="margin-top:14px;">
-          <div class="label">Сонгосон бараанууд</div>
-          <div id="pack-builder-list" style="margin-top:10px;"></div>
-        </div>
-
-        <div style="margin-top:12px;display:flex;justify-content:flex-end;">
-          <button class="btn primary" onclick="savePack()">БАГЦ ХАДГАЛАХ</button>
-        </div>
-      </div>
-
-      <div class="inner-shell list-shell">
-        <div class="inner-shell-title">Багцын жагсаалт</div>
-        <div id="packs-list" style="margin-top:12px;"></div>
-      </div>
-    </div>
-  </div>
-</section>
       <!-- USERS (admin) -->
       <section id="tab-users" class="tab-content hidden">
         <div class="card">
@@ -256,7 +196,7 @@
 
           <div class="row" style="margin-top:12px;">
             <div class="grow"><div class="label">Код</div><input id="u-code"/></div>
-            <div class="grow"><div class="label">Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
+            <div class="grow"><div class="label">🔑 Нууц үг</div><input id="u-pass" placeholder="(хоосон бол 12345)"/></div>
             <div class="grow"><div class="label">Нэр</div><input id="u-ner"/></div>
             <div class="grow"><div class="label">Овог</div><input id="u-ovog"/></div>
           </div>
@@ -297,6 +237,6 @@
     </section>
   </main>
 
-  <script src="./app.js?v=20260303-patch1"></script>
+  <script src="./app.js?v=20260308-ui1"></script>
 </body>
 </html>
