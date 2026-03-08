@@ -437,7 +437,7 @@ function renderRequests() {
     const reqId = esc(r.request_id);
 
     const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
-        <div class="sub">ID: ${esc(r.code||"")}${r.role ? ` · ${esc(r.role)}` : ``}</div>
+        <div class="sub">ID: ${esc(r.code||"")}${r.role ? ` · ${esc(r.role)}` : ``}</div></div>`;
     const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"")}</div><div class="sub">${esc(r.department||"")}</div></div>`;
     const shift = `<div>${esc(r.shift||"")}</div>`;
     const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
@@ -753,7 +753,7 @@ window.confirmPackToCart = (packName) => {
   for (let i = 0; i < pack.lines.length; i++) {
     const ln = pack.lines[i];
     const size = ($(`pack-size-${i}`)?.value || "").trim();
-    if (!size) return popupError(`"${ln.item}" бараанд размер сонгоно уу.`);
+    if (!size) return popupError(`"${ln.item}" бараа��д размер сонгоно уу.`);
   }
 
   pack.lines.forEach((ln, i) => {
@@ -1872,7 +1872,7 @@ window.refreshData = async (keepTab = true) => {
   try {
     showLoading(true);
     const r = await apiPost({ action: "get_all_data" });
-    if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
+    if (!r.success) throw new Error(r.msg || "Дата татах��д алдаа");
     requests = Array.isArray(r.requests) ? r.requests : [];
     requestItems = Array.isArray(r.request_items) ? r.request_items : [];
     itemsMaster = Array.isArray(r.items) ? r.items : [];
