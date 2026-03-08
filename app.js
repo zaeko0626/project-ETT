@@ -1,4 +1,45 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbzCTHxnIWVV70Nw9NBuADybkcWaCtg9dBe91CY008uXhSw7lRp01WDlFpeR6otNDaYE/exec";
+window.login = async function () {
+  const code = (document.getElementById("login-code")?.value || "").trim();
+  const pass = (document.getElementById("login-pass")?.value || "").trim();
+
+  if (!code || !pass) {
+    alert("Код болон нууц үг оруулна уу");
+    return;
+  }
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "login",
+        code: code,
+        pass: pass
+      })
+    });
+
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.msg || "Нэвтрэхэд алдаа гарлаа");
+      return;
+    }
+
+    currentUser = data.user;
+
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("main-screen").classList.remove("hidden");
+
+    setSidebarUserInfo();
+    applyRoleVisibility();
+
+    await refreshData(true);
+
+  } catch (err) {
+    alert("Сервертэй холбогдож чадсангүй");
+  }
+};
 
 let currentUser = null;
 let requests = [];
