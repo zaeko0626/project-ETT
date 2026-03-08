@@ -1904,95 +1904,128 @@ window.refreshData = async (keepTab = true) => {
 };
 
 
-/* ===== FINAL OVERRIDES: receive by password + received statuses ===== */
-let __loginBusy = false;
 
-function requestStatusMeta(req) {
-  const raw = String(req?.overall_status || "").trim();
-  const alreadyReceived = String(req?.received_confirmed || "").toLowerCase() === "true" || req?.received_confirmed === true;
-
-  if (alreadyReceived) return { label: "ХҮЛЭЭН АВСАН", cls: "st-approved", value: "Хүлээн авсан" };
-  if (raw === "Шийдвэрлэсэн") return { label: "ХҮЛЭЭН АВААГҮЙ", cls: "st-pending", value: "Хүлээн аваагүй" };
-  if (raw === "Хэсэгчлэн" || raw === "Хэсэгчлэн шийдвэрлэсэн") {
-    return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending", value: "Хэсэгчлэн" };
-  }
-  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending", value: "Хүлээгдэж буй" };
-}
-
-function normalizeOverallStatus(v) {
-  const s = String(v || "").trim();
-  if (s === "Хэсэгчлэн шийдвэрлэсэн") return "Хэсэгчлэн";
-  return s || "Хүлээгдэж буй";
-}
-
-function getUserMetaByCode(code) {
-  const wanted = String(code || "").trim();
-  const u = (users || []).find((x) => String(x.code || "").trim() === wanted);
-  if (!u) return null;
-  return {
-    role: String(u.role || "").trim(),
-    place: String(u.place || "").trim(),
-    department: String(u.department || "").trim(),
-    shift: String(u.shift || "").trim(),
-    ovog: String(u.ovog || "").trim(),
-    ner: String(u.ner || "").trim()
-  };
-}
-
-function packSignatureFromLines(lines) {
-  const counts = {};
-  (lines || []).forEach((ln) => {
-    const key = `${String(ln.item || "").trim()}__${parseInt(ln.qty, 10) || 0}`;
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  return Object.keys(counts).sort().map((k) => `${k}::${counts[k]}`).join("|");
-}
-
-function getRequestPackLabel(request_id) {
-  const req = requests.find((x) => String(x.request_id) === String(request_id)) || {};
-  if (String(req.pack_name || "").trim()) return String(req.pack_name || "").trim();
-
-  const lines = linesForRequest(request_id);
-  if (!lines.length) return "Энгийн";
-
-  const reqSig = packSignatureFromLines(lines);
-  const grouped = groupPacks(packsMaster || []);
-  const match = grouped.find((p) => packSignatureFromLines((p.lines || []).map((ln) => ({
-    item: ln.item,
-    qty: ln.default_qty
-  }))) === reqSig);
-
-  return match ? String(match.pack_name || "").trim() : "Энгийн";
-}
-
-function hydrateRequestsForUI() {
-  requests = (requests || []).map((r) => {
-    const meta = getUserMetaByCode(r.code) || {};
-    return {
-      ...r,
-      ovog: String(r.ovog || meta.ovog || "").trim(),
-      ner: String(r.ner || meta.ner || "").trim(),
-      role: String(r.role || meta.role || "").trim(),
-      place: String(r.place || meta.place || "").trim(),
-      department: String(r.department || meta.department || "").trim(),
-      shift: String(r.shift || meta.shift || "").trim(),
-      pack_name: String(r.pack_name || "").trim(),
-      pack_label: getRequestPackLabel(r.request_id)
-    };
-  });
-}
+/* ===== FINAL OVERRIDES: mobile fixes, request mode, receive by password ===== */
+let loginInFlight = false;
 
 function rebuildPacksGrouped() {
   packsGrouped = groupPacks(packsMaster || []);
 }
 
-function fillPackItemSelect() {
-  const sel = $("pack-item-select");
-  if (!sel) return;
-  const names = Array.from(new Set((itemsMaster || []).map((x) => String(x.name || "").trim()).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b, "mn"));
-  sel.innerHTML = `<option value="">Сонгох</option>` +
-    names.map((name) => `<option value="${escAttr(name)}">${esc(name)}</option>`).join("");
+function normalizeOverallStatus(v, receivedConfirmed) {
+  const s = String(v || "").trim();
+  const received = String(receivedConfirmed || "").toLowerCase() === "true" || receivedConfirmed === true;
+  if (received) return "Хүлээн авсан";
+  if (s === "Шийдвэрлэсэн") return "Хүлээн аваагүй";
+  if (s === "Хэсэгчлэн шийдвэрлэсэн") return "Хэсэгчлэн";
+  return s || "Хүлээгдэж буй";
+}
+
+function getRequestPackLabel(request_id) {
+  const req = (requests || []).find((x) => String(x.request_id) === String(request_id)) || {};
+  if (String(req.pack_name || "").trim()) return String(req.pack_name || "").trim();
+
+  const lines = linesForRequest(request_id);
+  if (!lines.length) return "Энгийн";
+
+  const lineCounts = {};
+  lines.forEach((ln) => {
+    const key = `${String(ln.item || "").trim()}__${parseInt(ln.qty, 10) || 0}`;
+    lineCounts[key] = (lineCounts[key] || 0) + 1;
+  });
+
+  const grouped = groupPacks(packsMaster || []);
+  for (const p of grouped) {
+    const packCounts = {};
+    (p.lines || []).forEach((ln) => {
+      const key = `${String(ln.item || "").trim()}__${parseInt(ln.default_qty, 10) || 0}`;
+      packCounts[key] = (packCounts[key] || 0) + 1;
+    });
+    const a = Object.keys(lineCounts).sort().map(k => `${k}:${lineCounts[k]}`).join("|");
+    const b = Object.keys(packCounts).sort().map(k => `${k}:${packCounts[k]}`).join("|");
+    if (a && a === b) return p.pack_name || "Энгийн";
+  }
+  return "Энгийн";
+}
+
+function hydrateRequestsForUI() {
+  requests = (requests || []).map((r) => {
+    const role = String(r.role || "").trim();
+    const place = String(r.place || "").trim();
+    const department = String(r.department || "").trim();
+    const shift = String(r.shift || "").trim();
+    return {
+      ...r,
+      role,
+      place,
+      department,
+      shift,
+      pack_label: getRequestPackLabel(r.request_id),
+      ui_status: normalizeOverallStatus(r.overall_status, r.received_confirmed)
+    };
+  });
+}
+
+function statusMetaOverall(s) {
+  const st = String(s || "").trim();
+  if (st === "Шийдвэрлэсэн") return { label: "ШИЙДВЭРЛЭСЭН", cls: "st-approved" };
+  if (st === "Хүлээн авсан") return { label: "ХҮЛЭЭН АВСАН", cls: "st-approved" };
+  if (st === "Хүлээн аваагүй") return { label: "ХҮЛЭЭН АВААГҮЙ", cls: "st-pending" };
+  if (st === "Хэсэгчлэн" || st === "Хэсэгчлэн шийдвэрлэсэн") return { label: "ХЭСЭГЧЛЭН ШИЙДВЭРЛЭСЭН", cls: "st-pending" };
+  return { label: "ХҮЛЭЭГДЭЖ БУЙ", cls: "st-pending" };
+}
+
+window.login = async function () {
+  if (loginInFlight) return;
+  const code = ($("login-code")?.value || "").trim();
+  const pass = ($("login-pass")?.value || "").trim();
+  if (!code || !pass) return popupError("Код болон нууц үг оруулна уу");
+
+  const btn = document.querySelector('#login-screen button[onclick="login()"]');
+  try {
+    loginInFlight = true;
+    if (btn) btn.disabled = true;
+    showLoading(true);
+    const data = await apiPost({ action: "login", code, pass });
+    if (!data.success) throw new Error(data.msg || "Нэвтрэхэд алдаа гарлаа");
+    currentUser = data.user;
+    setLoggedInUI(true);
+    setSidebarUserInfo();
+    applyRoleVisibility();
+    await refreshData(true);
+  } catch (err) {
+    popupError(err.message || "Сервертэй холбогдож чадсангүй");
+  } finally {
+    loginInFlight = false;
+    if (btn) btn.disabled = false;
+    showLoading(false);
+  }
+};
+
+function syncRequestModeUI() {
+  const packVal = ($("req-pack")?.value || "").trim();
+  const manualHasCart = (cart || []).length > 0;
+  const hasPackSelected = !!packVal;
+
+  const reqItem = $("req-item");
+  const reqSize = $("req-size");
+  const reqQty = $("req-qty");
+  const btnAdd = $("btn-add-item");
+  const btnSubmit = $("btn-submit-request");
+  const btnPackAdd = $("btn-pack-add");
+  const btnPackSubmit = $("btn-pack-submit");
+  const manualBlock = $("manual-request-block");
+
+  const manualDisabled = hasPackSelected;
+  [reqItem, reqSize, reqQty, btnAdd, btnSubmit].forEach(el => { if (el) el.disabled = manualDisabled; });
+  if (manualBlock) manualBlock.classList.toggle("mode-disabled", manualDisabled);
+
+  const packDisabled = manualHasCart && !hasPackSelected;
+  [btnPackAdd, btnPackSubmit].forEach(el => { if (el) el.disabled = packDisabled; });
+
+  if (reqItem) reqItem.disabled = manualDisabled;
+  if (reqSize) reqSize.disabled = manualDisabled;
+  if (reqQty) reqQty.disabled = manualDisabled;
 }
 
 function fillRequestForm() {
@@ -2012,6 +2045,7 @@ function fillRequestForm() {
       const it = itemsMaster.find((x) => String(x.name || "") === itemName);
       const sizes = it ? String(it.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
       setSelectOptions(sizeSel, sizes, "Сонгох");
+      syncRequestModeUI();
     };
     itemSel.onchange = onItemChange;
     onItemChange();
@@ -2022,37 +2056,190 @@ function fillRequestForm() {
       .filter((p) => p.active)
       .map((p) => p.pack_name);
     setSelectOptions(packSel, activePackNames, "Сонгох");
+    packSel.onchange = () => {
+      if ((packSel.value || "").trim()) {
+        // clear manual selections when switching to pack mode
+        if ($("req-item")) $("req-item").value = "";
+        if ($("req-size")) setSelectOptions($("req-size"), [], "Сонгох");
+        if ($("req-qty")) $("req-qty").value = 1;
+      }
+      syncRequestModeUI();
+    };
   }
+
+  syncRequestModeUI();
 }
 
-window.login = async () => {
-  if (__loginBusy) return;
-  const code = ($("login-code")?.value || "").trim();
-  const pass = ($("login-pass")?.value || "").trim();
-  if (!code || !pass) return popupError("Код, нууц үг оруулна уу");
+window.addToCart = () => {
+  if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
+  if (($("req-pack")?.value || "").trim()) return popupError("Багц сонгосон үед энгийн бараа нэмэхгүй.");
+  const item = ($("req-item")?.value || "").trim();
+  const size = ($("req-size")?.value || "").trim();
+  let qty = parseInt(($("req-qty")?.value || "1"), 10);
+  if (!qty || qty < 1) qty = 1;
 
-  const btn = document.querySelector('#login-screen button[onclick="login()"]');
+  if (!item) return popupError("Бараа сонгоно уу");
+  if (!size) return popupError("Размер сонгоно уу");
+
+  const idx = cart.findIndex((x) => x.item === item && x.size === size);
+  if (idx >= 0) cart[idx].qty += qty;
+  else cart.push({ item, size, qty });
+
+  renderCart();
+  if ($("req-item")) $("req-item").value = "";
+  if ($("req-size")) setSelectOptions($("req-size"), [], "Сонгох");
+  if ($("req-qty")) $("req-qty").value = 1;
+  syncRequestModeUI();
+};
+
+window.removeCartItem = (i) => { cart.splice(i, 1); renderCart(); syncRequestModeUI(); };
+
+window.addPackToCart = () => {
+  if ((cart || []).length > 0) return popupError("Энгийн бараа сонгосон үед багц нэмэхгүй.");
+  const packName = ($("req-pack")?.value || "").trim();
+  if (!packName) return popupError("Багц сонгоно уу");
+
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack || !pack.lines.length) return popupError("Багц хоосон/олдсонгүй");
+
+  const modalHtml = `
+    <div style="padding:14px;">
+      <div class="muted" style="margin-bottom:12px;">${esc(packName)} багцын бараа бүрт размер сонгоно уу.</div>
+      <div class="mini-table pack-grid" style="display:grid;gap:10px;">
+        ${pack.lines.map((ln, i) => {
+          const item = itemsMaster.find((x) => String(x.name || "") === String(ln.item || ""));
+          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+          return `
+            <div class="light-table-row" style="grid-template-columns:2fr 1fr 1.2fr;">
+              <div style="font-weight:900;">${esc(ln.item)}</div>
+              <div>${esc(ln.default_qty)} ширхэг</div>
+              <div>
+                <select id="pack-size-${i}" class="input">
+                  <option value="">Размер</option>
+                  ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
+                </select>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>
+      <div class="detail-footer modal-actions">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
+        <button class="btn primary" onclick="confirmPackToCart('${escAttr(packName)}')">БАГЦ НЭМЭХ</button>
+      </div>
+    </div>`;
+  openModal(`Багц: ${packName}`, modalHtml);
+};
+
+window.confirmPackToCart = (packName) => {
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack) return popupError("Багц олдсонгүй");
+
+  for (let i = 0; i < pack.lines.length; i++) {
+    const ln = pack.lines[i];
+    const size = ($(`pack-size-${i}`)?.value || "").trim();
+    if (!size) return popupError(`"${ln.item}" бараанд размер сонгоно уу.`);
+  }
+
+  pack.lines.forEach((ln, i) => {
+    const size = ($(`pack-size-${i}`)?.value || "").trim();
+    const qty = parseInt(ln.default_qty, 10) || 1;
+    const idx = cart.findIndex((x) => x.item === ln.item && x.size === size);
+    if (idx >= 0) cart[idx].qty += qty;
+    else cart.push({ item: ln.item, size, qty });
+  });
+
+  renderCart();
+  if ($("req-pack")) $("req-pack").value = "";
+  closeModal();
+  syncRequestModeUI();
+};
+
+window.submitPackRequest = async () => {
+  if ((cart || []).length > 0) return popupError("Энгийн бараа сонгосон үед багц илгээхгүй.");
+  const packName = ($("req-pack")?.value || "").trim();
+  if (!packName) return popupError("Багц сонгоно уу");
+
+  const grouped = groupPacks(packsMaster || []);
+  const pack = grouped.find((p) => p.pack_name === packName && p.active);
+  if (!pack || !pack.lines.length) return popupError("Багц хоосон/олдсонгүй");
+
+  const modalHtml = `
+    <div style="padding:14px;">
+      <div class="muted" style="margin-bottom:12px;">${esc(packName)} багцын бараа бүрт размер сонгоод шууд илгээнэ.</div>
+      <div class="mini-table pack-grid" style="display:grid;gap:10px;">
+        ${pack.lines.map((ln, i) => {
+          const item = itemsMaster.find((x) => String(x.name || "") === String(ln.item || ""));
+          const sizes = item ? String(item.sizes || "").split(",").map((s) => s.trim()).filter(Boolean) : [];
+          return `
+            <div class="light-table-row" style="grid-template-columns:2fr 1fr 1.2fr;">
+              <div style="font-weight:900;">${esc(ln.item)}</div>
+              <div>${esc(ln.default_qty)} ширхэг</div>
+              <div>
+                <select id="pack-submit-size-${i}" class="input">
+                  <option value="">Размер</option>
+                  ${sizes.map((s) => `<option value="${escAttr(s)}">${esc(s)}</option>`).join("")}
+                </select>
+              </div>
+            </div>`;
+        }).join("")}
+      </div>
+      <div class="detail-footer modal-actions">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
+        <button class="btn primary" onclick="confirmSubmitPackRequest('${escAttr(packName)}')">БАГЦ ИЛГЭЭХ</button>
+      </div>
+    </div>`;
+  openModal(`Багц илгээх: ${packName}`, modalHtml);
+};
+
+window.submitMultiRequest = async () => {
   try {
-    __loginBusy = true;
-    if (btn) btn.disabled = true;
+    if (($("req-pack")?.value || "").trim()) return popupError("Багц сонгосон үед энгийн захиалга илгээхгүй.");
+    if (isAdmin()) return popupError("Админ талд захиалга илгээх хэрэггүй");
+    if (!currentUser) return popupError("Нэвтэрнэ үү");
+    if (!cart.length) return popupError("Сонгосон бараа алга");
     showLoading(true);
-    const r = await apiPost({ action: "login", code, pass });
-    if (!r.success) throw new Error(r.msg || "Нэвтрэх амжилтгүй");
-    currentUser = r.user;
-    setLoggedInUI(true);
-    setSidebarUserInfo();
-    applyRoleVisibility();
+    const r = await apiPost({
+      action: "add_request",
+      code: currentUser.code,
+      items: cart.map((x) => ({ item: x.item, size: x.size, qty: x.qty })),
+    });
+    if (!r.success) throw new Error(r.msg || "Илгээхэд алдаа");
+    cart = [];
+    renderCart();
+    syncRequestModeUI();
+    popupOk(`Захиалга амжилттай илгээгдлээ (${r.request_id || ""})`);
     await refreshData(false);
-    if (isAdmin()) showTab("orders", $("nav-orders"));
-    else showTab("request", $("nav-request"));
+    showTab("orders", $("nav-orders"));
   } catch (e) {
     popupError(e.message || String(e));
   } finally {
     showLoading(false);
-    __loginBusy = false;
-    if (btn) btn.disabled = false;
   }
 };
+
+function renderReceiveConfirmSection(req) {
+  const overall = normalizeOverallStatus(req.overall_status, req.received_confirmed);
+  const alreadyReceived = String(req.received_confirmed || "").toLowerCase() === "true" || req.received_confirmed === true;
+  if (alreadyReceived) {
+    return `
+      <div class="detail-receive-box">
+        <div class="receive-title">ХҮЛЭЭН АВСАН</div>
+        <div class="muted">Энэ захиалгыг ажилтан хүлээн авсан байна.</div>
+      </div>`;
+  }
+  if (overall !== "Хүлээн аваагүй") return "";
+
+  return `
+    <div class="detail-receive-box">
+      <div class="receive-title">ХҮЛЭЭН АВАЛТ БАТАЛГААЖУУЛАХ</div>
+      <div class="receive-row">
+        <input id="receive-pass" class="input receive-pin" type="password" placeholder="Нууц үг оруулна уу" />
+        <button class="btn primary" onclick="confirmReceive()">ХҮЛЭЭН АВСАН</button>
+      </div>
+    </div>`;
+}
 
 window.confirmReceive = async () => {
   const pass = ($("receive-pass")?.value || "").trim();
@@ -2070,29 +2257,6 @@ window.confirmReceive = async () => {
   }
 };
 
-function renderReceiveConfirmSection(req) {
-  const alreadyReceived = String(req.received_confirmed || "").toLowerCase() === "true" || req.received_confirmed === true;
-  const resolved = normalizeOverallStatus(req.overall_status) === "Шийдвэрлэсэн";
-
-  if (alreadyReceived) {
-    return `
-      <div class="detail-receive-box">
-        <div class="receive-title">ХҮЛЭЭН АВСАН</div>
-        <div class="muted">Энэ захиалгыг ажилтан хүлээн авсан байна.</div>
-      </div>`;
-  }
-  if (!resolved) return "";
-
-  return `
-    <div class="detail-receive-box">
-      <div class="receive-title">ХҮЛЭЭН АВАЛТ БАТАЛГААЖУУЛАХ</div>
-      <div class="receive-row">
-        <input id="receive-pass" class="input receive-pin" type="password" placeholder="Нууц үг оруулна уу" />
-        <button class="btn primary" onclick="confirmReceive()">ХҮЛЭЭН АВСАН</button>
-      </div>
-    </div>`;
-}
-
 function renderOrdersHeader() {
   const header = $("requests-header");
   if (!header) return;
@@ -2103,6 +2267,7 @@ function renderOrdersHeader() {
     <option value="Хэсэгчлэн" ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
     <option value="Хүлээн аваагүй" ${orderFilters.status==="Хүлээн аваагүй"?"selected":""}>Хүлээн аваагүй</option>
     <option value="Хүлээн авсан" ${orderFilters.status==="Хүлээн авсан"?"selected":""}>Хүлээн авсан</option>`;
+
   const shiftOptions = `
     <option value="">Бүгд</option>
     <option value="А ээлж" ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
@@ -2119,24 +2284,47 @@ function renderOrdersHeader() {
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr";
+    header.style.gridTemplateColumns = "1.1fr 1.8fr 1.3fr 1.8fr .8fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>БАГЦ</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.2fr 1fr 1.15fr 1.05fr";
+    header.style.gridTemplateColumns = "1.3fr .9fr 1.2fr 1.1fr";
   }
 }
 
+function passFilters(r) {
+  const y = getYear(r.requestedDate);
+  const m = getMonth(r.requestedDate);
+  const st = normalizeOverallStatus(r.overall_status, r.received_confirmed);
+  if (orderFilters.status && st !== orderFilters.status) return false;
+  if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
+  if (orderFilters.year && y !== orderFilters.year) return false;
+  if (orderFilters.month && m !== orderFilters.month) return false;
+  if (orderFilters.place && String(r.place || "").trim() !== orderFilters.place) return false;
+  if (orderFilters.dept && String(r.department || "").trim() !== orderFilters.dept) return false;
+  if (orderFilters.role && !String(r.role || "").toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
+  if (orderFilters.code && !String(r.code || "").toLowerCase().includes(orderFilters.code.toLowerCase())) return false;
+  if (orderFilters.name) {
+    const full = `${String(r.ovog||"")} ${String(r.ner||"")}`.toLowerCase();
+    if (!full.includes(orderFilters.name.toLowerCase())) return false;
+  }
+  if (orderFilters.item) {
+    const packLabel = getRequestPackLabel(r.request_id);
+    if (String(packLabel || "").trim() !== orderFilters.item) return false;
+  }
+  return true;
+}
+
 function populateOrderFilters() {
-  const vis = getVisibleRequestsHydrated();
+  const vis = getVisibleRequests();
   setSelectOptions($("f-year"), uniq(vis.map(r => getYear(r.requestedDate))).sort(), "Бүгд");
   setSelectOptions($("f-month"), uniq(vis.map(r => getMonth(r.requestedDate))).sort(), "Бүгд");
-  setSelectOptions($("f-item"), uniq(vis.map(r => getRequestPackLabel(r.request_id))).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-  setSelectOptions($("f-place"), uniq(vis.map(r => String(r.place||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-  setSelectOptions($("f-dept"), uniq(vis.map(r => String(r.department||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
+  setSelectOptions($("f-item"), uniq(vis.map(r => getRequestPackLabel(r.request_id))).sort((a,b)=>a.localeCompare(b,"mn")), "Бүгд");
+  setSelectOptions($("f-place"), uniq(vis.map(r => String(r.place||"").trim())).sort(), "Бүгд");
+  setSelectOptions($("f-dept"), uniq(vis.map(r => String(r.department||"").trim())).sort(), "Бүгд");
 
   window.applyFilters = () => {
     orderFilters.year = ($("f-year")?.value || "").trim();
@@ -2156,41 +2344,13 @@ function populateOrderFilters() {
   };
 }
 
-function passFilters(r) {
-  const y = getYear(r.requestedDate);
-  const m = getMonth(r.requestedDate);
-  const st = requestStatusMeta(r).value;
-
-  if (orderFilters.status && st !== orderFilters.status) return false;
-  if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
-  if (orderFilters.year && y !== orderFilters.year) return false;
-  if (orderFilters.month && m !== orderFilters.month) return false;
-  if (orderFilters.place && String(r.place || "").trim() !== orderFilters.place) return false;
-  if (orderFilters.dept && String(r.department || "").trim() !== orderFilters.dept) return false;
-  if (orderFilters.role && !String(r.role || "").toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
-  if (orderFilters.code && !String(r.code || "").toLowerCase().includes(orderFilters.code.toLowerCase())) return false;
-  if (orderFilters.name) {
-    const full = `${String(r.ovog||"")} ${String(r.ner||"")}`.toLowerCase();
-    if (!full.includes(orderFilters.name.toLowerCase())) return false;
-  }
-  if (orderFilters.item && getRequestPackLabel(r.request_id) !== orderFilters.item) return false;
-
-  return true;
-}
-
-function getVisibleRequestsHydrated() {
-  hydrateRequestsForUI();
-  return getVisibleRequests();
-}
-
 function renderRequests() {
   const list = $("requests-list");
   if (!list) return;
-
+  hydrateRequestsForUI();
   renderOrdersHeader();
 
-  const data = getVisibleRequestsHydrated()
-    .filter(passFilters)
+  const data = getVisibleRequests().filter(passFilters)
     .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
   if (!data.length) {
@@ -2199,39 +2359,31 @@ function renderRequests() {
   }
 
   const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
-    ? "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr"
-    : "1.2fr 1fr 1.15fr 1.05fr");
+    ? "1.1fr 1.8fr 1.3fr 1.8fr .8fr 1.2fr 1.1fr"
+    : "1.3fr .9fr 1.2fr 1.1fr");
 
   list.innerHTML = data.map((r) => {
-    const st = requestStatusMeta(r);
+    const st = statusMetaOverall(normalizeOverallStatus(r.overall_status, r.received_confirmed));
     const reqId = esc(r.request_id);
+    const packLabel = getRequestPackLabel(r.request_id);
 
     if (isAdmin()) {
-      const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div><div class="sub">ID: ${esc(r.code||"")}</div></div>`;
-      const role = `<div>${esc(r.role || "—")}</div>`;
-      const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"—")}</div><div class="sub">${esc(r.department||"—")}</div></div>`;
-      const shift = `<div>${esc(r.shift||"—")}</div>`;
-      const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
-      const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
-      return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+      return `<div class="request-row" style="grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
         <div class="req-id">${reqId}</div>
-        <div>${employee}</div>
-        <div>${role}</div>
-        <div>${placeDept}</div>
-        <div>${shift}</div>
-        <div>${status}</div>
-        <div>${date}</div>
+        <div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div><div class="sub">ID: ${esc(r.code||"")}</div></div>
+        <div>${esc(r.role || "—")}</div>
+        <div><div style="font-weight:900;">${esc(r.place||"—")}</div><div class="sub">${esc(r.department||"—")}</div></div>
+        <div>${esc(r.shift||"—")}</div>
+        <div><span class="status ${st.cls}">${esc(st.label)}</span></div>
+        <div>${esc(fmtDateOnly(r.requestedDate))}</div>
       </div>`;
     }
 
-    const pack = `<div>${esc(getRequestPackLabel(r.request_id))}</div>`;
-    const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
-    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
-    return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+    return `<div class="request-row" style="grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
       <div class="req-id">${reqId}</div>
-      <div>${pack}</div>
-      <div>${status}</div>
-      <div>${date}</div>
+      <div><span class="status pack-chip">${esc(packLabel)}</span></div>
+      <div><span class="status ${st.cls}">${esc(st.label)}</span></div>
+      <div>${esc(fmtDateOnly(r.requestedDate))}</div>
     </div>`;
   }).join("");
 }
@@ -2242,7 +2394,7 @@ window.openRequestDetail = (request_id) => {
   const req = requests.find((x) => String(x.request_id) === String(request_id));
   if (!req) return popupError("Захиалга олдсонгүй");
 
-  const st = requestStatusMeta(req);
+  const st = statusMetaOverall(normalizeOverallStatus(req.overall_status, req.received_confirmed));
   const packLabel = getRequestPackLabel(request_id);
 
   const header = `
@@ -2308,47 +2460,57 @@ window.openRequestDetail = (request_id) => {
   openModal(`Захиалга: ${request_id}`, `${header}${tableHead}${receiveSection}${footer}`);
 };
 
-function renderDetailRowsAdmin(request_id) {
-  const lines = linesForRequest(request_id);
-  if (!lines.length) return `<div class="detail-empty">Мэдээлэл хоосон.</div>`;
+window.showTab = (tabName, btn) => {
+  if (!isAdmin() && tabName === "items") return popupError("Зөвхөн админ харна.");
+  if (!isAdmin() && tabName === "users") return popupError("Зөвхөн админ харна.");
+  if (isAdmin() && tabName === "request") return popupError("Админ талд захиалга гаргах шаардлагагүй.");
 
-  return lines.map((l) => {
-    const meta = statusMetaItem(l.item_status);
-    const decided = ["Зөвшөөрсөн","Татгалзсан","Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status || "").trim());
+  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
+  $(`tab-${tabName}`)?.classList.remove("hidden");
 
-    const actionHtml = decided
-      ? `<span class="status ${meta.cls}">ШИЙДВЭРЛЭСЭН</span>`
-      : `
-        <div class="detail-actions">
-          <button class="icon-btn action-icon approve" title="Олгох" onclick="issueLine('${escAttr(l.line_id)}');event.stopPropagation();">✓</button>
-          <button class="icon-btn action-icon reject" title="Татгалзах" onclick="issueLineReject('${escAttr(l.line_id)}');event.stopPropagation();">✕</button>
-        </div>`;
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
 
-    return `
-      <div class="detail-table-row detail-admin-grid">
-        <div class="cell-strong">${esc(l.item || "")}</div>
-        <div>${esc(l.size || "—")}</div>
-        <div>${esc(l.qty ?? "")}</div>
-        <div><input class="input tiny issue-field" id="iss-size-${escAttr(l.line_id)}" value="${escAttr(l.issued_size || l.size || "")}" placeholder="Размер"/></div>
-        <div><input class="input tiny issue-field" id="iss-qty-${escAttr(l.line_id)}" type="number" min="0" value="${escAttr(l.issued_qty || l.qty || 0)}" placeholder="Тоо"/></div>
-        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
-        <div>${actionHtml}</div>
-      </div>`;
-  }).join("");
-}
+  if (window.innerWidth < 1024) closeSidebar();
 
-function renderDetailRowsUser(request_id) {
-  const lines = linesForRequest(request_id);
-  if (!lines.length) return `<div class="detail-empty">Мэдээлэл хоосон.</div>`;
+  if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
+  if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
+  if (tabName === "items") setTimeout(renderItemsTabAll, 0);
+  if (tabName === "users") renderUsers();
+};
 
-  return lines.map((l) => {
-    const meta = statusMetaItem(l.item_status);
-    return `
-      <div class="detail-table-row detail-user-grid">
-        <div class="cell-strong">${esc(l.item || "")}</div>
-        <div>${esc(l.size || "—")}</div>
-        <div>${esc(l.qty ?? "")}</div>
-        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
-      </div>`;
-  }).join("");
-}
+window.refreshData = async (keepTab = true) => {
+  if (!currentUser) return;
+  const activeTab = keepTab ? (document.querySelector(".nav-btn.active")?.id || "nav-orders") : "nav-orders";
+  try {
+    showLoading(true);
+    const r = await apiPost({ action: "get_all_data" });
+    if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
+    requests = Array.isArray(r.requests) ? r.requests : [];
+    requestItems = Array.isArray(r.request_items) ? r.request_items : [];
+    itemsMaster = Array.isArray(r.items) ? r.items : [];
+    packsMaster = Array.isArray(r.packs) ? r.packs : [];
+    stockMaster = Array.isArray(r.stock) ? r.stock : [];
+    rebuildPacksGrouped();
+    if (isAdmin()) {
+      const u = await apiPost({ action: "get_users" });
+      users = u.success ? (u.users || []) : [];
+    } else {
+      users = [];
+    }
+    hydrateRequestsForUI();
+    setSidebarUserInfo();
+    applyRoleVisibility();
+    populateOrderFilters();
+
+    if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
+    if (activeTab === "nav-request") showTab("request", $("nav-request"));
+    if (activeTab === "nav-items") setTimeout(() => showTab("items", $("nav-items")), 0);
+    if (activeTab === "nav-users") showTab("users", $("nav-users"));
+    if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
+  } catch (e) {
+    popupError(e.message || String(e));
+  } finally {
+    showLoading(false);
+  }
+};
