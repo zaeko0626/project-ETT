@@ -505,3 +505,33 @@ input:disabled, select:disabled{opacity:.6;cursor:not-allowed}
 
 /* ===== FINAL OVERRIDES: receive by password ===== */
 .receive-pin{max-width:320px}
+@media (max-width:768px){
+
+.orders-table{
+  display:block;
+}
+
+.orders-table thead{
+  display:none;
+}
+
+.orders-table tr{
+  display:block;
+  margin-bottom:14px;
+  background:#111827;
+  border-radius:14px;
+  padding:14px;
+}
+
+.orders-table td{
+  display:block;
+  padding:4px 0;
+  font-size:14px;
+}
+
+.orders-table td:first-child{
+  font-size:18px;
+  font-weight:700;
+}
+
+}
