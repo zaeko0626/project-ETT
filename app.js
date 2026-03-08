@@ -314,6 +314,7 @@ function renderOrdersHeader() {
     <option ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
     <option ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
     <option ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
+
   const shiftOptions = `
     <option value="">Бүгд</option>
     <option ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
@@ -325,18 +326,17 @@ function renderOrdersHeader() {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>АЖИЛТАН</div>
+      <div>АЛБАН ТУШААЛ</div>
       <div>ГАЗАР, ХЭЛТЭС</div>
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    // ✅ БАРАА багана авсан
-    header.style.gridTemplateColumns = "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr";
+    header.style.gridTemplateColumns = "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    // ✅ Ажилтан: зөвхөн дугаар / төлөв / огноо
     header.style.gridTemplateColumns = "1.4fr 1.2fr 1.1fr";
   }
 }
@@ -417,7 +417,8 @@ function renderRequests() {
 
   renderOrdersHeader();
 
-  const data = getVisibleRequests().filter(passFilters)
+  const data = getVisibleRequests()
+    .filter(passFilters)
     .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
   if (!data.length) {
@@ -425,39 +426,53 @@ function renderRequests() {
     return;
   }
 
-  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
-    ? "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr"
-    : "1.4fr 1.2fr 1.1fr");
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (
+    isAdmin()
+      ? "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr"
+      : "1.4fr 1.2fr 1.1fr"
+  );
 
   list.innerHTML = data.map((r) => {
     const st = statusMetaOverall(r.overall_status);
     const reqId = esc(r.request_id);
 
-    const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
-        <div class="sub">ID: ${esc(r.code||"")}${r.role?` · ${esc(r.role)}`:""}</div></div>`;
+    const employee = `
+      <div>
+        <div style="font-weight:900;">${esc(`${r.ovog || ""} ${r.ner || ""}`.trim() || "—")}</div>
+        <div class="sub">ID: ${esc(r.code || "")}</div>
+      </div>`;
 
-    const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"")}</div><div class="sub">${esc(r.department||"")}</div></div>`;
-    const shift = `<div>${esc(r.shift||"")}</div>`;
+    const role = `<div>${esc(r.role || "—")}</div>`;
+
+    const placeDept = `
+      <div>
+        <div style="font-weight:900;">${esc(r.place || "—")}</div>
+        <div class="sub">${esc(r.department || "—")}</div>
+      </div>`;
+
+    const shift = `<div>${esc(r.shift || "—")}</div>`;
     const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
     const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
 
     if (isAdmin()) {
-      return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+      return `
+        <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
+          <div class="req-id">${reqId}</div>
+          <div>${employee}</div>
+          <div>${role}</div>
+          <div>${placeDept}</div>
+          <div>${shift}</div>
+          <div>${status}</div>
+          <div>${date}</div>
+        </div>`;
+    }
+
+    return `
+      <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
         <div class="req-id">${reqId}</div>
-        <div>${employee}</div>
-        <div>${placeDept}</div>
-        <div>${shift}</div>
         <div>${status}</div>
         <div>${date}</div>
       </div>`;
-    }
-
-    // employee view (✅ бараа багана байхгүй)
-    return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
-      <div class="req-id">${reqId}</div>
-      <div>${status}</div>
-      <div>${date}</div>
-    </div>`;
   }).join("");
 }
 
@@ -468,64 +483,98 @@ window.openRequestDetail = (request_id) => {
   if (!req) return popupError("Захиалга олдсонгүй");
 
   const st = statusMetaOverall(req.overall_status);
+
   const header = `
     <div style="padding:14px;">
       <div style="font-weight:900;font-size:16px;">Захиалгын дугаар: ${esc(req.request_id)}</div>
-      <div class="muted" style="margin-top:6px;">Огноо: ${esc(fmtDateOnly(req.requestedDate))} · <span class="status ${st.cls}">${esc(st.label)}</span></div>
+      <div class="muted" style="margin-top:6px;">
+        Огноо: ${esc(fmtDateOnly(req.requestedDate))} ·
+        <span class="status ${st.cls}">${esc(st.label)}</span>
+      </div>
+
       ${isAdmin() ? `
-        <div class="muted" style="margin-top:10px;line-height:1.5;">
-          Ажилтан: ${esc(req.ovog||"")} ${esc(req.ner||"")} (Код: ${esc(req.code||"")})<br/>
-          Албан тушаал: ${esc(req.role||"")}<br/>
-          Газар/Хэлтэс: ${esc(req.place||"")} / ${esc(req.department||"")}<br/>
-          Ээлж: ${esc(req.shift||"")}
-        </div>` : ``}
+        <div class="detail-meta-grid" style="margin-top:12px;">
+          <div>
+            <div class="muted">Ажилтан</div>
+            <div>${esc(req.ovog || "")} ${esc(req.ner || "")} (Код: ${esc(req.code || "")})</div>
+          </div>
+          <div>
+            <div class="muted">Албан тушаал</div>
+            <div>${esc(req.role || "—")}</div>
+          </div>
+          <div>
+            <div class="muted">Газар / Хэлтэс</div>
+            <div>${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
+          </div>
+          <div>
+            <div class="muted">Ээлж</div>
+            <div>${esc(req.shift || "—")}</div>
+          </div>
+        </div>
+      ` : ``}
     </div>`;
 
   const tableHead = `
     <div style="padding:0 14px 10px;">
-      <div class="light-table-head">
+      <div class="light-table-head admin-detail-head">
         <div>БАРАА</div>
         <div>РАЗМЕР</div>
         <div>ТОО</div>
+        ${isAdmin() ? `<div>ОЛГОХ РАЗМЕР</div><div>ОЛГОХ ТОО</div>` : ``}
         <div>ТӨЛӨВ</div>
         ${isAdmin() ? `<div>ҮЙЛДЭЛ</div>` : ``}
       </div>
     </div>`;
 
   const lines = linesForRequest(request_id);
+
   const bodyRows = lines.map((l) => {
     const item = esc(l.item || "");
     const size = esc(l.size || "");
     const qty = esc(l.qty ?? "");
     const meta = statusMetaItem(l.item_status);
-    const decided = ["Зөвшөөрсөн","Татгалзсан","Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status||"").trim());
+
+    const decided = ["Зөвшөөрсөн", "Татгалзсан", "Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status || "").trim());
+
     const actionHtml = isAdmin()
-      ? (decided ? `<span class="pill decided">ШИЙДВЭРЛЭСЭН</span>` :
-        `<div class="decision-actions issue-actions">
-          <input class="input tiny" id="iss-size-${esc(l.line_id)}" value="${esc(l.issued_size || l.size || "")}" placeholder="Размер" />
-          <input class="input tiny" id="iss-qty-${esc(l.line_id)}" type="number" min="0" value="${esc(l.issued_qty || l.qty || 0)}" placeholder="Тоо" />
-          <button class="btn pill approve" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">ОЛГОХ</button>
-          <button class="btn pill reject" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">ТАТГАЛЗАХ</button>
-        </div>`)
-      : ``;    return `<div class="light-table-row">
-      <div style="font-weight:900;">${item}</div>
-      <div>Размер: ${size}</div>
-      <div>${qty} ширхэг</div>
-      <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
-      ${isAdmin() ? `<div>${actionHtml}</div>` : ``}
-    </div>`;
+      ? (decided
+          ? `<span class="pill decided">ШИЙДВЭРЛЭСЭН</span>`
+          : `
+            <div class="decision-actions compact-actions">
+              <button class="icon-action approve" title="Олгох" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">✓</button>
+              <button class="icon-action reject" title="Татгалзах" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">✕</button>
+            </div>`)
+      : ``;
+
+    return `
+      <div class="light-table-row admin-detail-row">
+        <div style="font-weight:900;">${item}</div>
+        <div>${size}</div>
+        <div>${qty}</div>
+        ${isAdmin() ? `
+          <div><input class="input tiny" id="iss-size-${esc(l.line_id)}" value="${esc(l.issued_size || l.size || "")}" placeholder="Размер" /></div>
+          <div><input class="input tiny" id="iss-qty-${esc(l.line_id)}" type="number" min="0" value="${esc(l.issued_qty || l.qty || 0)}" placeholder="Тоо" /></div>
+        ` : ``}
+        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
+        ${isAdmin() ? `<div>${actionHtml}</div>` : ``}
+      </div>`;
   }).join("");
 
   const finalizeBtn = isAdmin()
-    ? `<div style="padding:14px;display:flex;justify-content:flex-end;gap:10px;">
+    ? `
+      <div style="padding:14px;display:flex;justify-content:flex-end;gap:10px;">
         <button class="btn" onclick="closeModal()">ХААХ</button>
         <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
       </div>`
-    : `<div style="padding:14px;display:flex;justify-content:flex-end;">
+    : `
+      <div style="padding:14px;display:flex;justify-content:flex-end;">
         <button class="btn" onclick="closeModal()">ХААХ</button>
       </div>`;
 
-  openModal(`Захиалга: ${request_id}`, `${header}${tableHead}${bodyRows || `<div style="padding:14px;">Мэдээлэл хоосон.</div>`}${finalizeBtn}`);
+  openModal(
+    `Захиалга: ${request_id}`,
+    `${header}${tableHead}${bodyRows || `<div style="padding:14px;">Мэдээлэл хоосон.</div>`}${finalizeBtn}`
+  );
 };
 
 window.setItemDecision = async (line_id, status) => {
@@ -1590,15 +1639,16 @@ function renderOrdersHeader() {
 
   const statusOptions = `
     <option value="">Бүгд</option>
-    <option value="Хүлээгдэж буй" ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
-    <option value="Хэсэгчлэн" ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
-    <option value="Шийдвэрлэсэн" ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
+    <option ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
+    <option ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
+    <option ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
+
   const shiftOptions = `
     <option value="">Бүгд</option>
-    <option value="А ээлж" ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
-    <option value="Б ээлж" ${orderFilters.shift==="Б ээлж"?"selected":""}>Б ээлж</option>
-    <option value="В ээлж" ${orderFilters.shift==="В ээлж"?"selected":""}>В ээлж</option>
-    <option value="Г ээлж" ${orderFilters.shift==="Г ээлж"?"selected":""}>Г ээлж</option>`;
+    <option ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
+    <option ${orderFilters.shift==="Б ээлж"?"selected":""}>Б ээлж</option>
+    <option ${orderFilters.shift==="В ээлж"?"selected":""}>В ээлж</option>
+    <option ${orderFilters.shift==="Г ээлж"?"selected":""}>Г ээлж</option>`;
 
   if (isAdmin()) {
     header.innerHTML = `
@@ -1609,14 +1659,13 @@ function renderOrdersHeader() {
       <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr";
+    header.style.gridTemplateColumns = "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr";
   } else {
     header.innerHTML = `
       <div>ЗАХИАЛГЫН ДУГААР</div>
-      <div>БАГЦ</div>
       <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
       <div>ОГНОО</div>`;
-    header.style.gridTemplateColumns = "1.2fr 1fr 1.15fr 1.05fr";
+    header.style.gridTemplateColumns = "1.4fr 1.2fr 1.1fr";
   }
 }
 
@@ -1675,41 +1724,47 @@ function renderRequests() {
   if (!list) return;
 
   renderOrdersHeader();
-  const data = getVisibleRequestsHydrated().filter(passFilters)
+
+  const data = getVisibleRequests()
+    .filter(passFilters)
     .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
 
   if (!data.length) {
-    list.innerHTML = `<div style="padding:16px;color:#94a3b8;">Мэдээлэл олдсонгүй.</div>`;
+    list.innerHTML = `<div style="padding:16px;color:#6b7280;">Мэдээлэл олдсонгүй.</div>`;
     return;
   }
 
-  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
-    ? "1.1fr 1.7fr 1.25fr 1.8fr 0.8fr 1.15fr 1.05fr"
-    : "1.2fr 1fr 1.15fr 1.05fr");
+  const gridCols = $("requests-header")?.style.gridTemplateColumns || (
+    isAdmin()
+      ? "1.1fr 1.8fr 1.3fr 1.8fr 0.9fr 1.2fr 1.1fr"
+      : "1.4fr 1.2fr 1.1fr"
+  );
 
   list.innerHTML = data.map((r) => {
-    const st = statusMetaOverall(normalizeOverallStatus(r.overall_status));
+    const st = statusMetaOverall(r.overall_status);
     const reqId = esc(r.request_id);
-    const fullName = `${r.ovog || ""} ${r.ner || ""}`.trim() || "—";
+
     const employee = `
       <div>
-        <div style="font-weight:900;">${esc(fullName)}</div>
+        <div style="font-weight:900;">${esc(`${r.ovog || ""} ${r.ner || ""}`.trim() || "—")}</div>
         <div class="sub">ID: ${esc(r.code || "")}</div>
       </div>`;
+
     const role = `<div>${esc(r.role || "—")}</div>`;
+
     const placeDept = `
       <div>
         <div style="font-weight:900;">${esc(r.place || "—")}</div>
         <div class="sub">${esc(r.department || "—")}</div>
       </div>`;
+
     const shift = `<div>${esc(r.shift || "—")}</div>`;
     const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
-    const date = `<div>${esc(fmtDateTime(r.requestedDate))}</div>`;
-    const pack = `<div><span class="status pack-chip">${esc(getRequestPackLabel(r.request_id))}</span></div>`;
+    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
 
     if (isAdmin()) {
       return `
-        <div class="request-row orders-admin-grid" onclick="openRequestDetail('${reqId}')">
+        <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
           <div class="req-id">${reqId}</div>
           <div>${employee}</div>
           <div>${role}</div>
@@ -1721,9 +1776,8 @@ function renderRequests() {
     }
 
     return `
-      <div class="request-row orders-user-grid" onclick="openRequestDetail('${reqId}')">
+      <div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
         <div class="req-id">${reqId}</div>
-        <div>${pack}</div>
         <div>${status}</div>
         <div>${date}</div>
       </div>`;
@@ -1731,66 +1785,103 @@ function renderRequests() {
 }
 
 window.openRequestDetail = (request_id) => {
-  hydrateRequestsForUI();
   currentModalRequestId = String(request_id);
   const req = requests.find((x) => String(x.request_id) === String(request_id));
   if (!req) return popupError("Захиалга олдсонгүй");
 
-  const st = statusMetaOverall(normalizeOverallStatus(req.overall_status));
-  const packLabel = getRequestPackLabel(request_id);
+  const st = statusMetaOverall(req.overall_status);
 
   const header = `
-    <div class="detail-meta">
-      <div class="detail-request-title">Захиалгын дугаар: ${esc(req.request_id)}</div>
-      <div class="detail-meta-row">
-        <span class="muted">Огноо:</span> ${esc(fmtDateTime(req.requestedDate))}
-        <span class="detail-meta-sep">•</span>
+    <div style="padding:14px;">
+      <div style="font-weight:900;font-size:16px;">Захиалгын дугаар: ${esc(req.request_id)}</div>
+      <div class="muted" style="margin-top:6px;">
+        Огноо: ${esc(fmtDateOnly(req.requestedDate))} ·
         <span class="status ${st.cls}">${esc(st.label)}</span>
       </div>
-      <div class="detail-meta-grid">
-        <div><span class="muted">Ажилтан:</span> ${esc(`${req.ovog || ""} ${req.ner || ""}`.trim())} (Код: ${esc(req.code || "")})</div>
-        <div><span class="muted">Албан тушаал:</span> ${esc(req.role || "—")}</div>
-        <div><span class="muted">Газар/Хэлтэс:</span> ${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
-        <div><span class="muted">Ээлж:</span> ${esc(req.shift || "—")}</div>
-        <div><span class="muted">Багц:</span> ${esc(packLabel)}</div>
+
+      ${isAdmin() ? `
+        <div class="detail-meta-grid" style="margin-top:12px;">
+          <div>
+            <div class="muted">Ажилтан</div>
+            <div>${esc(req.ovog || "")} ${esc(req.ner || "")} (Код: ${esc(req.code || "")})</div>
+          </div>
+          <div>
+            <div class="muted">Албан тушаал</div>
+            <div>${esc(req.role || "—")}</div>
+          </div>
+          <div>
+            <div class="muted">Газар / Хэлтэс</div>
+            <div>${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
+          </div>
+          <div>
+            <div class="muted">Ээлж</div>
+            <div>${esc(req.shift || "—")}</div>
+          </div>
+        </div>
+      ` : ``}
+    </div>`;
+
+  const tableHead = `
+    <div style="padding:0 14px 10px;">
+      <div class="light-table-head admin-detail-head">
+        <div>БАРАА</div>
+        <div>РАЗМЕР</div>
+        <div>ТОО</div>
+        ${isAdmin() ? `<div>ОЛГОХ РАЗМЕР</div><div>ОЛГОХ ТОО</div>` : ``}
+        <div>ТӨЛӨВ</div>
+        ${isAdmin() ? `<div>ҮЙЛДЭЛ</div>` : ``}
       </div>
     </div>`;
 
-  const tableHead = isAdmin()
+  const lines = linesForRequest(request_id);
+
+  const bodyRows = lines.map((l) => {
+    const item = esc(l.item || "");
+    const size = esc(l.size || "");
+    const qty = esc(l.qty ?? "");
+    const meta = statusMetaItem(l.item_status);
+
+    const decided = ["Зөвшөөрсөн", "Татгалзсан", "Хэсэгчлэн шийдвэрлэсэн"].includes(String(l.item_status || "").trim());
+
+    const actionHtml = isAdmin()
+      ? (decided
+          ? `<span class="pill decided">ШИЙДВЭРЛЭСЭН</span>`
+          : `
+            <div class="decision-actions compact-actions">
+              <button class="icon-action approve" title="Олгох" onclick="issueLine('${esc(l.line_id)}');event.stopPropagation();">✓</button>
+              <button class="icon-action reject" title="Татгалзах" onclick="issueLineReject('${esc(l.line_id)}');event.stopPropagation();">✕</button>
+            </div>`)
+      : ``;
+
+    return `
+      <div class="light-table-row admin-detail-row">
+        <div style="font-weight:900;">${item}</div>
+        <div>${size}</div>
+        <div>${qty}</div>
+        ${isAdmin() ? `
+          <div><input class="input tiny" id="iss-size-${esc(l.line_id)}" value="${esc(l.issued_size || l.size || "")}" placeholder="Размер" /></div>
+          <div><input class="input tiny" id="iss-qty-${esc(l.line_id)}" type="number" min="0" value="${esc(l.issued_qty || l.qty || 0)}" placeholder="Тоо" /></div>
+        ` : ``}
+        <div><span class="status ${meta.cls}">${esc(meta.label)}</span></div>
+        ${isAdmin() ? `<div>${actionHtml}</div>` : ``}
+      </div>`;
+  }).join("");
+
+  const finalizeBtn = isAdmin()
     ? `
-      <div class="detail-table-wrap">
-        <div class="detail-table-head detail-admin-grid">
-          <div>БАРАА</div>
-          <div>РАЗМЕР</div>
-          <div>ТОО</div>
-          <div>ОЛГОХ РАЗМЕР</div>
-          <div>ОЛГОХ ТОО</div>
-          <div>ТӨЛӨВ</div>
-          <div>ҮЙЛДЭЛ</div>
-        </div>
-        ${renderDetailRowsAdmin(request_id)}
+      <div style="padding:14px;display:flex;justify-content:flex-end;gap:10px;">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
+        <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
       </div>`
     : `
-      <div class="detail-table-wrap">
-        <div class="detail-table-head detail-user-grid">
-          <div>БАРАА</div>
-          <div>РАЗМЕР</div>
-          <div>ТОО</div>
-          <div>ТӨЛӨВ</div>
-        </div>
-        ${renderDetailRowsUser(request_id)}
+      <div style="padding:14px;display:flex;justify-content:flex-end;">
+        <button class="btn" onclick="closeModal()">ХААХ</button>
       </div>`;
 
-  const footer = isAdmin()
-    ? `<div class="detail-footer">
-         <button class="btn" onclick="closeModal()">ХААХ</button>
-         <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
-       </div>`
-    : `<div class="detail-footer">
-         <button class="btn" onclick="closeModal()">ХААХ</button>
-       </div>`;
-
-  openModal(`Захиалга: ${request_id}`, `${header}${tableHead}${footer}`);
+  openModal(
+    `Захиалга: ${request_id}`,
+    `${header}${tableHead}${bodyRows || `<div style="padding:14px;">Мэдээлэл хоосон.</div>`}${finalizeBtn}`
+  );
 };
 
 function renderDetailRowsAdmin(request_id) {
@@ -1844,356 +1935,6 @@ function renderItemsTabAll() {
   renderPackBuilder();
   renderPacks();
 }
-
-window.showTab = (tabName, btn) => {
-  if (!isAdmin() && tabName === "items") return popupError("Зөвхөн админ харна.");
-  if (!isAdmin() && tabName === "users") return popupError("Зөвхөн админ харна.");
-  if (isAdmin() && tabName === "request") return popupError("Админ талд захиалга гаргах шаардлагагүй.");
-
-  document.querySelectorAll(".tab-content").forEach((el) => el.classList.add("hidden"));
-  $(`tab-${tabName}`)?.classList.remove("hidden");
-
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-
-  if (window.innerWidth < 1024) closeSidebar();
-
-  if (tabName === "orders") { populateOrderFilters(); renderRequests(); }
-  if (tabName === "request") { fillRequestForm(); renderCart(); renderUserHistory(); }
-  if (tabName === "items") setTimeout(renderItemsTabAll, 0);
-  if (tabName === "users") renderUsers();
-};
-
-window.refreshData = async (keepTab = true) => {
-  if (!currentUser) return;
-  const activeTab = keepTab ? (document.querySelector(".nav-btn.active")?.id || "nav-orders") : "nav-orders";
-  try {
-    showLoading(true);
-    const r = await apiPost({ action: "get_all_data" });
-    if (!r.success) throw new Error(r.msg || "Дата татахад алдаа");
-    requests = Array.isArray(r.requests) ? r.requests : [];
-    requestItems = Array.isArray(r.request_items) ? r.request_items : [];
-    itemsMaster = Array.isArray(r.items) ? r.items : [];
-    packsMaster = Array.isArray(r.packs) ? r.packs : [];
-    stockMaster = Array.isArray(r.stock) ? r.stock : [];
-    rebuildPacksGrouped();
-    if (isAdmin()) {
-      const u = await apiPost({ action: "get_users" });
-      users = u.success ? (u.users || []) : [];
-    } else {
-      users = [];
-    }
-    hydrateRequestsForUI();
-    setSidebarUserInfo();
-    applyRoleVisibility();
-    populateOrderFilters();
-
-    if (activeTab === "nav-orders") showTab("orders", $("nav-orders"));
-    if (activeTab === "nav-request") showTab("request", $("nav-request"));
-    if (activeTab === "nav-items") {
-      showTab("items", $("nav-items"));
-      setTimeout(renderItemsTabAll, 0);
-    }
-    if (activeTab === "nav-users") showTab("users", $("nav-users"));
-    if (activeTab === "nav-pass") showTab("pass", $("nav-pass"));
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-  }
-};
-
-
-
-
-/* ================= FINAL REBUILD OVERRIDES ================= */
-
-function normalizeOverallStatus(v) {
-  const s = String(v || "").trim();
-  if (s === "Хэсэгчлэн шийдвэрлэсэн") return "Хэсэгчлэн";
-  return s || "Хүлээгдэж буй";
-}
-
-function getUserMetaByCode(code) {
-  const wanted = String(code || "").trim();
-  const u = (users || []).find((x) => String(x.code || "").trim() === wanted);
-  if (!u) return null;
-  return {
-    role: String(u.role || "").trim(),
-    place: String(u.place || "").trim(),
-    department: String(u.department || "").trim(),
-    shift: String(u.shift || "").trim(),
-    ovog: String(u.ovog || "").trim(),
-    ner: String(u.ner || "").trim()
-  };
-}
-
-function packSignatureFromLines(lines) {
-  const counts = {};
-  (lines || []).forEach((ln) => {
-    const key = `${String(ln.item || "").trim()}__${parseInt(ln.qty, 10) || 0}`;
-    counts[key] = (counts[key] || 0) + 1;
-  });
-  return Object.keys(counts).sort().map((k) => `${k}::${counts[k]}`).join("|");
-}
-
-function getRequestPackLabel(request_id) {
-  const req = (requests || []).find((x) => String(x.request_id) === String(request_id)) || {};
-  if (String(req.pack_name || "").trim()) return String(req.pack_name || "").trim();
-
-  const lines = linesForRequest(request_id);
-  if (!lines.length) return "Энгийн";
-
-  const reqSig = packSignatureFromLines(lines);
-  const grouped = groupPacks ? groupPacks(packsMaster || []) : [];
-  const match = grouped.find((p) => packSignatureFromLines((p.lines || []).map((ln) => ({
-    item: ln.item,
-    qty: ln.default_qty
-  }))) === reqSig);
-
-  return match ? String(match.pack_name || "").trim() : "Энгийн";
-}
-
-function hydrateRequestsForUI() {
-  requests = (requests || []).map((r) => {
-    const meta = getUserMetaByCode(r.code) || {};
-    return {
-      ...r,
-      ovog: String(r.ovog || meta.ovog || "").trim(),
-      ner: String(r.ner || meta.ner || "").trim(),
-      role: String(r.role || meta.role || "").trim(),
-      place: String(r.place || meta.place || "").trim(),
-      department: String(r.department || meta.department || "").trim(),
-      shift: String(r.shift || meta.shift || "").trim(),
-      pack_name: String(r.pack_name || "").trim(),
-      pack_label: getRequestPackLabel(r.request_id)
-    };
-  });
-}
-
-function renderItemsTabAll() {
-  renderItems();
-  fillPackItemSelect();
-  renderPackBuilder();
-  renderPacks();
-}
-
-window.clearItemSearch = () => {
-  const el = $("item-search");
-  if (el) el.value = "";
-  renderItems();
-};
-
-function renderOrdersHeader() {
-  const header = $("requests-header");
-  if (!header) return;
-
-  const statusOptions = `
-    <option value="">Бүгд</option>
-    <option value="Хүлээгдэж буй" ${orderFilters.status==="Хүлээгдэж буй"?"selected":""}>Хүлээгдэж буй</option>
-    <option value="Хэсэгчлэн" ${orderFilters.status==="Хэсэгчлэн"?"selected":""}>Хэсэгчлэн</option>
-    <option value="Шийдвэрлэсэн" ${orderFilters.status==="Шийдвэрлэсэн"?"selected":""}>Шийдвэрлэсэн</option>`;
-  const shiftOptions = `
-    <option value="">Бүгд</option>
-    <option value="А ээлж" ${orderFilters.shift==="А ээлж"?"selected":""}>А ээлж</option>
-    <option value="Б ээлж" ${orderFilters.shift==="Б ээлж"?"selected":""}>Б ээлж</option>
-    <option value="В ээлж" ${orderFilters.shift==="В ээлж"?"selected":""}>В ээлж</option>
-    <option value="Г ээлж" ${orderFilters.shift==="Г ээлж"?"selected":""}>Г ээлж</option>`;
-
-  if (isAdmin()) {
-    header.innerHTML = `
-      <div>ЗАХИАЛГЫН ДУГААР</div>
-      <div>АЖИЛТАН</div>
-      <div>АЛБАН ТУШААЛ</div>
-      <div>ГАЗАР, ХЭЛТЭС</div>
-      <div>${headerFilterCell("ЭЭЛЖ", "shift", shiftOptions)}</div>
-      <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
-      <div>ОГНОО</div>`;
-    header.className = "orders-header orders-admin-grid";
-  } else {
-    header.innerHTML = `
-      <div>ЗАХИАЛГЫН ДУГААР</div>
-      <div>БАГЦ</div>
-      <div>${headerFilterCell("ТӨЛӨВ", "status", statusOptions)}</div>
-      <div>ОГНОО</div>`;
-    header.className = "orders-header orders-user-grid";
-  }
-}
-
-function populateOrderFilters() {
-  hydrateRequestsForUI();
-  const vis = getVisibleRequests();
-  setSelectOptions($("f-year"), uniq(vis.map(r => getYear(r.requestedDate))).sort(), "Бүгд");
-  setSelectOptions($("f-month"), uniq(vis.map(r => getMonth(r.requestedDate))).sort(), "Бүгд");
-  setSelectOptions($("f-item"), uniq(vis.map(r => getRequestPackLabel(r.request_id))).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-  setSelectOptions($("f-place"), uniq(vis.map(r => String(r.place||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-  setSelectOptions($("f-dept"), uniq(vis.map(r => String(r.department||"").trim())).sort((a,b)=>String(a).localeCompare(String(b),"mn")), "Бүгд");
-
-  window.applyFilters = () => {
-    orderFilters.year = ($("f-year")?.value || "").trim();
-    orderFilters.month = ($("f-month")?.value || "").trim();
-    orderFilters.item = ($("f-item")?.value || "").trim();
-    orderFilters.place = ($("f-place")?.value || "").trim();
-    orderFilters.dept = ($("f-dept")?.value || "").trim();
-    orderFilters.role = ($("f-role")?.value || "").trim();
-    orderFilters.name = ($("f-name")?.value || "").trim();
-    orderFilters.code = ($("f-code")?.value || "").trim();
-    renderRequests();
-  };
-
-  window.clearFilters = () => {
-    ["f-year","f-month","f-item","f-place","f-dept","f-role","f-name","f-code"].forEach(id => { if ($(id)) $(id).value = ""; });
-    orderFilters = { status: orderFilters.status, shift: orderFilters.shift, year:"",month:"",item:"",place:"",dept:"",role:"",code:"",name:"" };
-    renderRequests();
-  };
-}
-
-function passFilters(r) {
-  const y = getYear(r.requestedDate);
-  const m = getMonth(r.requestedDate);
-  const st = normalizeOverallStatus(r.overall_status);
-  const packLabel = getRequestPackLabel(r.request_id);
-
-  if (orderFilters.status && st !== orderFilters.status) return false;
-  if (orderFilters.shift && String(r.shift || "").trim() !== orderFilters.shift) return false;
-  if (orderFilters.year && y !== orderFilters.year) return false;
-  if (orderFilters.month && m !== orderFilters.month) return false;
-  if (orderFilters.place && String(r.place || "").trim() !== orderFilters.place) return false;
-  if (orderFilters.dept && String(r.department || "").trim() !== orderFilters.dept) return false;
-  if (orderFilters.role && !String(r.role || "").toLowerCase().includes(orderFilters.role.toLowerCase())) return false;
-  if (orderFilters.code && !String(r.code || "").toLowerCase().includes(orderFilters.code.toLowerCase())) return false;
-  if (orderFilters.name) {
-    const full = `${String(r.ovog || "")} ${String(r.ner || "")}`.toLowerCase();
-    if (!full.includes(orderFilters.name.toLowerCase())) return false;
-  }
-  if (orderFilters.item && packLabel !== orderFilters.item) return false;
-  return true;
-}
-
-function renderRequests() {
-  const list = $("requests-list");
-  if (!list) return;
-
-  renderOrdersHeader();
-  hydrateRequestsForUI();
-
-  const data = getVisibleRequests().filter(passFilters)
-    .sort((a, b) => new Date(b.requestedDate) - new Date(a.requestedDate));
-
-  if (!data.length) {
-    list.innerHTML = `<div style="padding:16px;color:#94a3b8;">Мэдээлэл олдсонгүй.</div>`;
-    return;
-  }
-
-  list.innerHTML = data.map((r) => {
-    const st = statusMetaOverall(normalizeOverallStatus(r.overall_status));
-    const reqId = esc(r.request_id);
-    const fullName = `${r.ovog || ""} ${r.ner || ""}`.trim() || "—";
-    const employee = `
-      <div>
-        <div style="font-weight:900;">${esc(fullName)}</div>
-        <div class="sub">ID: ${esc(r.code || "")}</div>
-      </div>`;
-    const role = `<div>${esc(r.role || "—")}</div>`;
-    const placeDept = `
-      <div>
-        <div style="font-weight:900;">${esc(r.place || "—")}</div>
-        <div class="sub">${esc(r.department || "—")}</div>
-      </div>`;
-    const shift = `<div>${esc(r.shift || "—")}</div>`;
-    const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
-    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
-    const pack = `<div><span class="status pack-chip">${esc(getRequestPackLabel(r.request_id))}</span></div>`;
-
-    if (isAdmin()) {
-      return `
-        <div class="request-row orders-admin-grid" onclick="openRequestDetail('${reqId}')">
-          <div class="req-id">${reqId}</div>
-          <div>${employee}</div>
-          <div>${role}</div>
-          <div>${placeDept}</div>
-          <div>${shift}</div>
-          <div>${status}</div>
-          <div>${date}</div>
-        </div>`;
-    }
-
-    return `
-      <div class="request-row orders-user-grid" onclick="openRequestDetail('${reqId}')">
-        <div class="req-id">${reqId}</div>
-        <div>${pack}</div>
-        <div>${status}</div>
-        <div>${date}</div>
-      </div>`;
-  }).join("");
-}
-
-window.openRequestDetail = (request_id) => {
-  hydrateRequestsForUI();
-  currentModalRequestId = String(request_id);
-  const req = requests.find((x) => String(x.request_id) === String(request_id));
-  if (!req) return popupError("Захиалга олдсонгүй");
-
-  const st = statusMetaOverall(normalizeOverallStatus(req.overall_status));
-  const packLabel = getRequestPackLabel(request_id);
-
-  const header = `
-    <div class="detail-meta">
-      <div class="detail-request-title">Захиалгын дугаар: ${esc(req.request_id)}</div>
-      <div class="detail-meta-row">
-        <span class="muted">Огноо:</span> ${esc(fmtDateOnly(req.requestedDate))}
-        <span class="detail-meta-sep">•</span>
-        <span class="status ${st.cls}">${esc(st.label)}</span>
-      </div>
-      ${isAdmin() ? `
-      <div class="detail-meta-grid">
-        <div><span class="muted">Ажилтан:</span> ${esc(`${req.ovog || ""} ${req.ner || ""}`.trim())} (Код: ${esc(req.code || "")})</div>
-        <div><span class="muted">Албан тушаал:</span> ${esc(req.role || "—")}</div>
-        <div><span class="muted">Газар/Хэлтэс:</span> ${esc(req.place || "—")} / ${esc(req.department || "—")}</div>
-        <div><span class="muted">Ээлж:</span> ${esc(req.shift || "—")}</div>
-        <div><span class="muted">Багц:</span> ${esc(packLabel)}</div>
-      </div>` : `
-      <div class="detail-meta-grid">
-        <div><span class="muted">Багц:</span> ${esc(packLabel)}</div>
-      </div>`}
-    </div>`;
-
-  const tableHead = isAdmin()
-    ? `
-      <div class="detail-table-wrap">
-        <div class="detail-table-head detail-admin-grid">
-          <div>БАРАА</div>
-          <div>РАЗМЕР</div>
-          <div>ТОО</div>
-          <div>ОЛГОХ РАЗМЕР</div>
-          <div>ОЛГОХ ТОО</div>
-          <div>ТӨЛӨВ</div>
-          <div>ҮЙЛДЭЛ</div>
-        </div>
-        ${renderDetailRowsAdmin(request_id)}
-      </div>`
-    : `
-      <div class="detail-table-wrap">
-        <div class="detail-table-head detail-user-grid">
-          <div>БАРАА</div>
-          <div>РАЗМЕР</div>
-          <div>ТОО</div>
-          <div>ТӨЛӨВ</div>
-        </div>
-        ${renderDetailRowsUser(request_id)}
-      </div>`;
-
-  const footer = isAdmin()
-    ? `<div class="detail-footer">
-         <button class="btn" onclick="closeModal()">ХААХ</button>
-         <button class="btn primary" onclick="finalizeCurrentRequest()">БҮГДИЙГ ШИЙДВЭРЛЭХ</button>
-       </div>`
-    : `<div class="detail-footer">
-         <button class="btn" onclick="closeModal()">ХААХ</button>
-       </div>`;
-
-  openModal(`Захиалга: ${request_id}`, `${header}${tableHead}${footer}`);
-};
 
 window.showTab = (tabName, btn) => {
   if (!isAdmin() && tabName === "items") return popupError("Зөвхөн админ харна.");
