@@ -2559,3 +2559,20 @@ window.refreshData = async (keepTab = true) => {
     showLoading(false);
   }
 };
+// ---- SAFETY FALLBACKS ----
+
+if (typeof renderItems === "undefined") {
+  function renderItems(){ console.warn("renderItems fallback"); }
+}
+
+if (typeof addItem === "undefined") {
+  window.addItem = function(){
+    console.warn("addItem fallback");
+  };
+}
+
+if (typeof addPackLine === "undefined") {
+  window.addPackLine = function(){
+    console.warn("addPackLine fallback");
+  };
+}
