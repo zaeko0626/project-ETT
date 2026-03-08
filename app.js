@@ -436,42 +436,7 @@ function renderRequests() {
     return;
   }
 
-  const gridCols = $("requests-header")?.style.gridTemplateColumns || (isAdmin()
-    ? "1.1fr 2.1fr 2.2fr 0.7fr 1.2fr 1.1fr"
-    : "1.4fr 1.2fr 1.1fr");
 
-  list.innerHTML = data.map((r) => {
-    const st = statusMetaOverall(r.overall_status);
-    const reqId = esc(r.request_id);
-
-    const employee = `<div><div style="font-weight:900;">${esc(`${r.ovog||""} ${r.ner||""}`.trim() || "—")}</div>
-        <div class="sub">ID: ${esc(r.code||"")}${r.role ? ` · ${esc(r.role)}` : ``}</div></div>`;
-    const placeDept = `<div><div style="font-weight:900;">${esc(r.place||"")}</div><div class="sub">${esc(r.department||"")}</div></div>`;
-    const shift = `<div>${esc(r.shift||"")}</div>`;
-    const status = `<span class="status ${st.cls}">${esc(st.label)}</span>`;
-    const date = `<div>${esc(fmtDateOnly(r.requestedDate))}</div>`;
-
-    if (isAdmin()) {
-      return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
-        <div class="req-id">${reqId}</div>
-        <div>${employee}</div>
-        <div>${placeDept}</div>
-        <div>${shift}</div>
-        <div>${status}</div>
-        <div>${date}</div>
-      </div>`;
-    }
-
-    // employee view (✅ бараа багана байхгүй)
-    return `<div class="request-row" style="display:grid;grid-template-columns:${gridCols};" onclick="openRequestDetail('${reqId}')">
-      <div class="req-id">${reqId}</div>
-      <div>${status}</div>
-      <div>${date}</div>
-    </div>`;
-  }).join("");
-}
-
-/* ---------------- Request Detail (Admin + User) ---------------- */
 window.openRequestDetail = (request_id) => {
   currentModalRequestId = String(request_id);
   const req = requests.find((x) => String(x.request_id) === String(request_id));
@@ -2578,70 +2543,3 @@ window.refreshData = async (keepTab = true) => {
     showLoading(false);
   }
 };
-
-/* ---------------- Login / Logout ---------------- */
-window.login = async () => {
-  const btn = document.querySelector('#login-screen button[onclick="login()"]');
-  if (btn?.dataset.loading === "1") return;
-
-  const code = ($("login-code")?.value || "").trim();
-  const pass = ($("login-pass")?.value || "").trim();
-  if (!code || !pass) return popupError("Код, нууц үг оруулна уу");
-
-  try {
-    if (btn) {
-      btn.dataset.loading = "1";
-      btn.disabled = true;
-    }
-    showLoading(true);
-    const r = await apiPost({ action: "login", code, pass });
-    if (!r.success) throw new Error(r.msg || "Нэвтрэх амжилтгүй");
-    currentUser = r.user;
-    setLoggedInUI(true);
-    setSidebarUserInfo();
-    applyRoleVisibility();
-    await refreshData(false);
-    if (isAdmin()) showTab("orders", $("nav-orders"));
-    else showTab("request", $("nav-request"));
-  } catch (e) {
-    popupError(e.message || String(e));
-  } finally {
-    showLoading(false);
-    if (btn) {
-      btn.dataset.loading = "0";
-      btn.disabled = false;
-    }
-  }
-};
-
-window.logout = () => {
-  currentUser = null;
-  requests = [];
-  requestItems = [];
-  itemsMaster = [];
-  packsMaster = [];
-  stockMaster = [];
-  packBuilder = [];
-  packsGrouped = [];
-  users = [];
-  cart = [];
-  currentModalRequestId = null;
-  orderFilters = { status: "", shift: "", year: "", month: "", item: "", place: "", dept: "", role: "", code: "", name: "" };
-  openHeaderFilterKey = null;
-  setLoggedInUI(false);
-  if ($("sidebar-userinfo")) $("sidebar-userinfo").textContent = "—";
-  if ($("header-userline")) $("header-userline").textContent = "—";
-  if ($("login-code")) $("login-code").value = "";
-  if ($("login-pass")) $("login-pass").value = "";
-};
-
-/* ---------------- Init ---------------- */
-function init() {
-  setLoggedInUI(false);
-  $("login-pass")?.addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
-  renderOrdersHeader();
-  installHeaderCloseHandler();
-  renderKpis();
-}
-
-window.addEventListener("load", init);
