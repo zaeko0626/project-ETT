@@ -2,7 +2,10 @@
   "name": "project-ett",
   "version": "1.0.0",
   "scripts": {
-    "dev": "npx serve .",
-    "start": "npx serve ."
+    "dev": "serve .",
+    "start": "serve ."
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
   }
 }
